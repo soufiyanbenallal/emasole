@@ -1,0 +1,1 @@
+/Users/user/Documents/beyonders/emasole/AGENTS.md
