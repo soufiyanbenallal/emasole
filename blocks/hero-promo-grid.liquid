@@ -1,0 +1,69 @@
+{% doc %}
+  Renders a flexible 2-column grid of promo cards (hero-promo-card blocks),
+  intended as the right zone of the hero-showcase section. Any number of
+  cards can be added; they wrap automatically two per row.
+
+  @example
+  {% content_for 'block', type: 'hero-promo-grid', id: 'promo-grid' %}
+{% enddoc %}
+
+<div
+  class="hero-promo-grid"
+  style="--hero-promo-grid-gap: {{ block.settings.gap }}px;"
+  {{ block.shopify_attributes }}
+>
+  {% content_for 'blocks' %}
+</div>
+
+{% stylesheet %}
+  .hero-promo-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--hero-promo-grid-gap, 8px);
+    height: 100%;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:names.hero_promo_grid",
+  "tag": null,
+  "blocks": [{ "type": "hero-promo-card" }],
+  "settings": [
+    {
+      "type": "range",
+      "id": "gap",
+      "label": "t:settings.gap",
+      "min": 0,
+      "max": 40,
+      "step": 2,
+      "unit": "px",
+      "default": 8
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:names.hero_promo_grid",
+      "blocks": {
+        "card_1": {
+          "type": "hero-promo-card",
+          "settings": { "title": "Category one", "background_color": "#E96E43", "image_position": "right" }
+        },
+        "card_2": {
+          "type": "hero-promo-card",
+          "settings": { "title": "Category two", "background_color": "#C74B6B", "image_position": "right" }
+        },
+        "card_3": {
+          "type": "hero-promo-card",
+          "settings": { "title": "Category three", "background_color": "#3E8C6B", "image_position": "right" }
+        },
+        "card_4": {
+          "type": "hero-promo-card",
+          "settings": { "title": "Category four", "background_color": "#7C5CBF", "image_position": "right" }
+        }
+      },
+      "block_order": ["card_1", "card_2", "card_3", "card_4"]
+    }
+  ]
+}
+{% endschema %}

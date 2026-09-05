@@ -1,0 +1,106 @@
+{% doc %}
+  Renders a vertical panel of highlight rows (icon + title + description),
+  intended as the left zone of the hero-showcase section. This is content,
+  not a navigation menu — each row is informational (e.g. "Secure privacy",
+  "Delivery guarantee") and only becomes a link if one is explicitly set on it.
+
+  @example
+  {% content_for 'block', type: 'hero-trust-panel', id: 'trust-panel' %}
+{% enddoc %}
+
+{% liquid
+  if block.settings.background_color != blank
+    render 'contrast-override', background_color: block.settings.background_color, section_id: block.id
+  endif
+%}
+
+<div
+  class="hero-trust-panel{% if block.settings.background_color != blank %} color-custom-{{ block.id }}{% endif %}"
+  {{ block.shopify_attributes }}
+>
+  {% if block.settings.heading != blank %}
+    <h3 class="hero-trust-panel__heading">{{ block.settings.heading }}</h3>
+  {% endif %}
+
+  <ul class="hero-trust-panel__list">
+    {% content_for 'blocks' %}
+  </ul>
+</div>
+
+{% stylesheet %}
+  .hero-trust-panel {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: var(--padding-lg);
+    background: var(--color-background);
+    border-radius: var(--style-border-radius-lg);
+  }
+
+  .hero-trust-panel__heading {
+    margin: 0 0 var(--margin-md);
+  }
+
+  .hero-trust-panel__list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap-md);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:names.hero_trust_panel",
+  "tag": null,
+  "blocks": [{ "type": "hero-trust-item" }],
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "t:settings.heading",
+      "default": "Why shop with us?"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "t:settings.background_color",
+      "placeholder": "t:settings.default"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:names.hero_trust_panel",
+      "blocks": {
+        "item_1": {
+          "type": "hero-trust-item",
+          "settings": {
+            "icon": "lock",
+            "title": "Secure privacy",
+            "description": "Your data is protected at every step."
+          }
+        },
+        "item_2": {
+          "type": "hero-trust-item",
+          "settings": {
+            "icon": "check_box",
+            "title": "Safe payments",
+            "description": "Checkout with trusted payment methods."
+          }
+        },
+        "item_3": {
+          "type": "hero-trust-item",
+          "settings": {
+            "icon": "truck",
+            "title": "Delivery guarantee",
+            "description": "Reliable shipping on every order."
+          }
+        }
+      },
+      "block_order": ["item_1", "item_2", "item_3"]
+    }
+  ]
+}
+{% endschema %}

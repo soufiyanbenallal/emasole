@@ -224,6 +224,7 @@
   },
   "info": {
     "accent_color_info": "Used sparingly across the store for sale badges and active states — not applied to backgrounds or body text, so the neutral palette stays product-agnostic.",
+    "category_pills_info": "Pick a menu whose links point to your product categories or collections. The link matching the current page is highlighted automatically.",
     "actions_display_style": "Icons are always used on mobile",
     "applies_on_image_only": "Applies to images only",
     "aspect_ratio_adjusted": "Adjusted in some layouts",
@@ -253,6 +254,14 @@
     "media_type_info": "Features are populated from your menu links"
   },
   "names": {
+    "category_pills": "Category pills",
+    "hero_showcase": "Hero showcase",
+    "hero_trust_panel": "Highlights panel",
+    "hero_trust_item": "Highlight",
+    "hero_promo_carousel": "Promo carousel",
+    "hero_promo_slide": "Promo slide",
+    "hero_promo_grid": "Promo grid",
+    "hero_promo_card": "Promo card",
     "column": "Column",
     "product_title": "Product title",
     "custom_liquid": "Custom Liquid",
@@ -754,6 +763,7 @@
     "auto_load_products": "Auto load products on scroll",
     "autoplay": "Autoplay",
     "background": "Background",
+    "description": "Description",
     "background_color": "Background color",
     "background_overlay": "Background overlay",
     "badge_corner_radius": "Corner radius",

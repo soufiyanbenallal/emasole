@@ -26,6 +26,7 @@
       {% if active_hover_effect == 'lift' %}
         .card-hover-effect-lift .product-card:hover,
         .card-hover-effect-lift .collection-card:hover,
+        .card-hover-effect-lift .blog-post-card:hover,
         .card-hover-effect-lift .predictive-search-results__card:hover {
           transform: translateY(calc(-1 * var(--hover-lift-amount)));
         }
@@ -34,6 +35,7 @@
       {% if active_hover_effect == 'scale' %}
         .card-hover-effect-scale .product-card:hover,
         .card-hover-effect-scale .collection-card:hover,
+        .card-hover-effect-scale .blog-post-card:hover,
         .card-hover-effect-scale .predictive-search-results__card:hover {
           transform: scale(var(--hover-scale-amount));
         }
@@ -61,6 +63,7 @@
 {% stylesheet %}
   .product-card:hover,
   .collection-card:hover,
+  .blog-post-card:hover,
   .predictive-search-results__card:hover {
     z-index: var(--layer-raised);
   }

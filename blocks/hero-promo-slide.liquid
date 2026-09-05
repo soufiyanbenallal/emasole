@@ -1,0 +1,166 @@
+{% doc %}
+  Renders a single promotional slide for the hero-promo-carousel block.
+  The entire slide is one clickable link; an optional secondary action
+  button can still be used inside without creating nested links.
+
+  @example
+  {% content_for 'block', type: 'hero-promo-slide', id: 'promo-slide' %}
+{% enddoc %}
+
+{% liquid
+  assign block_settings = block.settings
+  assign has_link = false
+  if block_settings.link != blank
+    assign has_link = true
+  endif
+%}
+
+{% capture children %}
+  {% if has_link %}
+    <a
+      href="{{ block_settings.link }}"
+      class="hero-promo-slide__link"
+      {% if block_settings.open_in_new_tab %}
+        target="_blank" rel="noopener"
+      {% endif %}
+      aria-label="{{ block_settings.heading | strip_html }}"
+    ></a>
+  {% endif %}
+
+  {% if block_settings.image != blank %}
+    {{
+      block_settings.image
+      | image_url: width: 1600
+      | image_tag: loading: 'lazy', sizes: '(min-width: 990px) 60vw, 100vw', class: 'hero-promo-slide__image'
+    }}
+  {% endif %}
+
+  {% if block_settings.toggle_overlay %}
+    {% render 'overlay', settings: block_settings %}
+  {% endif %}
+
+  <div class="hero-promo-slide__content">
+    {% if block_settings.heading != blank %}
+      <p class="hero-promo-slide__heading">{{ block_settings.heading }}</p>
+    {% endif %}
+    {% if block_settings.description != blank %}
+      <p class="hero-promo-slide__description">{{ block_settings.description }}</p>
+    {% endif %}
+  </div>
+{% endcapture %}
+
+{% render 'slideshow-slide',
+  index: 0,
+  slide_id: block.id,
+  children: children,
+  class: 'hero-promo-slide',
+  attributes: block.shopify_attributes,
+  navigate_to_slide: true
+%}
+
+{% stylesheet %}
+  .hero-promo-slide {
+    display: flex;
+    align-items: flex-end;
+    height: 100%;
+  }
+
+  .hero-promo-slide__link {
+    position: absolute;
+    inset: 0;
+    z-index: var(--layer-raised);
+  }
+
+  .hero-promo-slide__image {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .hero-promo-slide__content {
+    position: relative;
+    z-index: var(--layer-flat);
+    padding: var(--padding-lg);
+    color: var(--color-background);
+  }
+
+  .hero-promo-slide__heading {
+    margin: 0 0 var(--margin-2xs);
+    font: var(--font-h4--family);
+    font-size: var(--font-h4--size);
+  }
+
+  .hero-promo-slide__description {
+    margin: 0;
+    max-width: 32rem;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:names.hero_promo_slide",
+  "tag": null,
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "t:settings.image"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "t:settings.heading",
+      "default": "New arrivals"
+    },
+    {
+      "type": "text",
+      "id": "description",
+      "label": "t:settings.description",
+      "default": "Discover what's new this week."
+    },
+    {
+      "type": "url",
+      "id": "link",
+      "label": "t:settings.link"
+    },
+    {
+      "type": "checkbox",
+      "id": "open_in_new_tab",
+      "label": "t:settings.open_new_tab",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "t:settings.overlay"
+    },
+    {
+      "type": "checkbox",
+      "id": "toggle_overlay",
+      "label": "t:settings.media_overlay",
+      "default": true
+    },
+    {
+      "type": "color",
+      "id": "overlay_color",
+      "label": "t:settings.overlay_color",
+      "alpha": true,
+      "default": "#00000066",
+      "visible_if": "{{ block.settings.toggle_overlay }}"
+    },
+    {
+      "type": "select",
+      "id": "overlay_style",
+      "label": "t:settings.overlay_style",
+      "options": [
+        { "value": "solid", "label": "t:options.solid" },
+        { "value": "gradient", "label": "t:options.gradient" }
+      ],
+      "default": "gradient",
+      "visible_if": "{{ block.settings.toggle_overlay }}"
+    }
+  ],
+  "presets": [{ "name": "t:names.hero_promo_slide" }]
+}
+{% endschema %}

@@ -1,0 +1,80 @@
+{% doc %}
+  Renders a horizontally-scrollable row of pill-style links sourced from a
+  navigation menu. Useful for a homepage category switcher, or any other
+  spot that needs a lightweight link to the store's collections.
+
+  The link matching the current page is highlighted using Shopify's built-in
+  `link.active` state, so no extra configuration is needed to reflect where
+  the visitor currently is.
+
+  @example
+  {% content_for 'block', type: 'category-pills', id: 'category-pills' %}
+{% enddoc %}
+
+{% render 'pills-styles' %}
+
+{% liquid
+  assign menu_list = linklists[block.settings.menu]
+%}
+
+{% if menu_list.links.size > 0 %}
+  <div
+    class="category-pills"
+    {{ block.shopify_attributes }}
+  >
+    {% for link in menu_list.links %}
+      <a
+        href="{{ link.url }}"
+        class="pills__pill"
+        {% if link.active %}
+          aria-selected="true"
+        {% endif %}
+      >
+        {{ link.title }}
+      </a>
+    {% endfor %}
+  </div>
+{% endif %}
+
+{% stylesheet %}
+  .category-pills {
+    display: flex;
+    align-items: center;
+    gap: var(--gap-2xs);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .category-pills::-webkit-scrollbar {
+    display: none;
+  }
+
+  .category-pills .pills__pill {
+    flex-shrink: 0;
+    text-decoration: none;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:names.category_pills",
+  "tag": null,
+  "settings": [
+    {
+      "type": "link_list",
+      "id": "menu",
+      "label": "t:settings.menu",
+      "default": "main-menu"
+    },
+    {
+      "type": "paragraph",
+      "content": "t:info.category_pills_info"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:names.category_pills"
+    }
+  ]
+}
+{% endschema %}

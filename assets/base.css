@@ -93,6 +93,7 @@ select {
 
 .product-card,
 .collection-card,
+.blog-post-card,
 .predictive-search-results__card--product,
 .predictive-search-results__card {
   position: relative;

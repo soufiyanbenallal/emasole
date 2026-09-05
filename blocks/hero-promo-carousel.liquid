@@ -1,0 +1,92 @@
+{% doc %}
+  Renders a carousel of full-bleed, fully-clickable promotional slides,
+  intended as the center zone of the hero-showcase section. Wraps nested
+  hero-promo-slide blocks in Horizon's slideshow component for swipe/arrow
+  navigation, one slide filling the view at a time.
+
+  @example
+  {% content_for 'block', type: 'hero-promo-carousel', id: 'promo-carousel' %}
+{% enddoc %}
+
+{% liquid
+  assign slide_count = block.blocks.size
+  assign show_arrows = false
+  if slide_count > 1
+    assign show_arrows = true
+  endif
+%}
+
+{% capture slides %}
+  {% content_for 'blocks' %}
+{% endcapture %}
+
+<div
+  class="hero-promo-carousel"
+  style="--corner-radius: var(--style-border-radius-lg);"
+  {{ block.shopify_attributes }}
+>
+  {% render 'slideshow',
+    class: 'hero-promo-carousel__slideshow',
+    slides: slides,
+    slide_count: slide_count,
+    slide_size: 'medium',
+    show_arrows: show_arrows,
+    icon_style: 'arrow',
+    icon_shape: 'circle',
+    autoplay: block.settings.autoplay,
+    autoplay_speed: block.settings.autoplay_speed,
+    infinite: true
+  %}
+</div>
+
+{% stylesheet %}
+  .hero-promo-carousel,
+  .hero-promo-carousel__slideshow,
+  .hero-promo-carousel__slideshow slideshow-container,
+  .hero-promo-carousel__slideshow slideshow-slides {
+    height: 100%;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:names.hero_promo_carousel",
+  "tag": null,
+  "blocks": [{ "type": "hero-promo-slide" }],
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "autoplay",
+      "label": "t:settings.autoplay",
+      "default": false
+    },
+    {
+      "type": "range",
+      "id": "autoplay_speed",
+      "label": "t:settings.speed",
+      "min": 3,
+      "max": 10,
+      "step": 1,
+      "unit": "s",
+      "default": 5,
+      "visible_if": "{{ block.settings.autoplay }}"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:names.hero_promo_carousel",
+      "blocks": {
+        "slide_1": {
+          "type": "hero-promo-slide",
+          "settings": {
+            "heading": "New arrivals",
+            "description": "Discover what's new this week.",
+            "link": "shopify://collections/all"
+          }
+        }
+      },
+      "block_order": ["slide_1"]
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,227 @@
+{% doc %}
+  Renders a single promo card: a colored or image background paired with a
+  positioned product/illustration image, title, and description. The whole
+  card is one clickable link. Used inside the hero-promo-grid block.
+
+  @example
+  {% content_for 'block', type: 'hero-promo-card', id: 'promo-card' %}
+{% enddoc %}
+
+{% liquid
+  assign block_settings = block.settings
+  assign has_link = false
+  if block_settings.link != blank
+    assign has_link = true
+  endif
+
+  assign has_background_image = false
+  if block_settings.background_image != blank
+    assign has_background_image = true
+  endif
+
+  assign use_contrast_color = false
+  if has_background_image == false and block_settings.background_color != blank
+    render 'contrast-override', background_color: block_settings.background_color, section_id: block.id
+    assign use_contrast_color = true
+  endif
+%}
+
+<div
+  class="
+    hero-promo-card
+    hero-promo-card--image-{{ block_settings.image_position }}
+    {% if has_background_image %}hero-promo-card--on-image{% endif %}
+    {% if use_contrast_color %}color-custom-{{ block.id }}{% endif %}
+  "
+  style="
+    {% if use_contrast_color %}
+      background-color: {{ block_settings.background_color }};
+    {% endif %}
+  "
+  {{ block.shopify_attributes }}
+>
+  {% if has_link %}
+    <a
+      href="{{ block_settings.link }}"
+      class="hero-promo-card__link"
+      {% if block_settings.open_in_new_tab %}
+        target="_blank" rel="noopener"
+      {% endif %}
+      aria-label="{{ block_settings.title | strip_html }}"
+    ></a>
+  {% endif %}
+
+  {% if has_background_image %}
+    {{
+      block_settings.background_image
+      | image_url: width: 1200
+      | image_tag: loading: 'lazy', sizes: '(min-width: 990px) 25vw, 50vw', class: 'hero-promo-card__background'
+    }}
+    <div class="hero-promo-card__scrim"></div>
+  {% endif %}
+
+  <div class="hero-promo-card__body">
+    <div class="hero-promo-card__text">
+      {% if block_settings.title != blank %}
+        <p class="hero-promo-card__title">{{ block_settings.title }}</p>
+      {% endif %}
+      {% if block_settings.description != blank %}
+        <p class="hero-promo-card__description">{{ block_settings.description }}</p>
+      {% endif %}
+    </div>
+
+    {% if block_settings.image != blank %}
+      <div class="hero-promo-card__image-wrap">
+        {{
+          block_settings.image
+          | image_url: width: 400
+          | image_tag: loading: 'lazy', sizes: '160px', class: 'hero-promo-card__image'
+        }}
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+{% stylesheet %}
+  .hero-promo-card {
+    position: relative;
+    display: flex;
+    height: 100%;
+    min-height: 9rem;
+    overflow: hidden;
+    border-radius: var(--style-border-radius-lg);
+  }
+
+  .hero-promo-card--on-image {
+    color: var(--color-background);
+  }
+
+  .hero-promo-card__link {
+    position: absolute;
+    inset: 0;
+    z-index: var(--layer-raised);
+  }
+
+  .hero-promo-card__background {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .hero-promo-card__scrim {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgb(0 0 0 / 0.45), rgb(0 0 0 / 0.1));
+  }
+
+  .hero-promo-card__body {
+    position: relative;
+    z-index: var(--layer-flat);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--gap-sm);
+    width: 100%;
+    padding: var(--padding-md);
+  }
+
+  .hero-promo-card--image-left .hero-promo-card__body {
+    flex-direction: row-reverse;
+  }
+
+  .hero-promo-card__text {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap-3xs, 2px);
+    min-width: 0;
+  }
+
+  .hero-promo-card__title {
+    margin: 0;
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .hero-promo-card__description {
+    margin: 0;
+    font-size: var(--font-size--sm);
+    opacity: var(--opacity-70);
+  }
+
+  .hero-promo-card__image-wrap {
+    flex-shrink: 0;
+    width: 5.5rem;
+  }
+
+  .hero-promo-card__image {
+    width: 100%;
+    height: auto;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:names.hero_promo_card",
+  "tag": null,
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "t:settings.title",
+      "default": "Category"
+    },
+    {
+      "type": "text",
+      "id": "description",
+      "label": "t:settings.description"
+    },
+    {
+      "type": "url",
+      "id": "link",
+      "label": "t:settings.link"
+    },
+    {
+      "type": "checkbox",
+      "id": "open_in_new_tab",
+      "label": "t:settings.open_new_tab",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "t:settings.image"
+    },
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "t:settings.image"
+    },
+    {
+      "type": "select",
+      "id": "image_position",
+      "label": "t:settings.image_position",
+      "options": [
+        { "value": "left", "label": "t:options.left" },
+        { "value": "right", "label": "t:options.right" }
+      ],
+      "default": "right"
+    },
+    {
+      "type": "header",
+      "content": "t:settings.background_color"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "t:settings.background_color",
+      "default": "#3F6E8C"
+    },
+    {
+      "type": "image_picker",
+      "id": "background_image",
+      "label": "t:content.background_image"
+    }
+  ],
+  "presets": [{ "name": "t:names.hero_promo_card" }]
+}
+{% endschema %}
