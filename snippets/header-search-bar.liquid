@@ -1,0 +1,188 @@
+{% doc %}
+  Renders the desktop header search bar: an always-visible, centered search
+  input that expands into a floating predictive search panel below it,
+  showing the same product and resource groups as the search modal.
+
+  Hidden below the desktop breakpoint, where the icon-triggered search modal
+  (`search-modal.liquid`) is used instead.
+
+  @example
+  {% render 'header-search-bar' %}
+{% enddoc %}
+
+{% render 'pills-styles' %}
+{% render 'predictive-search-styles' %}
+
+<script
+  src="{{ 'search-bar.js' | asset_url }}"
+  type="module"
+></script>
+
+<script
+  src="{{ 'predictive-search.js' | asset_url }}"
+  type="module"
+  fetchpriority="low"
+></script>
+
+<search-bar-component class="header-search-bar">
+  <predictive-search-component
+    class="predictive-search color-custom-popover"
+    style="--product-corner-radius: {{ settings.product_corner_radius | default: 8 | append: 'px' }}; --card-corner-radius: {{ settings.card_corner_radius | default: 8 | append: 'px' }};{% if settings.card_title_case == 'uppercase' %} --title-case: uppercase;{% endif %}"
+    data-section-id="predictive-search"
+    data-testid="search-component--header"
+    role="search"
+    aria-label="{{ 'content.search_input_label' | t }}"
+  >
+    <form
+      action="{{ routes.search_url }}"
+      method="get"
+      role="search"
+      class="predictive-search-form"
+      ref="form"
+      on:keydown="/onSearchKeyDown"
+    >
+      <div class="predictive-search-form__header">
+        <div class="predictive-search-form__header-inner">
+          <label
+            for="header-search-input"
+            class="visually-hidden"
+          >
+            {{- 'content.search_input_label' | t -}}
+          </label>
+          <input
+            class="search-input"
+            id="header-search-input"
+            type="search"
+            name="q"
+            role="combobox"
+            aria-expanded="false"
+            aria-owns="predictive-search-results"
+            aria-controls="predictive-search-results"
+            aria-haspopup="listbox"
+            aria-autocomplete="list"
+            autocomplete="off"
+            placeholder="{{ 'content.search_input_placeholder' | t }}"
+            ref="searchInput"
+            on:input="/search"
+            on:keydown="/onSearchKeyDown"
+            on:focus="search-bar-component/showPanel"
+          >
+          <input
+            name="options[prefix]"
+            type="hidden"
+            value="last"
+          >
+          <span class="svg-wrapper predictive-search__icon">
+            {{ 'icon-search.svg' | inline_asset_content }}
+          </span>
+          <button
+            type="button"
+            class="button-unstyled predictive-search__reset-button"
+            ref="resetButton"
+            hidden
+            on:click="/resetSearch"
+          >
+            {{ 'actions.clear' | t }}
+          </button>
+        </div>
+      </div>
+
+      <div
+        class="predictive-search-form__content-wrapper header-search-bar__panel"
+        hidden
+      >
+        <div
+          class="predictive-search-form__content"
+          ref="predictiveSearchResults"
+          on:click="/handleModalClick"
+        >
+          {% render 'predictive-search-empty-state',
+            load_empty_state: true,
+            shadow_opacity: 0.1,
+            products_test_id: 'products-list-default--header'
+          %}
+        </div>
+
+        <div class="predictive-search-form__footer">
+          <button
+            class="button predictive-search__search-button"
+            ref="viewAllButton"
+          >
+            {{ 'content.search_results_view_all' | t }}
+          </button>
+        </div>
+      </div>
+    </form>
+  </predictive-search-component>
+</search-bar-component>
+
+{% stylesheet %}
+  .header-search-bar {
+    /* Matches the radius/width `.search-modal` uses for its own dropdown seam
+       (see predictive-search-styles.liquid); undefined here it would resolve
+       to nothing and the pill would square off the moment the panel opens. */
+    --search-border-radius: var(--style-border-radius-popover);
+    --search-border-width: var(--style-border-width);
+
+    display: none;
+  }
+
+  @media screen and (min-width: 750px) {
+    .header-search-bar {
+      display: flex;
+      width: 100%;
+      margin-inline: auto;
+    }
+
+    /* The old icon-triggered search action is replaced by this bar on desktop. */
+    #header-component:has(.header-search-bar) .search-action {
+      display: none;
+    }
+  }
+
+  /* The outer header wrapper stays invisible; the inner one carries the pill look. */
+  .header-search-bar .predictive-search-form__header {
+    position: static;
+    border: 0;
+    border-radius: 0;
+    background-color: transparent;
+    padding: 0;
+  }
+
+  .header-search-bar .predictive-search-form__header-inner {
+    transition: border-color var(--animation-speed) var(--animation-easing), box-shadow var(--animation-speed) var(--animation-easing);
+  }
+
+  .header-search-bar[expanded] .predictive-search-form__header-inner {
+    box-shadow: var(--shadow-popover);
+  }
+
+  /* Selectors below are scoped through `.header-search-bar` so their specificity
+     reliably wins over the unscoped `.predictive-search-form__content-wrapper`
+     rules (shared with the search modal) regardless of stylesheet concatenation order. */
+  .header-search-bar .header-search-bar__panel[hidden] {
+    display: none;
+  }
+
+  .header-search-bar .header-search-bar__panel {
+    transition-property: display, opacity, translate;
+    transition-duration: var(--animation-speed-medium);
+    transition-timing-function: var(--ease-out-quad);
+    transition-behavior: allow-discrete;
+    translate: 0 -8px;
+    opacity: 0;
+    box-shadow: var(--shadow-popover);
+  }
+
+  .header-search-bar .header-search-bar__panel:not([hidden]) {
+    translate: 0 0;
+    opacity: 1;
+  }
+
+  @starting-style {
+    .header-search-bar .header-search-bar__panel:not([hidden]) {
+      translate: 0 -8px;
+      opacity: 0;
+    }
+  }
+{% endstylesheet %}

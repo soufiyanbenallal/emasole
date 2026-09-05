@@ -1,0 +1,136 @@
+<script src="{{ 'collection-scroller.js' | asset_url }}" type="module"></script>
+
+<collection-scroller
+  class="collection-scroller-section spacing-style{% if section.settings.background_color != blank %} color-custom-{{ section.id }}{% endif %}"
+  style="
+    {% render 'spacing-style', settings: section.settings %}
+    {% if section.settings.background_color != blank %}
+      --color-background: {{ section.settings.background_color }};
+    {% endif %}
+  "
+>
+  {% liquid
+    if section.settings.background_color != blank
+      render 'contrast-override', background_color: section.settings.background_color, section_id: section.id
+    endif
+  %}
+  <div class="section section--{{ section.settings.section_width }}">
+    <div class="collection-scroller">
+      {% content_for 'blocks' %}
+    </div>
+  </div>
+</collection-scroller>
+
+{% stylesheet %}
+  .collection-scroller-section {
+    position: sticky;
+    top: var(--header-height, 0px);
+    z-index: var(--layer-sticky);
+    background: var(--color-background);
+    transition: padding var(--hover-transition-duration) var(--hover-transition-timing),
+      box-shadow var(--hover-transition-duration) var(--hover-transition-timing);
+  }
+
+  .collection-scroller {
+    display: flex;
+    align-items: center;
+    gap: var(--gap-lg);
+    overflow-x: auto;
+    scrollbar-width: none;
+    transition: gap var(--hover-transition-duration) var(--hover-transition-timing);
+  }
+
+  .collection-scroller::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Compact "nav" mode once the row has scrolled to its sticky position */
+  .collection-scroller-section[data-sticky-state='active'] {
+    box-shadow: 0 4px 12px rgb(var(--color-foreground-rgb) / var(--opacity-10));
+  }
+
+  .collection-scroller-section[data-sticky-state='active'] .collection-scroller {
+    gap: var(--gap-md);
+  }
+
+  .collection-scroller-section[data-sticky-state='active'] .collection-scroller-item {
+    flex-direction: row;
+    width: auto;
+    gap: var(--gap-3xs, 4px);
+  }
+
+  .collection-scroller-section[data-sticky-state='active'] .collection-scroller-item__media {
+    width: 1.75rem;
+    height: 1.75rem;
+  }
+
+  .collection-scroller-section[data-sticky-state='active'] .collection-scroller-item__title {
+    font-size: var(--font-size--xs);
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:names.collection_scroller",
+  "class": "collection-scroller-wrapper",
+  "blocks": [{ "type": "collection-scroller-item" }],
+  "settings": [
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "t:settings.width",
+      "options": [
+        { "value": "page-width", "label": "t:options.page" },
+        { "value": "full-width", "label": "t:options.full" }
+      ],
+      "default": "page-width"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "t:settings.background_color",
+      "placeholder": "t:settings.default"
+    },
+    {
+      "type": "header",
+      "content": "t:content.padding"
+    },
+    {
+      "type": "range",
+      "id": "padding-block-start",
+      "label": "t:settings.top",
+      "min": 0,
+      "max": 60,
+      "step": 1,
+      "unit": "px",
+      "default": 16
+    },
+    {
+      "type": "range",
+      "id": "padding-block-end",
+      "label": "t:settings.bottom",
+      "min": 0,
+      "max": 60,
+      "step": 1,
+      "unit": "px",
+      "default": 16
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:names.collection_scroller",
+      "category": "t:categories.collections",
+      "blocks": {
+        "item_recommended": {
+          "type": "collection-scroller-item",
+          "settings": {
+            "custom_title": "Recommended for you",
+            "icon": "star"
+          }
+        }
+      },
+      "block_order": ["item_recommended"]
+    }
+  ]
+}
+{% endschema %}

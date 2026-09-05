@@ -1,0 +1,171 @@
+{% doc %}
+  Renders a single card for the collection-scroller section: an image or
+  icon with a title underneath, linking to a collection (or a fully custom
+  destination when no collection is picked — e.g. a "Recommended for you"
+  entry that isn't backed by a real collection).
+
+  @example
+  {% content_for 'block', type: 'collection-scroller-item', id: 'scroller-item' %}
+{% enddoc %}
+
+{% liquid
+  assign block_settings = block.settings
+  assign title = block_settings.custom_title | default: block_settings.collection.title
+  # Items with no collection and no manual link (e.g. "Recommended for you")
+  # still need a real, always-populated fallback destination for no-JS
+  # navigation and for the AJAX swap to fetch from.
+  assign url = block_settings.link | default: block_settings.collection.url | default: routes.all_products_collection_url
+  assign image = block_settings.image | default: block_settings.collection.featured_image
+%}
+
+<a
+  href="{{ url }}"
+  class="collection-scroller-item"
+  data-collection-scroller-item
+  {% if block_settings.default_active %}
+    data-default-active="true"
+  {% endif %}
+  aria-current="false"
+  {% if block_settings.open_in_new_tab %}
+    target="_blank" rel="noopener"
+  {% endif %}
+  {{ block.shopify_attributes }}
+>
+  <span class="collection-scroller-item__media">
+    {% if image != blank %}
+      {{
+        image
+        | image_url: width: 160
+        | image_tag: loading: 'lazy', sizes: '80px', class: 'collection-scroller-item__image'
+      }}
+    {% else %}
+      {% render 'icon-or-image',
+        icon: block_settings.icon,
+        image_upload: block_settings.image,
+        width: 24,
+        class_name: 'collection-scroller-item__icon'
+      %}
+    {% endif %}
+  </span>
+  <span class="collection-scroller-item__title">{{ title }}</span>
+</a>
+
+{% stylesheet %}
+  .collection-scroller-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--gap-2xs);
+    flex-shrink: 0;
+    width: 5.5rem;
+    text-decoration: none;
+    color: var(--color-foreground);
+    text-align: center;
+  }
+
+  .collection-scroller-item__media {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 4rem;
+    height: 4rem;
+    border-radius: var(--style-border-radius-50);
+    overflow: hidden;
+    background: rgb(var(--color-foreground-rgb) / var(--opacity-5-15));
+    transition: transform var(--hover-transition-duration) var(--hover-transition-timing);
+  }
+
+  .collection-scroller-item:hover .collection-scroller-item__media {
+    transform: scale(1.04);
+  }
+
+  .collection-scroller-item[aria-current='true'] .collection-scroller-item__media {
+    background: var(--color-foreground);
+    color: var(--color-background);
+    outline: 2px solid var(--color-foreground);
+    outline-offset: 2px;
+  }
+
+  .collection-scroller-item[aria-current='true'] .collection-scroller-item__title {
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .collection-scroller-item__image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .collection-scroller-item__title {
+    font-size: var(--font-size--sm);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:names.collection_scroller_item",
+  "tag": null,
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "default_active",
+      "label": "t:settings.default_active",
+      "info": "t:info.default_active_scroller_item",
+      "default": false
+    },
+    {
+      "type": "collection",
+      "id": "collection",
+      "label": "t:settings.collection"
+    },
+    {
+      "type": "text",
+      "id": "custom_title",
+      "label": "t:settings.title",
+      "info": "t:info.custom_title_override"
+    },
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "t:settings.image",
+      "info": "t:info.custom_image_override"
+    },
+    {
+      "type": "select",
+      "id": "icon",
+      "label": "t:settings.icon",
+      "info": "t:info.icon_fallback",
+      "options": [
+        { "value": "none", "label": "t:options.none" },
+        { "value": "star", "label": "t:options.star" },
+        { "value": "heart", "label": "t:options.heart" },
+        { "value": "fire", "label": "t:options.fire" },
+        { "value": "price_tag", "label": "t:options.price_tag" },
+        { "value": "lightning_bolt", "label": "t:options.lightning_bolt" },
+        { "value": "truck", "label": "t:options.truck" },
+        { "value": "shirt", "label": "t:options.shirt" },
+        { "value": "shoe", "label": "t:options.shoe" },
+        { "value": "silhouette", "label": "t:options.silhouette" }
+      ],
+      "default": "star"
+    },
+    {
+      "type": "url",
+      "id": "link",
+      "label": "t:settings.link",
+      "info": "t:info.custom_link_override"
+    },
+    {
+      "type": "checkbox",
+      "id": "open_in_new_tab",
+      "label": "t:settings.open_new_tab",
+      "default": false
+    }
+  ],
+  "presets": [{ "name": "t:names.collection_scroller_item" }]
+}
+{% endschema %}

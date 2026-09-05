@@ -135,6 +135,12 @@
     render 'search', style: search_style, class: search_class, display_style: section.settings.actions_display_style
   endcapture
 
+  capture center_search
+    if section.settings.show_search
+      render 'header-search-bar'
+    endif
+  endcapture
+
   # Skip drawer search under specific conditions:
   # Always render if search_row is bottom
   # Don't render when shop.customer_accounts_enabled is false and search_position is left and search_style is not none
@@ -452,7 +458,8 @@
         actions: actions,
         localization: localization_markup,
         search: search,
-        drawer_search: drawer_search
+        drawer_search: drawer_search,
+        center_search: center_search
       %}
     {% endcapture %}
 
@@ -851,6 +858,13 @@
     /* If menu is in center column */
     &:has(.header__column--center header-menu) {
       --header-center: auto;
+      --header-left: minmax(max-content, 1fr);
+      --header-right: minmax(max-content, 1fr);
+    }
+
+    /* Give the always-centered desktop search bar a generous, adaptive width */
+    &:has(.header-search-bar) {
+      --header-center: clamp(280px, 34vw, 560px);
       --header-left: minmax(max-content, 1fr);
       --header-right: minmax(max-content, 1fr);
     }
