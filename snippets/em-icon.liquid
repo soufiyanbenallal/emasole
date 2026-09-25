@@ -1,0 +1,91 @@
+{% doc %}
+  Renders an Emasole interface icon: a 24px outline glyph on a 2px stroke that inherits
+  `currentColor`, so it always matches the text around it.
+
+  Decorative by default (`aria-hidden`). Pass `label` when the icon is the only content
+  of a control and must be announced.
+
+  @param {string} icon - Icon name: search, user, heart, truck, shield, return, tag, bolt, chevron-left, chevron-right, chevron-down, star, menu, close, gift, clock, check, headset, grid, percent, lock, copy, arrow-right, package, flame, globe, mail, cart-plus, badge-check
+  @param {string} [class] - Extra classes on the svg element
+  @param {string} [label] - Accessible label; omit for decorative icons
+
+  @example
+  {% render 'em-icon', icon: 'truck' %}
+  {% render 'em-icon', icon: 'close', label: 'Close', class: 'em-icon--lg' %}
+{% enddoc %}
+<svg
+  class="em-icon{% if class %} {{ class }}{% endif %}"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  focusable="false"
+  {% if label %}
+    role="img" aria-label="{{ label | escape }}"
+  {% else %}
+    aria-hidden="true"
+  {% endif %}
+>
+  {%- case icon -%}
+    {%- when 'search' -%}
+      <circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>
+    {%- when 'user' -%}
+      <circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>
+    {%- when 'heart' -%}
+      <path d="M12 20s-7.5-4.6-7.5-10.1A4.4 4.4 0 0 1 12 7.1a4.4 4.4 0 0 1 7.5 2.8C19.5 15.4 12 20 12 20Z"/>
+    {%- when 'truck' -%}
+      <path d="M2 6h11v10H2z"/><path d="M13 9h4.5L21 12.5V16h-8"/><circle cx="6.5" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/>
+    {%- when 'shield' -%}
+      <path d="M12 3 4.5 6v5.5c0 4.6 3.2 8.2 7.5 9.5 4.3-1.3 7.5-4.9 7.5-9.5V6Z"/><path d="m8.8 12 2.2 2.2 4.2-4.4"/>
+    {%- when 'return' -%}
+      <path d="M4 9h11a5 5 0 0 1 0 10H9"/><path d="M8 5 4 9l4 4"/>
+    {%- when 'tag' -%}
+      <path d="M3 12V4h8l10 10-8 8Z"/><circle cx="7.5" cy="8.5" r="1.3"/>
+    {%- when 'bolt' -%}
+      <path d="M13 2 4 14h7l-1 8 9-12h-7Z" fill="currentColor"/>
+    {%- when 'chevron-left' -%}
+      <path d="m15 5-7 7 7 7"/>
+    {%- when 'chevron-right' -%}
+      <path d="m9 5 7 7-7 7"/>
+    {%- when 'chevron-down' -%}
+      <path d="m5 9 7 7 7-7"/>
+    {%- when 'star' -%}
+      <path d="m12 3 2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.8l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8Z" fill="currentColor" stroke="none"/>
+    {%- when 'menu' -%}
+      <path d="M4 6h16M4 12h16M4 18h16"/>
+    {%- when 'close' -%}
+      <path d="M6 6l12 12M18 6 6 18"/>
+    {%- when 'gift' -%}
+      <path d="M4 11h16v10H4zM3 7h18v4H3zM12 7v14"/><path d="M12 7C10.5 3.5 7 3.5 7 5.5S10 7 12 7Zm0 0c1.5-3.5 5-3.5 5-1.5S14 7 12 7Z"/>
+    {%- when 'clock' -%}
+      <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
+    {%- when 'check' -%}
+      <path d="m5 12.5 4.5 4.5L19 7.5"/>
+    {%- when 'headset' -%}
+      <path d="M4 14v-2a8 8 0 0 1 16 0v2"/><path d="M4 14h3v5H5a1 1 0 0 1-1-1ZM20 14h-3v5h2a1 1 0 0 0 1-1Z"/><path d="M17 19c0 1.5-2 2-5 2"/>
+    {%- when 'grid' -%}
+      <rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/>
+    {%- when 'percent' -%}
+      <path d="M19 5 5 19"/><circle cx="7" cy="7" r="2.5"/><circle cx="17" cy="17" r="2.5"/>
+    {%- when 'lock' -%}
+      <rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>
+    {%- when 'copy' -%}
+      <rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>
+    {%- when 'arrow-right' -%}
+      <path d="M5 12h14M13 6l6 6-6 6"/>
+    {%- when 'package' -%}
+      <path d="M12 3 20 7.5v9L12 21l-8-4.5v-9Z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/>
+    {%- when 'flame' -%}
+      <path d="M12 21c-3.9 0-6.5-2.6-6.5-6.2 0-4.3 4-6.3 4.8-10.8 3 1.8 4.4 4.6 4.2 7.2 1-.6 1.6-1.6 1.8-2.8 1.4 1.4 2.2 3.8 2.2 6.4 0 3.6-2.6 6.2-6.5 6.2Z"/>
+    {%- when 'globe' -%}
+      <circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.5 5.6 3.5 9s-1 6.4-3.5 9c-2.5-2.6-3.5-5.6-3.5-9s1-6.4 3.5-9Z"/>
+    {%- when 'mail' -%}
+      <rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/>
+    {%- when 'cart-plus' -%}
+      <path d="M3 4h2.2l2.1 11h10.9l2-7.5H9"/><circle cx="9" cy="19.5" r="1.3"/><circle cx="17" cy="19.5" r="1.3"/><path d="M13.5 5.5v5M11 8h5"/>
+    {%- when 'badge-check' -%}
+      <path d="m12 2.5 2.3 1.7 2.9-.1.9 2.7 2.3 1.7-.9 2.8.9 2.8-2.3 1.7-.9 2.7-2.9-.1L12 21.5l-2.3-1.7-2.9.1-.9-2.7-2.3-1.7.9-2.8-.9-2.8 2.3-1.7.9-2.7 2.9.1Z"/><path d="m8.8 12 2.2 2.2 4.2-4.4"/>
+  {%- endcase -%}
+</svg>

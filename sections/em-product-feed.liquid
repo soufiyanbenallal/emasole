@@ -1,0 +1,253 @@
+{%- liquid
+  assign feed = section.settings.collection | default: collections.all
+  assign per_page = section.settings.products_per_page
+-%}
+
+<div class="em-section em-feed">
+  <div class="em-container">
+    <div class="em-feed__head">
+      <span class="em-feed__rule" aria-hidden="true"></span>
+      <h2 class="em-feed__title">
+        {%- render 'em-icon', icon: 'heart' -%}
+        {{ section.settings.title | escape }}
+      </h2>
+      <span class="em-feed__rule" aria-hidden="true"></span>
+    </div>
+
+    {%- if feed != blank and feed.products_count > 0 -%}
+      {%- paginate feed.products by per_page -%}
+        <em-feed
+          class="em-feed__body"
+          data-section-id="{{ section.id }}"
+          {% if section.settings.auto_load %}
+            data-auto-load
+          {% endif %}
+        >
+          <ul class="em-grid" role="list" style="--em-cols: {{ section.settings.columns }};" data-em-feed-grid>
+            {%- for product in feed.products -%}
+              <li>
+                {%- render 'em-product-card',
+                  product: product,
+                  sizes: '(min-width: 990px) 240px, (min-width: 750px) 30vw, 46vw',
+                  show_rating: section.settings.show_rating
+                -%}
+              </li>
+            {%- endfor -%}
+          </ul>
+
+          {%- if paginate.next -%}
+            <div class="em-feed__more">
+              <a class="em-btn em-btn--secondary em-feed__button" href="{{ paginate.next.url }}" data-em-feed-next>
+                <span>{{ 'emasole.feed.load_more' | t }}</span>
+                {%- render 'em-icon', icon: 'chevron-down' -%}
+              </a>
+              {%- assign shown = paginate.current_offset | plus: paginate.page_size | at_most: paginate.items -%}
+              <p class="em-feed__count">
+                {{ 'emasole.feed.showing' | t: shown: shown, total: paginate.items }}
+              </p>
+            </div>
+          {%- endif -%}
+          <p class="em-visually-hidden" role="status" data-em-feed-status></p>
+        </em-feed>
+      {%- endpaginate -%}
+    {%- else -%}
+      <ul class="em-grid" role="list" style="--em-cols: {{ section.settings.columns }};">
+        {%- for i in (1..10) -%}
+          <li>{%- render 'em-product-card', index: i -%}</li>
+        {%- endfor -%}
+      </ul>
+    {%- endif -%}
+  </div>
+</div>
+
+{% stylesheet %}
+  .em-feed__head {
+    display: flex;
+    align-items: center;
+    gap: var(--em-space-4);
+    margin-block: var(--em-space-4) var(--em-space-4);
+  }
+
+  .em-feed__rule {
+    flex: 1;
+    height: 1px;
+    background: var(--em-ink-200);
+  }
+
+  .em-feed__title {
+    display: flex;
+    align-items: center;
+    gap: var(--em-space-2);
+    margin: 0;
+    font-family: var(--em-font-display);
+    font-size: var(--em-text-xl);
+    font-weight: 800;
+    letter-spacing: -0.01em;
+  }
+
+  .em-feed__title .em-icon {
+    color: var(--em-ember-600);
+    fill: currentColor;
+  }
+
+  .em-feed__more {
+    display: grid;
+    justify-items: center;
+    gap: var(--em-space-2);
+    margin-block-start: var(--em-space-5);
+  }
+
+  .em-feed__button {
+    min-width: 220px;
+  }
+
+  em-feed[data-loading] .em-feed__button {
+    pointer-events: none;
+    opacity: 0.6;
+  }
+
+  .em-feed__count {
+    margin: 0;
+    color: var(--em-color-text-muted);
+    font-size: var(--em-text-xs);
+  }
+{% endstylesheet %}
+
+{% javascript %}
+  /**
+   * "More to love" feed: appends the next page of products in place.
+   * The load-more control is a real link to the next page, so the feed works without JavaScript.
+   */
+  if (!customElements.get('em-feed')) {
+    class EmFeed extends HTMLElement {
+      connectedCallback() {
+        this.grid = this.querySelector('[data-em-feed-grid]');
+        this.status = this.querySelector('[data-em-feed-status]');
+        this.bind();
+      }
+
+      disconnectedCallback() {
+        this.observer?.disconnect();
+      }
+
+      bind() {
+        this.link = this.querySelector('[data-em-feed-next]');
+        if (!this.link) {
+          this.observer?.disconnect();
+          return;
+        }
+
+        this.link.addEventListener('click', (event) => {
+          event.preventDefault();
+          this.load();
+        });
+
+        // Auto-load a few pages, then hand control back so the footer stays reachable.
+        this.autoLoads = this.autoLoads || 0;
+        this.observer?.disconnect();
+        if (this.hasAttribute('data-auto-load') && this.autoLoads < 3 && 'IntersectionObserver' in window) {
+          this.observer = new IntersectionObserver(
+            (entries) => {
+              if (!entries.some((entry) => entry.isIntersecting)) return;
+              this.autoLoads += 1;
+              this.load();
+            },
+            { rootMargin: '600px 0px' }
+          );
+          this.observer.observe(this.link);
+        }
+      }
+
+      async load() {
+        if (!this.link || this.hasAttribute('data-loading')) return;
+        this.setAttribute('data-loading', '');
+
+        const url = new URL(this.link.href, window.location.origin);
+        url.searchParams.set('section_id', this.dataset.sectionId);
+
+        try {
+          const response = await fetch(url.toString());
+          if (!response.ok) throw new Error(response.statusText);
+          const html = new DOMParser().parseFromString(await response.text(), 'text/html');
+          const items = html.querySelectorAll('[data-em-feed-grid] > li');
+          this.grid.append(...items);
+
+          const nextMore = html.querySelector('.em-feed__more');
+          const currentMore = this.querySelector('.em-feed__more');
+          if (nextMore) currentMore?.replaceWith(nextMore);
+          else currentMore?.remove();
+
+          if (this.status) this.status.textContent = nextMore?.querySelector('.em-feed__count')?.textContent?.trim() || '';
+          this.bind();
+        } catch (error) {
+          window.location.href = this.link.href;
+        } finally {
+          this.removeAttribute('data-loading');
+        }
+      }
+    }
+
+    customElements.define('em-feed', EmFeed);
+  }
+{% endjavascript %}
+
+{% schema %}
+{
+  "name": "t:emasole.names.product_feed",
+  "tag": "section",
+  "class": "em-feed-section",
+  "disabled_on": {
+    "groups": ["header", "footer"]
+  },
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "t:emasole.settings.heading",
+      "default": "More to love"
+    },
+    {
+      "type": "collection",
+      "id": "collection",
+      "label": "t:emasole.settings.collection",
+      "info": "t:emasole.info.feed_collection"
+    },
+    {
+      "type": "range",
+      "id": "products_per_page",
+      "label": "t:emasole.settings.products_per_page",
+      "min": 10,
+      "max": 40,
+      "step": 5,
+      "default": 20
+    },
+    {
+      "type": "range",
+      "id": "columns",
+      "label": "t:emasole.settings.columns_desktop",
+      "min": 4,
+      "max": 6,
+      "step": 1,
+      "default": 5
+    },
+    {
+      "type": "checkbox",
+      "id": "auto_load",
+      "label": "t:emasole.settings.auto_load",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_rating",
+      "label": "t:emasole.settings.show_rating",
+      "default": true
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:emasole.names.product_feed",
+      "category": "t:emasole.names.category"
+    }
+  ]
+}
+{% endschema %}
