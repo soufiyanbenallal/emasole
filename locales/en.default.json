@@ -8,6 +8,100 @@
  * ------------------------------------------------------------
  */
 {
+  "emasole": {
+    "card": {
+      "add_to_cart": "Add {{ title }} to cart",
+      "choose_options": "Choose options for {{ title }}",
+      "bestseller": "Best seller",
+      "discount": "-{{ percent }}%",
+      "ema_pick": "Ema Pick",
+      "from": "From {{ price }}",
+      "new": "New",
+      "only_left": {
+        "one": "Only {{ count }} left",
+        "other": "Only {{ count }} left"
+      },
+      "placeholder_title": "Product title",
+      "price": "Price",
+      "rating": "Rated {{ rating }} out of {{ max }}",
+      "regular_price": "Regular price",
+      "sale_price": "Sale price",
+      "sold_out": "Sold out",
+      "you_save": "You save {{ amount }}",
+      "rank": "Ranked number {{ rank }}"
+    },
+    "categories": {
+      "placeholder": "Category"
+    },
+    "coupons": {
+      "claim": "Claim",
+      "copy": "Copy code {{ code }}",
+      "shop_now": "Shop now"
+    },
+    "deals": {
+      "ends_in": "Ends in"
+    },
+    "feed": {
+      "load_more": "Show more",
+      "showing": "Showing {{ shown }} of {{ total }} products"
+    },
+    "footer": {
+      "buyer_protection": "Buyer protection on every order",
+      "choose_menu": "Choose a menu in the theme editor",
+      "easy_returns": "Free returns within 90 days",
+      "payment_methods": "Payment methods",
+      "rights": "All rights reserved",
+      "secure_checkout": "Secure, encrypted checkout",
+      "subscribe": "Subscribe",
+      "subscribed": "Thanks for subscribing. Check your inbox for your coupon."
+    },
+    "general": {
+      "next": "Next",
+      "previous": "Previous",
+      "view_all": "View all"
+    },
+    "header": {
+      "all_categories": "All categories",
+      "close_menu": "Close menu",
+      "explore": "Explore",
+      "greeting": "Hi, {{ name }}",
+      "help": "Help",
+      "menu": "Menu",
+      "nav_label": "Categories",
+      "open_menu": "Open menu",
+      "search_button": "Search",
+      "search_label": "Search products",
+      "shop_all": "Shop all {{ title }}",
+      "sign_in": "Sign in / Register",
+      "trending": "Trending searches"
+    },
+    "hero": {
+      "carousel": "carousel",
+      "categories": "Categories",
+      "choose_slide": "Choose slide",
+      "featured_offers": "Featured offers",
+      "join": "Join free",
+      "pause": "Pause slideshow",
+      "play": "Play slideshow",
+      "sign_in": "Sign in",
+      "slide": "slide",
+      "slide_count": "Slide {{ index }} of {{ count }}",
+      "welcome": "Welcome to {{ shop }}",
+      "welcome_panel": "Welcome"
+    },
+    "tabs": {
+      "see_all": "See all in {{ title }}"
+    },
+    "duo": {
+      "view_all": "View all {{ title }}"
+    },
+    "club": {
+      "account": "Go to my account"
+    },
+    "recent": {
+      "clear": "Clear"
+    }
+  },
   "accessibility": {
     "account": "Account",
     "active_filters": "Active filters:",

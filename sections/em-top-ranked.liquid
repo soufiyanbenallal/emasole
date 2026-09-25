@@ -1,0 +1,145 @@
+{%- liquid
+  assign ranked = section.settings.collection
+  assign limit = section.settings.max_products
+-%}
+
+<div class="em-section em-ranked">
+  <div class="em-container">
+    <div class="em-panel">
+      <div class="em-head">
+        <div class="em-ranked__titles">
+          <h2 class="em-head__title">
+            <span class="em-ranked__crown" aria-hidden="true">{%- render 'em-icon', icon: 'badge-check' -%}</span>
+            {{ section.settings.title | escape }}
+          </h2>
+          {%- if section.settings.subtitle != blank -%}
+            <p class="em-ranked__subtitle">{{ section.settings.subtitle | escape }}</p>
+          {%- endif -%}
+        </div>
+        {%- if ranked != blank -%}
+          <a class="em-head__link" href="{{ ranked.url }}">
+            {{- 'emasole.general.view_all' | t -}}
+            {%- render 'em-icon', icon: 'chevron-right' -%}
+          </a>
+        {%- endif -%}
+      </div>
+
+      <em-rail class="em-rail em-ranked__rail">
+        <ol class="em-rail__track" role="list">
+          {%- if ranked != blank and ranked.products_count > 0 -%}
+            {%- for product in ranked.products limit: limit -%}
+              <li>
+                {%- render 'em-product-card',
+                  product: product,
+                  rank: forloop.index,
+                  sizes: '(min-width: 990px) 210px, 42vw',
+                  show_rating: section.settings.show_rating
+                -%}
+              </li>
+            {%- endfor -%}
+          {%- else -%}
+            {%- for i in (1..10) -%}
+              <li>{%- render 'em-product-card', index: i -%}</li>
+            {%- endfor -%}
+          {%- endif -%}
+        </ol>
+        {%- render 'em-rail-arrows', label: section.settings.title -%}
+      </em-rail>
+    </div>
+  </div>
+</div>
+
+{% stylesheet %}
+  .em-ranked__subtitle {
+    margin: var(--em-space-1) 0 0;
+    color: var(--em-color-text-muted);
+    font-size: var(--em-text-sm);
+  }
+
+  .em-ranked__crown {
+    display: inline-grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--em-radius-pill);
+    background: var(--em-sun-400);
+  }
+
+  .em-ranked__crown .em-icon {
+    width: 20px;
+    height: 20px;
+    color: var(--em-ink-900);
+  }
+
+  .em-ranked__rail {
+    --em-rail-item: 42%;
+  }
+
+  @media screen and (min-width: 750px) {
+    .em-ranked__rail {
+      --em-rail-item: calc((100% - var(--em-space-3) * 3) / 4);
+    }
+  }
+
+  @media screen and (min-width: 990px) {
+    .em-ranked__rail {
+      --em-rail-item: calc((100% - var(--em-space-3) * 5) / 6);
+    }
+  }
+
+  .em-ranked__rail .em-card {
+    border: 1px solid var(--em-ink-100);
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:emasole.names.top_ranked",
+  "tag": "section",
+  "class": "em-ranked-section",
+  "disabled_on": {
+    "groups": ["header", "footer"]
+  },
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "t:emasole.settings.heading",
+      "default": "Top ranked"
+    },
+    {
+      "type": "text",
+      "id": "subtitle",
+      "label": "t:emasole.settings.subheading",
+      "default": "Our best sellers this week"
+    },
+    {
+      "type": "collection",
+      "id": "collection",
+      "label": "t:emasole.settings.collection",
+      "info": "t:emasole.info.ranked_collection"
+    },
+    {
+      "type": "range",
+      "id": "max_products",
+      "label": "t:emasole.settings.max_products",
+      "min": 3,
+      "max": 20,
+      "step": 1,
+      "default": 10
+    },
+    {
+      "type": "checkbox",
+      "id": "show_rating",
+      "label": "t:emasole.settings.show_rating",
+      "default": true
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:emasole.names.top_ranked",
+      "category": "t:emasole.names.category"
+    }
+  ]
+}
+{% endschema %}

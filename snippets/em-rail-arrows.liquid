@@ -1,0 +1,70 @@
+{% doc %}
+  Renders the previous/next buttons for an `<em-rail>` horizontal scroller and defines the
+  `em-rail` element that drives them. Place it inside `<em-rail>`, after the
+  `.em-rail__track` list. Touch and trackpad scrolling work without JavaScript; the
+  arrows appear on desktop and hide at either end of the track.
+
+  @param {string} [label] - What the rail contains, used in the button labels
+
+  @example
+  <em-rail class="em-rail">
+    <ul class="em-rail__track">…</ul>
+    {% render 'em-rail-arrows', label: section.settings.title %}
+  </em-rail>
+{% enddoc %}
+<button
+  type="button"
+  class="em-icon-btn em-rail__arrow em-rail__arrow--prev"
+  data-em-rail-prev
+  aria-label="{{ 'emasole.general.previous' | t }}{% if label != blank %}: {{ label | strip_html | escape }}{% endif %}"
+  disabled
+>
+  {%- render 'em-icon', icon: 'chevron-left' -%}
+</button>
+<button
+  type="button"
+  class="em-icon-btn em-rail__arrow em-rail__arrow--next"
+  data-em-rail-next
+  aria-label="{{ 'emasole.general.next' | t }}{% if label != blank %}: {{ label | strip_html | escape }}{% endif %}"
+>
+  {%- render 'em-icon', icon: 'chevron-right' -%}
+</button>
+
+{% javascript %}
+  if (!customElements.get('em-rail')) {
+    class EmRail extends HTMLElement {
+      connectedCallback() {
+        this.track = this.querySelector('.em-rail__track');
+        this.prev = this.querySelector('[data-em-rail-prev]');
+        this.next = this.querySelector('[data-em-rail-next]');
+        if (!this.track) return;
+
+        this.prev?.addEventListener('click', () => this.page(-1));
+        this.next?.addEventListener('click', () => this.page(1));
+        this.track.addEventListener('scroll', this.update, { passive: true });
+        this.observer = new ResizeObserver(this.update);
+        this.observer.observe(this.track);
+        this.update();
+      }
+
+      disconnectedCallback() {
+        this.track?.removeEventListener('scroll', this.update);
+        this.observer?.disconnect();
+      }
+
+      page(direction) {
+        const rtl = getComputedStyle(this).direction === 'rtl' ? -1 : 1;
+        this.track.scrollBy({ left: direction * rtl * this.track.clientWidth * 0.9, behavior: 'smooth' });
+      }
+
+      update = () => {
+        const { scrollLeft, scrollWidth, clientWidth } = this.track;
+        const position = Math.abs(scrollLeft);
+        if (this.prev) this.prev.disabled = position <= 2;
+        if (this.next) this.next.disabled = position + clientWidth >= scrollWidth - 2;
+      };
+    }
+
+    customElements.define('em-rail', EmRail);
+  }
+{% endjavascript %}

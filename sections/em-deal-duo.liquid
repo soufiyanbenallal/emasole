@@ -1,0 +1,324 @@
+{%- assign panels = section.blocks | where: 'type', 'panel' -%}
+
+<div class="em-section em-duo">
+  <div class="em-container">
+    <div class="em-duo__grid" style="--em-duo-cols: {{ panels.size | at_least: 1 | at_most: 2 }};">
+      {%- for block in panels -%}
+        {%- assign panel_collection = block.settings.collection -%}
+        <section
+          class="em-duo__panel em-duo__panel--{{ block.settings.accent }}"
+          aria-labelledby="EmDuoTitle-{{ block.id }}"
+          {{ block.shopify_attributes }}
+        >
+          <header class="em-duo__head">
+            <div class="em-duo__titles">
+              <h2 class="em-duo__title" id="EmDuoTitle-{{ block.id }}">
+                {%- render 'em-icon', icon: block.settings.icon -%}
+                {{ block.settings.title | escape }}
+              </h2>
+              {%- if block.settings.subtitle != blank -%}
+                <p class="em-duo__subtitle">{{ block.settings.subtitle | escape }}</p>
+              {%- endif -%}
+            </div>
+            {%- if panel_collection != blank -%}
+              <a class="em-duo__more" href="{{ panel_collection.url }}" aria-label="{{ 'emasole.duo.view_all' | t: title: block.settings.title | escape }}">
+                {%- render 'em-icon', icon: 'arrow-right' -%}
+              </a>
+            {%- endif -%}
+          </header>
+
+          <ul class="em-duo__items" role="list">
+            {%- if panel_collection != blank and panel_collection.products_count > 0 -%}
+              {%- for product in panel_collection.products limit: 3 -%}
+                {%- liquid
+                  assign variant = product.selected_or_first_available_variant
+                  assign discount = 0
+                  if variant.compare_at_price > variant.price
+                    assign saved = variant.compare_at_price | minus: variant.price
+                    assign discount = saved | times: 100.0 | divided_by: variant.compare_at_price | round
+                  endif
+                -%}
+                <li>
+                  <a class="em-duo__item" href="{{ product.url }}">
+                    <span class="em-duo__media">
+                      {%- if product.featured_media -%}
+                        {{
+                          product.featured_media
+                          | image_url: width: 400
+                          | image_tag: loading: 'lazy', widths: '160, 240, 320, 400', sizes: '(min-width: 990px) 190px, 30vw', alt: ''
+                        }}
+                      {%- else -%}
+                        {{ 'product-3' | placeholder_svg_tag }}
+                      {%- endif -%}
+                      {%- if discount > 0 -%}
+                        <span class="em-badge em-badge--deal em-duo__badge">{{ 'emasole.card.discount' | t: percent: discount }}</span>
+                      {%- endif -%}
+                    </span>
+                    <span class="em-visually-hidden">{{ product.title | escape }}</span>
+                    <span class="em-duo__price{% if discount > 0 %} em-duo__price--sale{% endif %}">{{ variant.price | money }}</span>
+                    {%- if discount > 0 -%}
+                      <s class="em-duo__compare">{{ variant.compare_at_price | money }}</s>
+                    {%- endif -%}
+                  </a>
+                </li>
+              {%- endfor -%}
+            {%- else -%}
+              {%- for i in (1..3) -%}
+                {%- liquid
+                  assign art = i | plus: forloop.parentloop.index | modulo: 6 | plus: 1
+                  assign placeholder_name = 'product-' | append: art
+                  assign placeholder_price = i | times: 500 | plus: 499
+                  assign placeholder_compare = placeholder_price | times: 2
+                -%}
+                <li>
+                  <span class="em-duo__item">
+                    <span class="em-duo__media">
+                      {{ placeholder_name | placeholder_svg_tag }}
+                      <span class="em-badge em-badge--deal em-duo__badge">{{ 'emasole.card.discount' | t: percent: 50 }}</span>
+                    </span>
+                    <span class="em-duo__price em-duo__price--sale">{{ placeholder_price | money }}</span>
+                    <s class="em-duo__compare">{{ placeholder_compare | money }}</s>
+                  </span>
+                </li>
+              {%- endfor -%}
+            {%- endif -%}
+          </ul>
+        </section>
+      {%- endfor -%}
+    </div>
+  </div>
+</div>
+
+{% stylesheet %}
+  .em-duo__grid {
+    display: grid;
+    gap: var(--em-space-3);
+  }
+
+  @media screen and (min-width: 750px) {
+    .em-duo__grid {
+      grid-template-columns: repeat(var(--em-duo-cols), minmax(0, 1fr));
+      gap: var(--em-space-4);
+    }
+  }
+
+  .em-duo__panel {
+    --em-duo-ground: var(--em-ember-50);
+    --em-duo-ink: var(--em-ember-700);
+
+    padding: var(--em-space-4);
+    border-radius: var(--em-radius-lg);
+    background: var(--em-duo-ground);
+    color: var(--em-ink-900);
+    box-shadow: var(--em-shadow-1);
+  }
+
+  @media screen and (min-width: 750px) {
+    .em-duo__panel {
+      padding: var(--em-space-5);
+    }
+  }
+
+  .em-duo__panel--sun {
+    --em-duo-ground: var(--em-sun-100);
+    --em-duo-ink: var(--em-ink-900);
+  }
+
+  .em-duo__panel--mint {
+    --em-duo-ground: var(--em-mint-50);
+    --em-duo-ink: var(--em-mint-700);
+  }
+
+  .em-duo__panel--white {
+    --em-duo-ground: var(--em-card);
+    --em-duo-ink: var(--em-ember-600);
+  }
+
+  .em-duo__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--em-space-3);
+    margin-block-end: var(--em-space-4);
+  }
+
+  .em-duo__title {
+    display: flex;
+    align-items: center;
+    gap: var(--em-space-2);
+    margin: 0;
+    color: var(--em-duo-ink);
+    font-family: var(--em-font-display);
+    font-size: var(--em-text-xl);
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    line-height: 1.15;
+  }
+
+  .em-duo__subtitle {
+    margin: var(--em-space-1) 0 0;
+    color: var(--em-ink-600);
+    font-size: var(--em-text-sm);
+    font-weight: 600;
+  }
+
+  .em-duo__more {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--em-radius-pill);
+    background: var(--em-ink-900);
+    color: #ffffff;
+    transition: background-color var(--em-duration) var(--em-ease);
+  }
+
+  .em-duo__more:hover {
+    background: var(--em-ember-600);
+  }
+
+  .em-duo__items {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--em-space-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .em-duo__item {
+    display: grid;
+    gap: 2px;
+    color: var(--em-ink-900);
+    text-decoration: none;
+  }
+
+  .em-duo__media {
+    position: relative;
+    display: block;
+    aspect-ratio: 1;
+    margin-block-end: var(--em-space-2);
+    overflow: hidden;
+    border-radius: var(--em-radius-md);
+    background: var(--em-card);
+  }
+
+  .em-duo__media img,
+  .em-duo__media svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: scale 300ms var(--em-ease);
+  }
+
+  .em-duo__media svg {
+    fill: var(--em-ink-400);
+  }
+
+  a.em-duo__item:hover img {
+    scale: 1.05;
+  }
+
+  .em-duo__badge {
+    position: absolute;
+    inset-block-start: var(--em-space-2);
+    inset-inline-start: var(--em-space-2);
+  }
+
+  .em-duo__price {
+    font-family: var(--em-font-display);
+    font-size: var(--em-text-md);
+    font-weight: 700;
+    line-height: 1.1;
+  }
+
+  .em-duo__price--sale {
+    color: var(--em-color-price);
+  }
+
+  .em-duo__compare {
+    color: var(--em-ink-600);
+    font-size: var(--em-text-xs);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .em-duo__media img {
+      transition: none;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:emasole.names.deal_duo",
+  "tag": "section",
+  "class": "em-duo-section",
+  "disabled_on": {
+    "groups": ["header", "footer"]
+  },
+  "max_blocks": 2,
+  "blocks": [
+    {
+      "type": "panel",
+      "name": "t:emasole.names.deal_panel",
+      "settings": [
+        {
+          "type": "text",
+          "id": "title",
+          "label": "t:emasole.settings.heading",
+          "default": "Super deals"
+        },
+        {
+          "type": "text",
+          "id": "subtitle",
+          "label": "t:emasole.settings.subheading",
+          "default": "Lowest prices of the week"
+        },
+        {
+          "type": "select",
+          "id": "icon",
+          "label": "t:emasole.settings.icon",
+          "options": [
+            { "value": "bolt", "label": "t:emasole.options.icon_bolt" },
+            { "value": "tag", "label": "t:emasole.options.icon_tag" },
+            { "value": "percent", "label": "t:emasole.options.icon_percent" },
+            { "value": "flame", "label": "t:emasole.options.icon_flame" },
+            { "value": "gift", "label": "t:emasole.options.icon_gift" },
+            { "value": "badge-check", "label": "t:emasole.options.icon_badge" }
+          ],
+          "default": "bolt"
+        },
+        {
+          "type": "select",
+          "id": "accent",
+          "label": "t:emasole.settings.background",
+          "options": [
+            { "value": "ember", "label": "t:emasole.options.ember" },
+            { "value": "sun", "label": "t:emasole.options.sun" },
+            { "value": "mint", "label": "t:emasole.options.mint" },
+            { "value": "white", "label": "t:emasole.options.white" }
+          ],
+          "default": "ember"
+        },
+        {
+          "type": "collection",
+          "id": "collection",
+          "label": "t:emasole.settings.collection"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:emasole.names.deal_duo",
+      "category": "t:emasole.names.category",
+      "blocks": [
+        { "type": "panel", "settings": { "title": "Super deals", "subtitle": "Lowest prices of the week", "icon": "bolt", "accent": "ember" } },
+        { "type": "panel", "settings": { "title": "Big save", "subtitle": "Bundles and multipacks", "icon": "percent", "accent": "sun" } }
+      ]
+    }
+  ]
+}
+{% endschema %}

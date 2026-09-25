@@ -1,0 +1,363 @@
+{%- liquid
+  assign deals = section.settings.collection
+  assign limit = section.settings.max_products
+-%}
+
+<div class="em-section em-deals">
+  <div class="em-container">
+    <div class="em-deals__panel em-panel">
+      <div class="em-deals__head">
+        <div class="em-deals__title-row">
+          <h2 class="em-deals__title">
+            {%- render 'em-icon', icon: 'bolt' -%}
+            {{ section.settings.title | escape }}
+          </h2>
+
+          {%- if section.settings.show_timer -%}
+            <em-countdown
+              class="em-countdown"
+              data-mode="{{ section.settings.timer_mode }}"
+              {% if section.settings.timer_mode == 'fixed' %}
+                data-end="{{ section.settings.end_date | escape }}"
+              {% endif %}
+              hidden
+            >
+              <span class="em-countdown__label">{{ 'emasole.deals.ends_in' | t }}</span>
+              <span class="em-countdown__time" role="timer" aria-live="off">
+                <span class="em-countdown__unit" data-hours>00</span>
+                <span aria-hidden="true">:</span>
+                <span class="em-countdown__unit" data-minutes>00</span>
+                <span aria-hidden="true">:</span>
+                <span class="em-countdown__unit" data-seconds>00</span>
+              </span>
+            </em-countdown>
+          {%- endif -%}
+        </div>
+
+        <div class="em-deals__meta">
+          {%- if section.settings.subtitle != blank -%}
+            <p class="em-deals__subtitle">{{ section.settings.subtitle | escape }}</p>
+          {%- endif -%}
+          {%- if deals != blank -%}
+            <a class="em-head__link em-deals__link" href="{{ deals.url }}">
+              {{- 'emasole.general.view_all' | t -}}
+              {%- render 'em-icon', icon: 'chevron-right' -%}
+            </a>
+          {%- endif -%}
+        </div>
+      </div>
+
+      <em-rail class="em-rail em-deals__rail">
+        <ul class="em-rail__track" role="list">
+          {%- if deals != blank and deals.products_count > 0 -%}
+            {%- for product in deals.products limit: limit -%}
+              <li>
+                {%- render 'em-product-card',
+                  product: product,
+                  sizes: '(min-width: 990px) 210px, 42vw',
+                  low_stock: section.settings.low_stock,
+                  show_rating: section.settings.show_rating
+                -%}
+              </li>
+            {%- endfor -%}
+          {%- else -%}
+            {%- for i in (1..8) -%}
+              <li>{%- render 'em-product-card', index: i -%}</li>
+            {%- endfor -%}
+          {%- endif -%}
+        </ul>
+        {%- render 'em-rail-arrows', label: section.settings.title -%}
+      </em-rail>
+    </div>
+  </div>
+</div>
+
+{% stylesheet %}
+  .em-deals__panel {
+    padding: 0;
+    overflow: hidden;
+  }
+
+  /* The yellow band grows with its content; product cards overlap its lower edge */
+  .em-deals__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--em-space-2) var(--em-space-4);
+    padding: var(--em-space-4) var(--em-space-4) var(--em-space-7);
+    background: var(--em-sun-400);
+    color: var(--em-ink-900);
+  }
+
+  .em-deals__rail {
+    margin-block-start: calc(var(--em-space-6) * -1);
+    padding: 0 var(--em-space-4) var(--em-space-4);
+  }
+
+  @media screen and (min-width: 750px) {
+    .em-deals__head {
+      padding: var(--em-space-5) var(--em-space-5) var(--em-space-7);
+    }
+
+    .em-deals__rail {
+      padding: 0 var(--em-space-5) var(--em-space-5);
+    }
+  }
+
+  .em-deals__title-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--em-space-2) var(--em-space-4);
+  }
+
+  .em-deals__title {
+    display: flex;
+    align-items: center;
+    gap: var(--em-space-1);
+    margin: 0;
+    font-family: var(--em-font-display);
+    font-size: var(--em-text-2xl);
+    font-weight: 800;
+    font-style: italic;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+
+  .em-deals__title .em-icon {
+    color: var(--em-ember-600);
+  }
+
+  .em-deals__meta {
+    display: flex;
+    align-items: center;
+    gap: var(--em-space-4);
+  }
+
+  .em-deals__subtitle {
+    display: none;
+    margin: 0;
+    font-size: var(--em-text-sm);
+    font-weight: 600;
+  }
+
+  @media screen and (min-width: 750px) {
+    .em-deals__subtitle {
+      display: block;
+    }
+  }
+
+  .em-deals__link {
+    color: var(--em-ink-900);
+  }
+
+  .em-deals__link:hover {
+    color: var(--em-ember-700);
+  }
+
+  .em-countdown {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--em-space-2);
+    font-size: var(--em-text-sm);
+    font-weight: 600;
+  }
+
+  .em-countdown[hidden] {
+    display: none;
+  }
+
+  .em-countdown__time {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-weight: 800;
+  }
+
+  .em-countdown__unit {
+    display: inline-grid;
+    place-items: center;
+    min-width: 28px;
+    height: 26px;
+    padding: 0 4px;
+    border-radius: var(--em-radius-xs);
+    background: var(--em-ink-900);
+    color: #ffffff;
+    font-family: var(--em-font-display);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .em-deals__rail {
+    --em-rail-item: 42%;
+  }
+
+  .em-deals__rail .em-rail__arrow--prev {
+    inset-inline-start: var(--em-space-2);
+  }
+
+  .em-deals__rail .em-rail__arrow--next {
+    inset-inline-end: var(--em-space-2);
+  }
+
+  @media screen and (min-width: 750px) {
+    .em-deals__rail {
+      --em-rail-item: calc((100% - var(--em-space-3) * 3) / 4);
+    }
+  }
+
+  @media screen and (min-width: 990px) {
+    .em-deals__rail {
+      --em-rail-item: calc((100% - var(--em-space-3) * 5) / 6);
+    }
+  }
+
+  .em-deals__rail .em-card {
+    border: 1px solid var(--em-ink-100);
+  }
+{% endstylesheet %}
+
+{% javascript %}
+  if (!customElements.get('em-countdown')) {
+    class EmCountdown extends HTMLElement {
+      connectedCallback() {
+        this.parts = {
+          hours: this.querySelector('[data-hours]'),
+          minutes: this.querySelector('[data-minutes]'),
+          seconds: this.querySelector('[data-seconds]'),
+        };
+        this.tick();
+        this.timer = window.setInterval(() => this.tick(), 1000);
+      }
+
+      disconnectedCallback() {
+        window.clearInterval(this.timer);
+      }
+
+      /** Daily mode counts down to local midnight; fixed mode to the merchant's end date. */
+      target() {
+        if (this.dataset.mode === 'fixed') {
+          const end = new Date((this.dataset.end || '').trim().replace(' ', 'T'));
+          return Number.isNaN(end.getTime()) ? null : end;
+        }
+        const midnight = new Date();
+        midnight.setHours(24, 0, 0, 0);
+        return midnight;
+      }
+
+      tick() {
+        const end = this.target();
+        const remaining = end ? end.getTime() - Date.now() : 0;
+        if (remaining <= 0) {
+          this.hidden = true;
+          window.clearInterval(this.timer);
+          return;
+        }
+
+        this.hidden = false;
+        const total = Math.floor(remaining / 1000);
+        const pad = (value) => String(value).padStart(2, '0');
+        this.parts.hours.textContent = pad(Math.floor(total / 3600));
+        this.parts.minutes.textContent = pad(Math.floor((total % 3600) / 60));
+        this.parts.seconds.textContent = pad(total % 60);
+      }
+    }
+
+    customElements.define('em-countdown', EmCountdown);
+  }
+{% endjavascript %}
+
+{% schema %}
+{
+  "name": "t:emasole.names.flash_deals",
+  "tag": "section",
+  "class": "em-deals-section",
+  "disabled_on": {
+    "groups": ["header", "footer"]
+  },
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "t:emasole.settings.heading",
+      "default": "Flash deals"
+    },
+    {
+      "type": "text",
+      "id": "subtitle",
+      "label": "t:emasole.settings.subheading",
+      "default": "New deals every day at midnight"
+    },
+    {
+      "type": "collection",
+      "id": "collection",
+      "label": "t:emasole.settings.collection",
+      "info": "t:emasole.info.deals_collection"
+    },
+    {
+      "type": "range",
+      "id": "max_products",
+      "label": "t:emasole.settings.max_products",
+      "min": 4,
+      "max": 24,
+      "step": 1,
+      "default": 12
+    },
+    {
+      "type": "header",
+      "content": "t:emasole.settings.countdown"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_timer",
+      "label": "t:emasole.settings.show_countdown",
+      "default": true
+    },
+    {
+      "type": "select",
+      "id": "timer_mode",
+      "label": "t:emasole.settings.countdown_mode",
+      "options": [
+        { "value": "daily", "label": "t:emasole.options.daily_reset" },
+        { "value": "fixed", "label": "t:emasole.options.fixed_end" }
+      ],
+      "default": "daily",
+      "visible_if": "{{ section.settings.show_timer }}"
+    },
+    {
+      "type": "text",
+      "id": "end_date",
+      "label": "t:emasole.settings.end_date",
+      "info": "t:emasole.info.end_date",
+      "placeholder": "2026-12-31 23:59",
+      "visible_if": "{{ section.settings.show_timer and section.settings.timer_mode == 'fixed' }}"
+    },
+    {
+      "type": "header",
+      "content": "t:emasole.settings.product_card"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_rating",
+      "label": "t:emasole.settings.show_rating",
+      "default": true
+    },
+    {
+      "type": "range",
+      "id": "low_stock",
+      "label": "t:emasole.settings.low_stock",
+      "info": "t:emasole.info.low_stock",
+      "min": 0,
+      "max": 50,
+      "step": 1,
+      "default": 10
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:emasole.names.flash_deals",
+      "category": "t:emasole.names.category"
+    }
+  ]
+}
+{% endschema %}

@@ -9,274 +9,394 @@
  */
 {
   "sections": {
-    "hero_jVaWmY": {
-      "type": "hero",
+    "hero": {
+      "type": "em-hero",
       "blocks": {
-        "text_YLPk4p": {
-          "type": "text",
-          "name": "t:names.heading",
+        "slide_1": {
+          "type": "slide",
           "settings": {
-            "text": "<p>Browse our latest products</p>",
-            "width": "fit-content",
-            "max_width": "normal",
-            "alignment": "left",
-            "type_preset": "h2",
-            "font": "var(--font-body--family)",
-            "font_size": "1rem",
-            "line_height": "normal",
-            "letter_spacing": "normal",
-            "case": "none",
-            "wrap": "pretty",
-            "text_color": "{{ settings.color_palette.background }}",
-            "background": false,
-            "background_color": "#00000026",
-            "corner_radius": 0,
-            "padding-block-start": 0,
-            "padding-block-end": 0,
-            "padding-inline-start": 0,
-            "padding-inline-end": 0
-          },
-          "blocks": {}
-        },
-        "button_H9gpTf": {
-          "type": "button",
-          "name": "t:names.button",
-          "settings": {
-            "label": "Shop all",
+            "layout": "split",
+            "background": "#FFC53D",
+            "text_tone": "dark",
+            "eyebrow": "Super deals",
+            "heading": "Up to 70% off everyday essentials",
+            "text": "New markdowns every morning. Free shipping on orders over $29.",
+            "button_label": "Shop deals",
             "link": "shopify://collections/all",
-            "open_in_new_tab": false,
-            "style_class": "button-custom",
-            "custom_button_background": "rgba(0, 0, 0, 0)",
-            "custom_button_text": "{{ settings.color_palette.background }}",
-            "custom_button_border": "{{ settings.color_palette.background }}",
-            "width": "fit-content",
-            "custom_width": 100,
-            "width_mobile": "fit-content",
-            "custom_width_mobile": 100
-          },
-          "blocks": {}
+            "art": "tickets"
+          }
+        },
+        "slide_2": {
+          "type": "slide",
+          "settings": {
+            "layout": "split",
+            "background": "#CC3500",
+            "text_tone": "light",
+            "eyebrow": "New arrivals",
+            "heading": "Fresh finds, landing daily",
+            "text": "Thousands of new products across every category.",
+            "button_label": "Explore new",
+            "link": "shopify://collections/all",
+            "art": "bag"
+          }
+        },
+        "slide_3": {
+          "type": "slide",
+          "settings": {
+            "layout": "split",
+            "background": "#17171C",
+            "text_tone": "light",
+            "eyebrow": "Tech week",
+            "heading": "Smart gadgets from $9.99",
+            "text": "Earbuds, chargers, smart home and more.",
+            "button_label": "Shop tech",
+            "link": "shopify://collections/all",
+            "art": "bolt"
+          }
         }
       },
       "block_order": [
-        "text_YLPk4p",
-        "button_H9gpTf"
+        "slide_1",
+        "slide_2",
+        "slide_3"
       ],
-      "name": "t:names.hero",
       "settings": {
-        "media_type_1": "image",
-        "media_type_2": "image",
-        "link": "",
-        "open_in_new_tab": false,
-        "content_direction": "column",
-        "vertical_on_mobile": true,
-        "horizontal_alignment": "space-between",
-        "vertical_alignment": "flex-end",
-        "align_baseline": true,
-        "horizontal_alignment_flex_direction_column": "center",
-        "vertical_alignment_flex_direction_column": "flex-end",
-        "gap": 24,
-        "section_width": "page-width",
-        "section_height": "medium",
-        "section_height_custom": 50,
-        "toggle_overlay": true,
-        "overlay_color": "#12121266",
-        "overlay_style": "solid",
-        "gradient_direction": "to bottom",
-        "blurred_reflection": false,
-        "reflection_opacity": 75,
-        "padding-block-start": 100,
-        "padding-block-end": 72
+        "menu": "main-menu",
+        "autoplay": true,
+        "autoplay_seconds": 5,
+        "show_panel": true,
+        "panel_text": "Unlock member prices and free returns",
+        "coupon_amount": "$5 OFF",
+        "coupon_text": "Your first order over $25",
+        "coupon_code": "",
+        "picks_title": "Today's top picks",
+        "picks_collection": "all"
       }
     },
-    "product_list_fa6P9H": {
-      "type": "product-list",
+    "benefits": {
+      "type": "em-benefits",
       "blocks": {
-        "static-header": {
-          "type": "_product-list-content",
-          "name": "t:names.header",
-          "static": true,
+        "b1": {
+          "type": "benefit",
           "settings": {
-            "content_direction": "row",
-            "vertical_on_mobile": false,
-            "horizontal_alignment": "space-between",
-            "vertical_alignment": "flex-end",
-            "align_baseline": true,
-            "horizontal_alignment_flex_direction_column": "flex-start",
-            "vertical_alignment_flex_direction_column": "center",
-            "gap": 12,
-            "width": "fill",
-            "custom_width": 100,
-            "width_mobile": "fill",
-            "custom_width_mobile": 100,
-            "height": "fit",
-            "custom_height": 100,
-            "background_media": "none",
-            "video_position": "cover",
-            "background_image_position": "cover",
-            "border": "none",
-            "border_width": 1,
-            "border_opacity": 100,
-            "border_radius": 0,
-            "padding-block-start": 0,
-            "padding-block-end": 0,
-            "padding-inline-start": 0,
-            "padding-inline-end": 0
-          },
-          "blocks": {
-            "product_list_text_YFtzcL": {
-              "type": "_product-list-text",
-              "name": "t:names.collection_title",
-              "settings": {
-                "text": "<h3>{{ closest.collection.title }}</h3>",
-                "width": "fit-content",
-                "max_width": "normal",
-                "alignment": "left",
-                "type_preset": "h4",
-                "font": "var(--font-body--family)",
-                "font_size": "",
-                "line_height": "normal",
-                "letter_spacing": "normal",
-                "case": "none",
-                "wrap": "pretty",
-                "background": false,
-                "background_color": "#00000026",
-                "corner_radius": 0,
-                "padding-block-start": 0,
-                "padding-block-end": 0,
-                "padding-inline-start": 0,
-                "padding-inline-end": 0
-              },
-              "blocks": {}
-            },
-            "product_list_button_MWeP9V": {
-              "type": "_product-list-button",
-              "name": "t:names.product_list_button",
-              "settings": {
-                "label": "View all",
-                "open_in_new_tab": false,
-                "style_class": "button-unstyled",
-                "width": "fit-content",
-                "custom_width": 100,
-                "width_mobile": "fit-content",
-                "custom_width_mobile": 100
-              },
-              "blocks": {}
-            }
-          },
-          "block_order": [
-            "product_list_text_YFtzcL",
-            "product_list_button_MWeP9V"
-          ]
+            "icon": "truck",
+            "title": "Free shipping",
+            "text": "On orders over $29"
+          }
         },
-        "static-product-card": {
-          "type": "_product-card",
-          "name": "t:names.product_card",
-          "static": true,
+        "b2": {
+          "type": "benefit",
           "settings": {
-            "product_card_gap": 4,
-            "border": "none",
-            "border_width": 1,
-            "border_opacity": 100,
-            "border_radius": 0,
-            "padding-block-start": 0,
-            "padding-block-end": 0,
-            "padding-inline-start": 0,
-            "padding-inline-end": 0
-          },
-          "blocks": {
-            "product_card_gallery_677WP3": {
-              "type": "_product-card-gallery",
-              "name": "t:names.product_card_media",
-              "settings": {
-                "image_ratio": "adapt",
-                "border": "none",
-                "border_width": 1,
-                "border_opacity": 100,
-                "border_radius": 0,
-                "padding-block-start": 0,
-                "padding-block-end": 0,
-                "padding-inline-start": 0,
-                "padding-inline-end": 0
-              },
-              "blocks": {}
-            },
-            "product_title_YXxMTj": {
-              "type": "product-title",
-              "name": "t:names.product_title",
-              "settings": {
-                "width": "100%",
-                "max_width": "normal",
-                "alignment": "left",
-                "type_preset": "paragraph",
-                "font": "var(--font-body--family)",
-                "font_size": "1rem",
-                "line_height": "normal",
-                "letter_spacing": "normal",
-                "case": "none",
-                "wrap": "pretty",
-                "background": false,
-                "background_color": "#00000026",
-                "corner_radius": 0,
-                "padding-block-start": 4,
-                "padding-block-end": 0,
-                "padding-inline-start": 0,
-                "padding-inline-end": 0
-              },
-              "blocks": {}
-            },
-            "price_JQzVV4": {
-              "type": "price",
-              "name": "t:names.product_price",
-              "settings": {
-                "show_sale_price_first": true,
-                "show_installments": false,
-                "show_tax_info": false,
-                "type_preset": "h6",
-                "width": "100%",
-                "alignment": "left",
-                "font": "var(--font-body--family)",
-                "font_size": "1rem",
-                "line_height": "normal",
-                "letter_spacing": "normal",
-                "case": "none",
-                "padding-block-start": 0,
-                "padding-block-end": 0,
-                "padding-inline-start": 0,
-                "padding-inline-end": 0
-              },
-              "blocks": {}
-            }
-          },
-          "block_order": [
-            "product_card_gallery_677WP3",
-            "product_title_YXxMTj",
-            "price_JQzVV4"
-          ]
+            "icon": "return",
+            "title": "Free returns",
+            "text": "Within 90 days of delivery"
+          }
+        },
+        "b3": {
+          "type": "benefit",
+          "settings": {
+            "icon": "tag",
+            "title": "Price adjustment",
+            "text": "Price drops within 30 days? We refund the difference"
+          }
+        },
+        "b4": {
+          "type": "benefit",
+          "settings": {
+            "icon": "lock",
+            "title": "Secure payments",
+            "text": "Encrypted checkout, trusted providers"
+          }
         }
       },
-      "name": "t:names.featured_collection",
+      "block_order": [
+        "b1",
+        "b2",
+        "b3",
+        "b4"
+      ],
       "settings": {
+        "tone": "white"
+      }
+    },
+    "categories": {
+      "type": "em-categories",
+      "settings": {
+        "title": "Shop by category",
+        "layout": "two-rows",
+        "link_label": "All categories",
+        "link": "shopify://collections"
+      }
+    },
+    "flash_deals": {
+      "type": "em-flash-deals",
+      "settings": {
+        "title": "Flash deals",
+        "subtitle": "New deals every day at midnight",
         "collection": "all",
-        "layout_type": "grid",
-        "carousel_on_mobile": false,
-        "max_products": 8,
-        "columns": 4,
-        "mobile_columns": "2",
-        "mobile_card_size": "60cqw",
-        "columns_gap": 8,
-        "rows_gap": 24,
-        "icons_style": "arrow",
-        "icons_shape": "none",
-        "section_width": "page-width",
-        "horizontal_alignment": "flex-start",
-        "gap": 28,
-        "padding-block-start": 48,
-        "padding-block-end": 48
+        "max_products": 12,
+        "show_timer": true,
+        "timer_mode": "daily",
+        "show_rating": true,
+        "low_stock": 10
+      }
+    },
+    "coupons": {
+      "type": "em-coupons",
+      "blocks": {
+        "c1": {
+          "type": "coupon",
+          "settings": {
+            "amount": "$3 OFF",
+            "condition": "Orders over $29",
+            "expiry": "Valid this week"
+          }
+        },
+        "c2": {
+          "type": "coupon",
+          "settings": {
+            "amount": "$8 OFF",
+            "condition": "Orders over $59",
+            "expiry": "Valid this week"
+          }
+        },
+        "c3": {
+          "type": "coupon",
+          "settings": {
+            "amount": "15% OFF",
+            "condition": "Orders over $99",
+            "expiry": "Valid this week"
+          }
+        },
+        "c4": {
+          "type": "coupon",
+          "settings": {
+            "amount": "Free gift",
+            "condition": "Orders over $120",
+            "expiry": "While stocks last"
+          }
+        }
+      },
+      "block_order": [
+        "c1",
+        "c2",
+        "c3",
+        "c4"
+      ],
+      "settings": {
+        "title": "Coupons for you",
+        "subtitle": "Claim now — applied automatically at checkout"
+      }
+    },
+    "promos": {
+      "type": "em-promo-tiles",
+      "blocks": {
+        "t1": {
+          "type": "tile",
+          "settings": {
+            "background": "#FFF1EA",
+            "text_tone": "dark",
+            "eyebrow": "Bundle & save",
+            "heading": "Buy 2, get 10% off",
+            "text": "Mix and match across home and kitchen.",
+            "link_label": "Shop now",
+            "link": "shopify://collections/all",
+            "art": "gift"
+          }
+        },
+        "t2": {
+          "type": "tile",
+          "settings": {
+            "background": "#E6F5EC",
+            "text_tone": "dark",
+            "eyebrow": "Local warehouse",
+            "heading": "Fast delivery in 3–5 days",
+            "text": "Thousands of items ship from nearby.",
+            "link_label": "Shop fast delivery",
+            "link": "shopify://collections/all",
+            "art": "box"
+          }
+        },
+        "t3": {
+          "type": "tile",
+          "settings": {
+            "background": "#17171C",
+            "text_tone": "light",
+            "eyebrow": "Ema Picks",
+            "heading": "Quality-checked by our team",
+            "text": "Top-rated products, verified sellers.",
+            "link_label": "See Ema Picks",
+            "link": "shopify://collections/all",
+            "art": "badge"
+          }
+        }
+      },
+      "block_order": [
+        "t1",
+        "t2",
+        "t3"
+      ],
+      "settings": {}
+    },
+    "category_tabs": {
+      "type": "em-category-tabs",
+      "blocks": {
+        "tab1": {
+          "type": "tab",
+          "settings": {
+            "collection": "all",
+            "label": "Recommended"
+          }
+        },
+        "tab2": {
+          "type": "tab",
+          "settings": {
+            "label": "Electronics"
+          }
+        },
+        "tab3": {
+          "type": "tab",
+          "settings": {
+            "label": "Fashion"
+          }
+        },
+        "tab4": {
+          "type": "tab",
+          "settings": {
+            "label": "Home & kitchen"
+          }
+        },
+        "tab5": {
+          "type": "tab",
+          "settings": {
+            "label": "Beauty"
+          }
+        }
+      },
+      "block_order": [
+        "tab1",
+        "tab2",
+        "tab3",
+        "tab4",
+        "tab5"
+      ],
+      "settings": {
+        "title": "Trending in categories",
+        "products_per_tab": 10,
+        "columns": 5,
+        "show_rating": true
+      }
+    },
+    "feed": {
+      "type": "em-product-feed",
+      "settings": {
+        "title": "More to love",
+        "collection": "all",
+        "products_per_page": 20,
+        "columns": 5,
+        "auto_load": true,
+        "show_rating": true
+      }
+    },
+    "deal_duo": {
+      "type": "em-deal-duo",
+      "blocks": {
+        "p1": {
+          "type": "panel",
+          "settings": {
+            "title": "Super deals",
+            "subtitle": "Lowest prices of the week",
+            "icon": "bolt",
+            "accent": "ember",
+            "collection": "all"
+          }
+        },
+        "p2": {
+          "type": "panel",
+          "settings": {
+            "title": "Big save",
+            "subtitle": "Bundles and multipacks",
+            "icon": "percent",
+            "accent": "sun"
+          }
+        }
+      },
+      "block_order": [
+        "p1",
+        "p2"
+      ],
+      "settings": {}
+    },
+    "top_ranked": {
+      "type": "em-top-ranked",
+      "settings": {
+        "title": "Top ranked",
+        "subtitle": "Our best sellers this week",
+        "collection": "all",
+        "max_products": 10,
+        "show_rating": true
+      }
+    },
+    "club": {
+      "type": "em-club",
+      "blocks": {
+        "k1": {
+          "type": "perk",
+          "settings": {
+            "icon": "tag",
+            "title": "Member prices",
+            "text": "Extra savings on thousands of items"
+          }
+        },
+        "k2": {
+          "type": "perk",
+          "settings": {
+            "icon": "bolt",
+            "title": "Early access",
+            "text": "Shop flash deals an hour before everyone"
+          }
+        },
+        "k3": {
+          "type": "perk",
+          "settings": {
+            "icon": "gift",
+            "title": "Welcome coupon",
+            "text": "A thank-you on your first order"
+          }
+        }
+      },
+      "block_order": [
+        "k1",
+        "k2",
+        "k3"
+      ],
+      "settings": {
+        "eyebrow": "Emasole Club",
+        "heading": "Members save more, every single day",
+        "text": "Create a free account to unlock member prices, early access to flash deals and a welcome coupon.",
+        "button_label": "Join free",
+        "art": "bag"
+      }
+    },
+    "recently_viewed": {
+      "type": "em-recently-viewed",
+      "settings": {
+        "title": "Recently viewed"
       }
     }
   },
   "order": [
-    "hero_jVaWmY",
-    "product_list_fa6P9H"
+    "hero",
+    "benefits",
+    "categories",
+    "flash_deals",
+    "deal_duo",
+    "coupons",
+    "top_ranked",
+    "promos",
+    "category_tabs",
+    "club",
+    "recently_viewed",
+    "feed"
   ]
 }

@@ -1,0 +1,565 @@
+{% doc %}
+  Renders the Emasole product card used by every product rail and grid.
+
+  Shows the image (second image on hover), discount and merchant badges, a two-line
+  title, rating, price with compare-at price and a one-tap add to cart. Products with
+  options link to the product page instead of adding a default variant.
+
+  Merchant badges come from product tags: `bestseller`, `new`, `ema-pick`.
+  The stock hint only uses real inventory: it appears when a tracked variant has
+  `low_stock` units or fewer left. Nothing on the card is invented.
+
+  Pass no product to render a placeholder card for the theme editor.
+
+  @param {product} [product] - The product to render; blank renders a placeholder
+  @param {number} [index] - Position in the list, used to vary placeholder art
+  @param {string} [sizes] - The `sizes` attribute for the product image
+  @param {boolean} [show_rating] - Show the star rating when reviews exist (default true)
+  @param {boolean} [show_quick_add] - Show the add to cart button (default true)
+  @param {number} [low_stock] - Inventory threshold for the stock hint (default 10, 0 hides it)
+  @param {boolean} [eager] - Load the image eagerly (first row above the fold)
+  @param {number} [rank] - Position in a ranking; shows a rank ribbon on the image
+
+  @example
+  {% render 'em-product-card', product: product, sizes: '(min-width: 990px) 240px, 45vw' %}
+  {% render 'em-product-card', index: 3 %}
+{% enddoc %}
+{%- liquid
+  assign sizes = sizes | default: '(min-width: 990px) 250px, (min-width: 750px) 30vw, 46vw'
+  assign low_stock = low_stock | default: 10
+
+  if show_rating == false
+    assign rating_enabled = false
+  else
+    assign rating_enabled = true
+  endif
+
+  if show_quick_add == false
+    assign quick_add_enabled = false
+  else
+    assign quick_add_enabled = true
+  endif
+
+  if eager
+    assign loading = 'eager'
+  else
+    assign loading = 'lazy'
+  endif
+-%}
+
+{%- if product != blank -%}
+  {%- liquid
+    assign variant = product.selected_or_first_available_variant
+    assign price = variant.price
+    assign compare_at = variant.compare_at_price
+    assign on_sale = false
+    assign discount = 0
+
+    if compare_at > price
+      assign on_sale = true
+      assign saved = compare_at | minus: price
+      assign discount = saved | times: 100.0 | divided_by: compare_at | round
+    endif
+
+    if settings.currency_code_enabled_product_cards
+      assign price_formatted = price | money_with_currency
+      assign compare_formatted = compare_at | money_with_currency
+      assign saved_formatted = saved | money_with_currency
+    else
+      assign price_formatted = price | money
+      assign compare_formatted = compare_at | money
+      assign saved_formatted = saved | money
+    endif
+
+    assign show_stock_hint = false
+    if low_stock > 0 and variant.available and variant.inventory_management == 'shopify' and variant.inventory_policy == 'deny'
+      if variant.inventory_quantity > 0 and variant.inventory_quantity <= low_stock
+        assign show_stock_hint = true
+      endif
+    endif
+
+    assign tags = product.tags | join: ',' | downcase | split: ','
+  -%}
+
+  <article class="em-card{% unless product.available %} em-card--sold-out{% endunless %}">
+    <a
+      class="em-card__media"
+      href="{{ product.url }}"
+      tabindex="-1"
+      aria-hidden="true"
+    >
+      {%- if product.featured_media -%}
+        {{
+          product.featured_media
+          | image_url: width: 800
+          | image_tag:
+            loading: loading,
+            widths: '200, 300, 400, 500, 600, 800',
+            sizes: sizes,
+            class: 'em-card__img',
+            alt: product.featured_media.alt
+        }}
+        {%- if product.media.size > 1 -%}
+          {{
+            product.media[1]
+            | image_url: width: 800
+            | image_tag:
+              loading: 'lazy',
+              widths: '200, 300, 400, 500, 600, 800',
+              sizes: sizes,
+              class: 'em-card__img em-card__img--hover',
+              alt: ''
+          }}
+        {%- endif -%}
+      {%- else -%}
+        {{ 'product-1' | placeholder_svg_tag: 'em-card__img em-card__placeholder' }}
+      {%- endif -%}
+
+      {%- if rank -%}
+        <span class="em-card__rank{% if rank <= 3 %} em-card__rank--top{% endif %}">
+          <span class="em-visually-hidden">{{ 'emasole.card.rank' | t: rank: rank }}</span>
+          <span aria-hidden="true">{{ rank }}</span>
+        </span>
+      {%- endif -%}
+
+      <span class="em-card__badges{% if rank %} em-card__badges--ranked{% endif %}">
+        {%- if on_sale -%}
+          <span class="em-badge em-badge--deal">{{ 'emasole.card.discount' | t: percent: discount }}</span>
+        {%- endif -%}
+        {%- if tags contains 'ema-pick' -%}
+          <span class="em-badge em-badge--pick">{{ 'emasole.card.ema_pick' | t }}</span>
+        {%- elsif tags contains 'bestseller' -%}
+          <span class="em-badge em-badge--hot">{{ 'emasole.card.bestseller' | t }}</span>
+        {%- elsif tags contains 'new' -%}
+          <span class="em-badge em-badge--dark">{{ 'emasole.card.new' | t }}</span>
+        {%- endif -%}
+      </span>
+
+      {%- unless product.available -%}
+        <span class="em-card__sold-out">{{ 'emasole.card.sold_out' | t }}</span>
+      {%- endunless -%}
+    </a>
+
+    <div class="em-card__body">
+      <h3 class="em-card__title">
+        <a href="{{ product.url }}">{{ product.title | escape }}</a>
+      </h3>
+
+      {%- if rating_enabled and product.metafields.reviews.rating.value != blank -%}
+        {%- liquid
+          assign rating = product.metafields.reviews.rating.value.rating
+          assign scale_max = product.metafields.reviews.rating.value.scale_max
+          assign rating_pct = rating | times: 100.0 | divided_by: scale_max
+          assign rating_count = product.metafields.reviews.rating_count.value | default: 0
+        -%}
+        <p class="em-card__rating">
+          <span class="em-stars" style="--em-rating: {{ rating_pct | round: 1 }}%;" aria-hidden="true"></span>
+          <span class="em-visually-hidden">
+            {{- 'emasole.card.rating' | t: rating: rating, max: scale_max -}}
+          </span>
+          {%- if rating_count > 0 -%}
+            <span class="em-card__rating-count">({{ rating_count }})</span>
+          {%- endif -%}
+        </p>
+      {%- endif -%}
+
+      <div class="em-card__foot">
+        <div class="em-price{% if on_sale %} em-price--sale{% endif %}">
+          <span class="em-visually-hidden">
+            {%- if on_sale -%}
+              {{- 'emasole.card.sale_price' | t -}}
+            {%- else -%}
+              {{- 'emasole.card.price' | t -}}
+            {%- endif -%}
+          </span>
+          <span class="em-price__current">
+            {%- if product.price_varies -%}
+              {{- 'emasole.card.from' | t: price: price_formatted -}}
+            {%- else -%}
+              {{- price_formatted -}}
+            {%- endif -%}
+          </span>
+          {%- if on_sale -%}
+            <span class="em-visually-hidden">{{ 'emasole.card.regular_price' | t }}</span>
+            <s class="em-price__compare">{{ compare_formatted }}</s>
+          {%- endif -%}
+        </div>
+
+        {%- if quick_add_enabled and product.available -%}
+          {%- if product.has_only_default_variant -%}
+            <em-quick-add class="em-card__add">
+              {%- form 'product', product, class: 'em-card__form', novalidate: 'novalidate' -%}
+                <input type="hidden" name="id" value="{{ variant.id }}">
+                <input type="hidden" name="quantity" value="1">
+                <button
+                  type="submit"
+                  class="em-card__add-btn"
+                  aria-label="{{ 'emasole.card.add_to_cart' | t: title: product.title | escape }}"
+                >
+                  {%- render 'em-icon', icon: 'cart-plus', class: 'em-card__add-icon' -%}
+                  {%- render 'em-icon', icon: 'check', class: 'em-card__added-icon' -%}
+                </button>
+              {%- endform -%}
+              <span class="em-visually-hidden" role="status" data-em-status></span>
+            </em-quick-add>
+          {%- else -%}
+            <a
+              class="em-card__add em-card__add-btn"
+              href="{{ product.url }}"
+              aria-label="{{ 'emasole.card.choose_options' | t: title: product.title | escape }}"
+            >
+              {%- render 'em-icon', icon: 'cart-plus' -%}
+            </a>
+          {%- endif -%}
+        {%- endif -%}
+      </div>
+
+      {%- if show_stock_hint -%}
+        <p class="em-card__hint em-card__hint--stock">
+          {{ 'emasole.card.only_left' | t: count: variant.inventory_quantity }}
+        </p>
+      {%- elsif on_sale -%}
+        <p class="em-card__hint em-card__hint--save">
+          {{- 'emasole.card.you_save' | t: amount: saved_formatted -}}
+        </p>
+      {%- else -%}
+        <p class="em-card__hint" aria-hidden="true"></p>
+      {%- endif -%}
+    </div>
+  </article>
+{%- else -%}
+  {%- liquid
+    assign art = index | default: 1 | modulo: 6 | plus: 1
+    assign placeholder_name = 'product-' | append: art
+    assign placeholder_price = art | times: 700 | plus: 999
+    assign placeholder_compare = placeholder_price | times: 2
+  -%}
+  <article class="em-card em-card--placeholder">
+    <div class="em-card__media">
+      {{ placeholder_name | placeholder_svg_tag: 'em-card__img em-card__placeholder' }}
+      <span class="em-card__badges">
+        <span class="em-badge em-badge--deal">{{ 'emasole.card.discount' | t: percent: 50 }}</span>
+      </span>
+    </div>
+    <div class="em-card__body">
+      <h3 class="em-card__title">{{ 'emasole.card.placeholder_title' | t }}</h3>
+      <div class="em-card__foot">
+        <div class="em-price em-price--sale">
+          <span class="em-price__current">{{ placeholder_price | money }}</span>
+          <s class="em-price__compare">{{ placeholder_compare | money }}</s>
+        </div>
+      </div>
+    </div>
+  </article>
+{%- endif -%}
+
+{% stylesheet %}
+  .em-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: var(--em-card);
+    border-radius: var(--em-radius-md);
+    overflow: hidden;
+    color: var(--em-color-text);
+    transition: box-shadow var(--em-duration) var(--em-ease), transform var(--em-duration) var(--em-ease);
+  }
+
+  @media (hover: hover) {
+    .em-card:hover {
+      box-shadow: var(--em-shadow-2);
+      transform: translateY(-2px);
+    }
+
+    .em-card:hover .em-card__img--hover {
+      opacity: 1;
+    }
+  }
+
+  .em-card__media {
+    position: relative;
+    display: block;
+    aspect-ratio: 1;
+    overflow: hidden;
+    background: var(--em-ink-100);
+    border-radius: var(--em-radius-md);
+  }
+
+  .em-card__img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: opacity 240ms var(--em-ease);
+  }
+
+  .em-card__img--hover {
+    opacity: 0;
+  }
+
+  .em-card__placeholder {
+    fill: var(--em-ink-400);
+    background: var(--em-ink-100);
+  }
+
+  .em-card__badges {
+    position: absolute;
+    inset-block-start: var(--em-space-2);
+    inset-inline-start: var(--em-space-2);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--em-space-1);
+  }
+
+  /* Rank ribbon: a folded tab on the image's top-left corner */
+  .em-card__rank {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-start: var(--em-space-2);
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 36px;
+    padding-block-end: 6px;
+    background: var(--em-ink-900);
+    color: #ffffff;
+    font-family: var(--em-font-display);
+    font-size: var(--em-text-md);
+    font-weight: 800;
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%);
+  }
+
+  .em-card__rank--top {
+    background: var(--em-sun-400);
+    color: var(--em-ink-900);
+  }
+
+  .em-card__badges--ranked {
+    inset-inline-start: calc(var(--em-space-2) + 36px);
+  }
+
+  .em-card__sold-out {
+    position: absolute;
+    inset: auto 0 0;
+    padding: var(--em-space-1) var(--em-space-2);
+    background: rgb(23 23 28 / 0.78);
+    color: #ffffff;
+    font-size: var(--em-text-xs);
+    font-weight: 700;
+    text-align: center;
+  }
+
+  .em-card--sold-out .em-card__img {
+    filter: grayscale(0.6);
+  }
+
+  .em-card__body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 6px;
+    padding: var(--em-space-2) var(--em-space-2) var(--em-space-3);
+  }
+
+  .em-card__title {
+    display: -webkit-box;
+    margin: 0;
+    overflow: hidden;
+    font-family: var(--em-font-body);
+    font-size: var(--em-text-sm);
+    font-weight: 500;
+    line-height: 1.35;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    min-height: calc(1.35em * 2);
+  }
+
+  .em-card__title a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .em-card__title a::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+  }
+
+  .em-card__title a:focus-visible {
+    outline: none;
+  }
+
+  .em-card:has(.em-card__title a:focus-visible) {
+    outline: 2px solid var(--em-color-focus);
+    outline-offset: 2px;
+  }
+
+  .em-card__rating {
+    display: flex;
+    align-items: center;
+    gap: var(--em-space-1);
+    margin: 0;
+    font-size: var(--em-text-xs);
+    color: var(--em-color-text-muted);
+  }
+
+  .em-stars {
+    --em-star: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m12 3 2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.8l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8Z'/%3E%3C/svg%3E");
+
+    display: inline-block;
+    width: 70px;
+    height: 14px;
+    background: linear-gradient(90deg, var(--em-ink-900) var(--em-rating), var(--em-ink-200) var(--em-rating));
+    mask: var(--em-star) 0 0 / 14px 14px repeat-x;
+  }
+
+  .em-card__foot {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--em-space-2);
+    margin-block-start: auto;
+  }
+
+  .em-card__add {
+    position: relative;
+    z-index: 2;
+    flex: none;
+  }
+
+  .em-card__form {
+    margin: 0;
+  }
+
+  .em-card__add-btn {
+    display: inline-grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 1.5px solid var(--em-ink-900);
+    border-radius: var(--em-radius-pill);
+    background: var(--em-card);
+    color: var(--em-ink-900);
+    cursor: pointer;
+    transition: background-color var(--em-duration) var(--em-ease), color var(--em-duration) var(--em-ease);
+  }
+
+  .em-card__add-btn:hover {
+    background: var(--em-ink-900);
+    color: #ffffff;
+  }
+
+  .em-card__add-btn .em-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .em-card__added-icon,
+  em-quick-add[data-state='added'] .em-card__add-icon {
+    display: none;
+  }
+
+  em-quick-add[data-state='added'] .em-card__added-icon {
+    display: inline-block;
+  }
+
+  em-quick-add[data-state='added'] .em-card__add-btn {
+    border-color: var(--em-mint-700);
+    background: var(--em-mint-700);
+    color: #ffffff;
+  }
+
+  em-quick-add[data-state='busy'] .em-card__add-btn {
+    cursor: progress;
+    opacity: 0.6;
+  }
+
+  /* Always present (empty when there is nothing to say) so prices align across a row */
+  .em-card__hint {
+    min-height: 1.35em;
+    margin: 0;
+    line-height: 1.35;
+    font-size: var(--em-text-xs);
+    font-weight: 600;
+  }
+
+  .em-card__hint--stock {
+    color: var(--em-ember-700);
+  }
+
+  .em-card__hint--save {
+    color: var(--em-mint-700);
+  }
+
+  .em-card--placeholder .em-card__title {
+    color: var(--em-color-text-muted);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .em-card,
+    .em-card__img {
+      transition: none;
+    }
+
+    .em-card:hover {
+      transform: none;
+    }
+  }
+{% endstylesheet %}
+
+{% javascript %}
+  /**
+   * One-tap add to cart for single-variant products.
+   *
+   * Uses Shopify's standard cart action so the theme's cart icon and drawer update through
+   * their own events. When the action is unavailable, or fails, the form submits natively
+   * to /cart/add, so the button always works.
+   */
+  if (!customElements.get('em-quick-add')) {
+    class EmQuickAdd extends HTMLElement {
+      connectedCallback() {
+        this.form = this.querySelector('form');
+        this.status = this.querySelector('[data-em-status]');
+        this.form?.addEventListener('submit', this.onSubmit);
+      }
+
+      disconnectedCallback() {
+        this.form?.removeEventListener('submit', this.onSubmit);
+      }
+
+      onSubmit = async (event) => {
+        const actions = window.Shopify?.actions;
+        if (!actions?.updateCart) return;
+
+        event.preventDefault();
+        if (this.dataset.state === 'busy') return;
+
+        const id = new FormData(this.form).get('id');
+        this.dataset.state = 'busy';
+
+        try {
+          const result = await actions.updateCart({ lines: [{ merchandiseId: String(id), quantity: 1 }] });
+          if (result?.userErrors?.length) throw new Error(result.userErrors[0].message);
+
+          this.dataset.state = 'added';
+          if (this.status) this.status.textContent = window.Theme?.translations?.added || 'Added';
+          actions.openCart?.();
+          window.setTimeout(() => {
+            delete this.dataset.state;
+            if (this.status) this.status.textContent = '';
+          }, 2000);
+        } catch (error) {
+          delete this.dataset.state;
+          this.form.submit();
+        }
+      };
+    }
+
+    customElements.define('em-quick-add', EmQuickAdd);
+  }
+{% endjavascript %}
