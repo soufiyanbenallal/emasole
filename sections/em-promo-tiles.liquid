@@ -4,7 +4,7 @@
       {%- for block in section.blocks -%}
         <li
           class="em-promo em-promo--{{ block.settings.text_tone }}"
-          style="--em-promo-bg: {{ block.settings.background }};"
+          style="--em-promo-bg: {{ block.settings.background }}; --em-art-ground: {{ block.settings.background }};"
           {{ block.shopify_attributes }}
         >
           <div class="em-promo__copy">
@@ -31,10 +31,13 @@
               }}
             {%- else -%}
               {%- liquid
-                assign art = forloop.index | modulo: 6 | plus: 1
-                assign placeholder_name = 'product-' | append: art
+                if block.settings.text_tone == 'light'
+                  assign art_tone = 'light'
+                else
+                  assign art_tone = 'dark'
+                endif
               -%}
-              {{ placeholder_name | placeholder_svg_tag }}
+              {%- render 'em-brand-art', art: block.settings.art, tone: art_tone, class: 'em-promo__art' -%}
             {%- endif -%}
           </div>
         </li>
@@ -164,9 +167,16 @@
     object-fit: cover;
   }
 
-  .em-promo__media svg {
-    fill: currentColor;
-    opacity: 0.2;
+  .em-promo__media {
+    display: grid;
+    place-items: center;
+  }
+
+  .em-promo__media .em-promo__art {
+    width: 100%;
+    height: 100%;
+    padding: var(--em-space-3) var(--em-space-3) var(--em-space-3) 0;
+    object-fit: contain;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -194,6 +204,21 @@
           "type": "image_picker",
           "id": "image",
           "label": "t:emasole.settings.image"
+        },
+        {
+          "type": "select",
+          "id": "art",
+          "label": "t:emasole.settings.brand_art",
+          "info": "t:emasole.info.brand_art",
+          "options": [
+            { "value": "gift", "label": "t:emasole.options.art_gift" },
+            { "value": "box", "label": "t:emasole.options.art_box" },
+            { "value": "badge", "label": "t:emasole.options.art_badge" },
+            { "value": "tickets", "label": "t:emasole.options.art_tickets" },
+            { "value": "bag", "label": "t:emasole.options.art_bag" },
+            { "value": "bolt", "label": "t:emasole.options.art_bolt" }
+          ],
+          "default": "gift"
         },
         {
           "type": "color",
@@ -250,15 +275,15 @@
       "blocks": [
         {
           "type": "tile",
-          "settings": { "background": "#FFF1EA", "text_tone": "dark", "eyebrow": "Bundle & save", "heading": "Buy 2, get 10% off", "text": "Mix and match across home and kitchen." }
+          "settings": { "art": "gift", "background": "#FFF1EA", "text_tone": "dark", "eyebrow": "Bundle & save", "heading": "Buy 2, get 10% off", "text": "Mix and match across home and kitchen." }
         },
         {
           "type": "tile",
-          "settings": { "background": "#E6F5EC", "text_tone": "dark", "eyebrow": "Local warehouse", "heading": "Fast delivery in 3–5 days", "text": "Thousands of items ship from nearby." }
+          "settings": { "art": "box", "background": "#E6F5EC", "text_tone": "dark", "eyebrow": "Local warehouse", "heading": "Fast delivery in 3–5 days", "text": "Thousands of items ship from nearby." }
         },
         {
           "type": "tile",
-          "settings": { "background": "#17171C", "text_tone": "light", "eyebrow": "Ema Picks", "heading": "Quality-checked by our team", "text": "Top-rated products, verified sellers." }
+          "settings": { "art": "badge", "background": "#17171C", "text_tone": "light", "eyebrow": "Ema Picks", "heading": "Quality-checked by our team", "text": "Top-rated products, verified sellers." }
         }
       ]
     }

@@ -24,7 +24,7 @@
         "help_link": "",
         "customer_account_menu": "customer-account-main-menu",
         "category_menu": "main-menu",
-        "nav_menu": "",
+        "nav_menu": "main-menu",
         "highlight_label": "Flash deals",
         "highlight_link": "shopify://collections/all",
         "sticky": true

@@ -35,8 +35,8 @@
         <div class="em-hero__track" data-em-track>
           {%- for block in slides -%}
             <div
-              class="em-slide em-slide--{{ block.settings.layout }} em-slide--{{ block.settings.text_tone }}"
-              style="--em-slide-bg: {{ block.settings.background }};"
+              class="em-slide em-slide--{{ block.settings.layout }} em-slide--{{ block.settings.text_tone }}{% if block.settings.image != blank %} em-slide--has-image{% endif %}"
+              style="--em-slide-bg: {{ block.settings.background }}; --em-art-ground: {{ block.settings.background }};"
               role="group"
               aria-roledescription="{{ 'emasole.hero.slide' | t }}"
               aria-label="{{ 'emasole.hero.slide_count' | t: index: forloop.index, count: forloop.length }}"
@@ -65,10 +65,15 @@
                   }}
                 {%- else -%}
                   {%- liquid
-                    assign art = forloop.index0 | modulo: 2 | plus: 1
-                    assign placeholder_name = 'lifestyle-' | append: art
+                    if block.settings.text_tone == 'light'
+                      assign art_tone = 'light'
+                    else
+                      assign art_tone = 'dark'
+                    endif
                   -%}
-                  {{ placeholder_name | placeholder_svg_tag: 'em-slide__img em-slide__placeholder' }}
+                  <div class="em-slide__art">
+                    {%- render 'em-brand-art', art: block.settings.art, tone: art_tone -%}
+                  </div>
                 {%- endif -%}
               </div>
               <div class="em-slide__content">
@@ -362,12 +367,19 @@
     object-fit: cover;
   }
 
-  .em-slide__placeholder {
-    fill: currentColor;
-    opacity: 0.18;
+  /* Brand artwork when no image is set: sits in the right half, never under the copy */
+  .em-slide__art {
+    position: absolute;
+    inset: 12% 4% 12% 55%;
   }
 
-  .em-slide--split .em-slide__media {
+  @media screen and (max-width: 749px) {
+    .em-slide__art {
+      inset: 18% 0 22% 58%;
+    }
+  }
+
+  .em-slide--split.em-slide--has-image .em-slide__media {
     inset: 0 0 0 45%;
   }
 
@@ -375,14 +387,14 @@
     mask-image: linear-gradient(90deg, transparent, #000 22%);
   }
 
-  .em-slide--cover.em-slide--light .em-slide__media::after {
+  .em-slide--has-image.em-slide--cover.em-slide--light .em-slide__media::after {
     content: '';
     position: absolute;
     inset: 0;
     background: linear-gradient(90deg, rgb(23 23 28 / 0.62), rgb(23 23 28 / 0.1) 70%);
   }
 
-  .em-slide--cover.em-slide--dark .em-slide__media::after {
+  .em-slide--has-image.em-slide--cover.em-slide--dark .em-slide__media::after {
     content: '';
     position: absolute;
     inset: 0;
@@ -889,6 +901,21 @@
         },
         {
           "type": "select",
+          "id": "art",
+          "label": "t:emasole.settings.brand_art",
+          "info": "t:emasole.info.brand_art",
+          "options": [
+            { "value": "tickets", "label": "t:emasole.options.art_tickets" },
+            { "value": "bag", "label": "t:emasole.options.art_bag" },
+            { "value": "bolt", "label": "t:emasole.options.art_bolt" },
+            { "value": "box", "label": "t:emasole.options.art_box" },
+            { "value": "gift", "label": "t:emasole.options.art_gift" },
+            { "value": "badge", "label": "t:emasole.options.art_badge" }
+          ],
+          "default": "tickets"
+        },
+        {
+          "type": "select",
           "id": "layout",
           "label": "t:emasole.settings.image_layout",
           "options": [
@@ -955,6 +982,7 @@
           "settings": {
             "background": "#FFC53D",
             "text_tone": "dark",
+            "art": "tickets",
             "eyebrow": "Super deals",
             "heading": "Up to 70% off everyday essentials",
             "button_label": "Shop deals"
@@ -965,6 +993,7 @@
           "settings": {
             "background": "#CC3500",
             "text_tone": "light",
+            "art": "bag",
             "eyebrow": "New arrivals",
             "heading": "Fresh finds, landing daily",
             "text": "Thousands of new products across every category.",
@@ -976,6 +1005,7 @@
           "settings": {
             "background": "#17171C",
             "text_tone": "light",
+            "art": "bolt",
             "eyebrow": "Tech week",
             "heading": "Smart gadgets from $9.99",
             "text": "Earbuds, chargers, smart home and more.",

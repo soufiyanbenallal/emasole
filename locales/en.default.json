@@ -27,7 +27,8 @@
       "regular_price": "Regular price",
       "sale_price": "Sale price",
       "sold_out": "Sold out",
-      "you_save": "You save {{ amount }}"
+      "you_save": "You save {{ amount }}",
+      "rank": "Ranked number {{ rank }}"
     },
     "categories": {
       "placeholder": "Category"
@@ -90,6 +91,15 @@
     },
     "tabs": {
       "see_all": "See all in {{ title }}"
+    },
+    "duo": {
+      "view_all": "View all {{ title }}"
+    },
+    "club": {
+      "account": "Go to my account"
+    },
+    "recent": {
+      "clear": "Clear"
     }
   },
   "accessibility": {

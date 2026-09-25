@@ -22,7 +22,8 @@
             "heading": "Up to 70% off everyday essentials",
             "text": "New markdowns every morning. Free shipping on orders over $29.",
             "button_label": "Shop deals",
-            "link": "shopify://collections/all"
+            "link": "shopify://collections/all",
+            "art": "tickets"
           }
         },
         "slide_2": {
@@ -35,7 +36,8 @@
             "heading": "Fresh finds, landing daily",
             "text": "Thousands of new products across every category.",
             "button_label": "Explore new",
-            "link": "shopify://collections/all"
+            "link": "shopify://collections/all",
+            "art": "bag"
           }
         },
         "slide_3": {
@@ -48,7 +50,8 @@
             "heading": "Smart gadgets from $9.99",
             "text": "Earbuds, chargers, smart home and more.",
             "button_label": "Shop tech",
-            "link": "shopify://collections/all"
+            "link": "shopify://collections/all",
+            "art": "bolt"
           }
         }
       },
@@ -197,7 +200,8 @@
             "heading": "Buy 2, get 10% off",
             "text": "Mix and match across home and kitchen.",
             "link_label": "Shop now",
-            "link": "shopify://collections/all"
+            "link": "shopify://collections/all",
+            "art": "gift"
           }
         },
         "t2": {
@@ -209,7 +213,8 @@
             "heading": "Fast delivery in 3–5 days",
             "text": "Thousands of items ship from nearby.",
             "link_label": "Shop fast delivery",
-            "link": "shopify://collections/all"
+            "link": "shopify://collections/all",
+            "art": "box"
           }
         },
         "t3": {
@@ -221,7 +226,8 @@
             "heading": "Quality-checked by our team",
             "text": "Top-rated products, verified sellers.",
             "link_label": "See Ema Picks",
-            "link": "shopify://collections/all"
+            "link": "shopify://collections/all",
+            "art": "badge"
           }
         }
       },
@@ -291,6 +297,92 @@
         "auto_load": true,
         "show_rating": true
       }
+    },
+    "deal_duo": {
+      "type": "em-deal-duo",
+      "blocks": {
+        "p1": {
+          "type": "panel",
+          "settings": {
+            "title": "Super deals",
+            "subtitle": "Lowest prices of the week",
+            "icon": "bolt",
+            "accent": "ember",
+            "collection": "all"
+          }
+        },
+        "p2": {
+          "type": "panel",
+          "settings": {
+            "title": "Big save",
+            "subtitle": "Bundles and multipacks",
+            "icon": "percent",
+            "accent": "sun"
+          }
+        }
+      },
+      "block_order": [
+        "p1",
+        "p2"
+      ],
+      "settings": {}
+    },
+    "top_ranked": {
+      "type": "em-top-ranked",
+      "settings": {
+        "title": "Top ranked",
+        "subtitle": "Our best sellers this week",
+        "collection": "all",
+        "max_products": 10,
+        "show_rating": true
+      }
+    },
+    "club": {
+      "type": "em-club",
+      "blocks": {
+        "k1": {
+          "type": "perk",
+          "settings": {
+            "icon": "tag",
+            "title": "Member prices",
+            "text": "Extra savings on thousands of items"
+          }
+        },
+        "k2": {
+          "type": "perk",
+          "settings": {
+            "icon": "bolt",
+            "title": "Early access",
+            "text": "Shop flash deals an hour before everyone"
+          }
+        },
+        "k3": {
+          "type": "perk",
+          "settings": {
+            "icon": "gift",
+            "title": "Welcome coupon",
+            "text": "A thank-you on your first order"
+          }
+        }
+      },
+      "block_order": [
+        "k1",
+        "k2",
+        "k3"
+      ],
+      "settings": {
+        "eyebrow": "Emasole Club",
+        "heading": "Members save more, every single day",
+        "text": "Create a free account to unlock member prices, early access to flash deals and a welcome coupon.",
+        "button_label": "Join free",
+        "art": "bag"
+      }
+    },
+    "recently_viewed": {
+      "type": "em-recently-viewed",
+      "settings": {
+        "title": "Recently viewed"
+      }
     }
   },
   "order": [
@@ -298,9 +390,13 @@
     "benefits",
     "categories",
     "flash_deals",
+    "deal_duo",
     "coupons",
+    "top_ranked",
     "promos",
     "category_tabs",
+    "club",
+    "recently_viewed",
     "feed"
   ]
 }

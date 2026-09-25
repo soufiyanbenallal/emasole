@@ -26,7 +26,13 @@
       "promo_tiles": "Promo tiles",
       "slide": "Slide",
       "tab": "Tab",
-      "tile": "Tile"
+      "tile": "Tile",
+      "deal_duo": "Deal duo",
+      "deal_panel": "Deal panel",
+      "top_ranked": "Top ranked",
+      "club": "Membership band",
+      "perk": "Perk",
+      "recently_viewed": "Recently viewed"
     },
     "settings": {
       "about": "About text",
@@ -85,7 +91,8 @@
       "text_tone": "Text color",
       "trending_searches": "Trending searches",
       "utility_menu": "Utility links",
-      "welcome_panel": "Welcome panel"
+      "welcome_panel": "Welcome panel",
+      "brand_art": "Brand artwork"
     },
     "options": {
       "cover": "Cover",
@@ -107,7 +114,19 @@
       "one_row": "One row",
       "split": "Split",
       "two_rows": "Two rows",
-      "white": "White"
+      "white": "White",
+      "art_tickets": "Coupon tickets",
+      "art_bag": "Shopping bag",
+      "art_bolt": "Lightning deal",
+      "art_box": "Parcel",
+      "art_gift": "Gift",
+      "art_badge": "Quality badge",
+      "icon_bolt": "Lightning",
+      "icon_percent": "Percent",
+      "icon_flame": "Flame",
+      "icon_heart": "Heart",
+      "ember": "Ember",
+      "sun": "Sun"
     },
     "info": {
       "category_menu": "Powers the All categories mega menu and the mobile menu. Nested links become subcategories.",
@@ -119,7 +138,11 @@
       "hero_menu": "Shown as a category sidebar on desktop. Leave empty to hide it.",
       "low_stock": "Shows \"Only X left\" when a tracked product has this many units or fewer. Set to 0 to turn off.",
       "tab_label": "Defaults to the collection title.",
-      "utility_menu": "Shown on the right of the promo strip on desktop, and at the bottom of the mobile menu."
+      "utility_menu": "Shown on the right of the promo strip on desktop, and at the bottom of the mobile menu.",
+      "brand_art": "Shown when no image is selected.",
+      "ranked_collection": "Products are ranked in the collection's sort order. Use a collection sorted by best selling.",
+      "club_link": "Used when customer accounts are turned off.",
+      "recently_viewed": "Shows up to 4 products the shopper viewed on this device. Hidden for first-time visitors."
     }
   },
   "categories": {

@@ -18,6 +18,7 @@
   @param {boolean} [show_quick_add] - Show the add to cart button (default true)
   @param {number} [low_stock] - Inventory threshold for the stock hint (default 10, 0 hides it)
   @param {boolean} [eager] - Load the image eagerly (first row above the fold)
+  @param {number} [rank] - Position in a ranking; shows a rank ribbon on the image
 
   @example
   {% render 'em-product-card', product: product, sizes: '(min-width: 990px) 240px, 45vw' %}
@@ -114,7 +115,14 @@
         {{ 'product-1' | placeholder_svg_tag: 'em-card__img em-card__placeholder' }}
       {%- endif -%}
 
-      <span class="em-card__badges">
+      {%- if rank -%}
+        <span class="em-card__rank{% if rank <= 3 %} em-card__rank--top{% endif %}">
+          <span class="em-visually-hidden">{{ 'emasole.card.rank' | t: rank: rank }}</span>
+          <span aria-hidden="true">{{ rank }}</span>
+        </span>
+      {%- endif -%}
+
+      <span class="em-card__badges{% if rank %} em-card__badges--ranked{% endif %}">
         {%- if on_sale -%}
           <span class="em-badge em-badge--deal">{{ 'emasole.card.discount' | t: percent: discount }}</span>
         {%- endif -%}
@@ -303,6 +311,33 @@
     display: flex;
     flex-wrap: wrap;
     gap: var(--em-space-1);
+  }
+
+  /* Rank ribbon: a folded tab on the image's top-left corner */
+  .em-card__rank {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-start: var(--em-space-2);
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 36px;
+    padding-block-end: 6px;
+    background: var(--em-ink-900);
+    color: #ffffff;
+    font-family: var(--em-font-display);
+    font-size: var(--em-text-md);
+    font-weight: 800;
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%);
+  }
+
+  .em-card__rank--top {
+    background: var(--em-sun-400);
+    color: var(--em-ink-900);
+  }
+
+  .em-card__badges--ranked {
+    inset-inline-start: calc(var(--em-space-2) + 36px);
   }
 
   .em-card__sold-out {
