@@ -96,12 +96,22 @@ em-header,
 em-rail,
 em-tabs,
 em-feed,
-em-carousel {
+em-carousel,
+em-facets,
+em-product,
+em-gallery,
+em-recommendations {
   display: block;
 }
 
-/* Homepage canvas: marketplace grey with white panels */
-main[data-template='index'] {
+/* Marketplace canvas: grey page with white panels on every Emasole template */
+main:is(
+    [data-template='index'],
+    [data-template^='product'],
+    [data-template^='collection'],
+    [data-template^='list-collections'],
+    [data-template^='search']
+  ) {
   background: var(--em-surface);
   padding-block-end: var(--em-space-6);
 }
@@ -379,6 +389,17 @@ main[data-template='index'] {
   text-decoration: line-through;
 }
 
+/* Star rating: set --em-rating to the filled percentage */
+.em-stars {
+  --em-star: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m12 3 2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.8l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8Z'/%3E%3C/svg%3E");
+
+  display: inline-block;
+  width: 70px;
+  height: 14px;
+  background: linear-gradient(90deg, var(--em-ink-900) var(--em-rating), var(--em-ink-200) var(--em-rating));
+  mask: var(--em-star) 0 0 / 14px 14px repeat-x;
+}
+
 /* Chips */
 .em-chip {
   display: inline-flex;
@@ -480,6 +501,116 @@ main[data-template='index'] {
     grid-template-columns: repeat(var(--em-cols, 5), minmax(0, 1fr));
     gap: var(--em-space-4);
   }
+}
+
+/* Form controls */
+.em-input,
+.em-select {
+  min-height: 40px;
+  padding: 0 var(--em-space-3);
+  border: 1px solid var(--em-color-border);
+  border-radius: var(--em-radius-sm);
+  background-color: var(--em-card);
+  color: var(--em-ink-900);
+  font-family: var(--em-font-body);
+  font-size: var(--em-text-sm);
+}
+
+.em-input:focus-visible,
+.em-select:focus-visible {
+  outline: 2px solid var(--em-color-focus);
+  outline-offset: 1px;
+  border-color: transparent;
+}
+
+.em-select {
+  padding-inline-end: 36px;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2317171c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px;
+  cursor: pointer;
+}
+
+/* Empty and zero-result states */
+.em-empty {
+  display: grid;
+  justify-items: center;
+  gap: var(--em-space-3);
+  padding: var(--em-space-7) var(--em-space-4);
+  text-align: center;
+}
+
+.em-empty__icon {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: var(--em-radius-pill);
+  background: var(--em-ember-50);
+  color: var(--em-ember-600);
+}
+
+.em-empty__icon .em-icon {
+  width: 28px;
+  height: 28px;
+}
+
+.em-empty__title {
+  margin: 0;
+  font-family: var(--em-font-display);
+  font-size: var(--em-text-xl);
+  font-weight: 700;
+}
+
+.em-empty__text {
+  max-width: 44ch;
+  margin: 0;
+  color: var(--em-color-text-muted);
+  font-size: var(--em-text-md);
+}
+
+/* Rich text written by the merchant */
+.em-rte {
+  color: var(--em-ink-900);
+  font-size: var(--em-text-md);
+  line-height: 1.65;
+}
+
+.em-rte > :first-child {
+  margin-block-start: 0;
+}
+
+.em-rte > :last-child {
+  margin-block-end: 0;
+}
+
+.em-rte :is(h2, h3, h4) {
+  margin-block: 1.4em 0.5em;
+  font-family: var(--em-font-display);
+  line-height: 1.25;
+}
+
+.em-rte img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--em-radius-md);
+}
+
+.em-rte table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.em-rte :is(td, th) {
+  padding: var(--em-space-2);
+  border: 1px solid var(--em-color-border);
+  text-align: start;
+}
+
+.em-rte a {
+  color: var(--em-color-action);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -1,0 +1,124 @@
+{% doc %}
+  Renders numbered Emasole pagination for a `paginate` block: previous, page numbers with
+  gaps, next. Every control is a real link, so paging works without JavaScript.
+
+  @param {object} paginate - The paginate object from the surrounding `{% paginate %}` tag
+
+  @example
+  {% paginate collection.products by 24 %}
+    …
+    {% render 'em-pagination', paginate: paginate %}
+  {% endpaginate %}
+{% enddoc %}
+{%- if paginate.pages > 1 -%}
+  <nav class="em-pages" aria-label="{{ 'emasole.pagination.label' | t }}">
+    {%- if paginate.previous -%}
+      <a class="em-pages__step" href="{{ paginate.previous.url }}" rel="prev">
+        {%- render 'em-icon', icon: 'chevron-left' -%}
+        <span class="em-pages__step-label">{{ 'emasole.general.previous' | t }}</span>
+      </a>
+    {%- endif -%}
+
+    <ol class="em-pages__list" role="list">
+      {%- for part in paginate.parts -%}
+        <li>
+          {%- if part.is_link -%}
+            <a class="em-pages__num" href="{{ part.url }}" aria-label="{{ 'emasole.pagination.page' | t: page: part.title }}">
+              {{- part.title -}}
+            </a>
+          {%- elsif part.title == '&hellip;' -%}
+            <span class="em-pages__gap" aria-hidden="true">{{ part.title }}</span>
+          {%- else -%}
+            <span class="em-pages__num em-pages__num--current" aria-current="page">
+              <span class="em-visually-hidden">{{ 'emasole.pagination.page' | t: page: part.title }}</span>
+              <span aria-hidden="true">{{ part.title }}</span>
+            </span>
+          {%- endif -%}
+        </li>
+      {%- endfor -%}
+    </ol>
+
+    {%- if paginate.next -%}
+      <a class="em-pages__step" href="{{ paginate.next.url }}" rel="next">
+        <span class="em-pages__step-label">{{ 'emasole.general.next' | t }}</span>
+        {%- render 'em-icon', icon: 'chevron-right' -%}
+      </a>
+    {%- endif -%}
+  </nav>
+{%- endif -%}
+
+{% stylesheet %}
+  .em-pages {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: var(--em-space-2);
+    margin-block-start: var(--em-space-6);
+    font-family: var(--em-font-body);
+  }
+
+  .em-pages__list {
+    display: flex;
+    gap: var(--em-space-1);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .em-pages__num,
+  .em-pages__gap,
+  .em-pages__step {
+    display: inline-grid;
+    place-items: center;
+    min-width: 40px;
+    height: 40px;
+    padding: 0 var(--em-space-2);
+    border-radius: var(--em-radius-pill);
+    color: var(--em-ink-900);
+    font-size: var(--em-text-sm);
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .em-pages__num {
+    background: var(--em-card);
+    border: 1px solid var(--em-color-border);
+  }
+
+  .em-pages__num:hover {
+    border-color: var(--em-ink-900);
+  }
+
+  .em-pages__num--current {
+    border-color: var(--em-ink-900);
+    background: var(--em-ink-900);
+    color: #ffffff;
+  }
+
+  .em-pages__gap {
+    min-width: 24px;
+    color: var(--em-color-text-muted);
+  }
+
+  .em-pages__step {
+    display: inline-flex;
+    gap: var(--em-space-1);
+    padding: 0 var(--em-space-3);
+  }
+
+  .em-pages__step:hover {
+    color: var(--em-color-action);
+  }
+
+  @media screen and (max-width: 749px) {
+    .em-pages__step-label {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+    }
+  }
+{% endstylesheet %}

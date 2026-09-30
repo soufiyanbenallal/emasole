@@ -12,6 +12,9 @@
 <em-recently-viewed
   class="em-section em-recent"
   data-section="em-recently-viewed"
+  {% if product %}
+    data-exclude="{{ product.id }}"
+  {% endif %}
   {% unless has_results or request.design_mode %}
     hidden
   {% endunless %}
@@ -108,7 +111,9 @@
       get ids() {
         try {
           const ids = JSON.parse(localStorage.getItem(EmRecentlyViewed.STORAGE_KEY) || '[]');
-          return Array.isArray(ids) ? ids.map(String).filter((id) => /^\d+$/.test(id)) : [];
+          // On a product page, skip the product being viewed.
+          const exclude = this.dataset.exclude;
+          return Array.isArray(ids) ? ids.map(String).filter((id) => /^\d+$/.test(id) && id !== exclude) : [];
         } catch (error) {
           return [];
         }

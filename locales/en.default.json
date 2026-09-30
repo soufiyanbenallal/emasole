@@ -9,6 +9,75 @@
  */
 {
   "emasole": {
+    "pagination": {
+      "label": "Pagination",
+      "page": "Page {{ page }}"
+    },
+    "filters": {
+      "active": "Active filters",
+      "clear_all": "Clear all",
+      "close": "Close",
+      "no_matches": "No products match these filters",
+      "no_matches_text": "Try removing a filter or widening the price range.",
+      "price_highest": "The highest price is {{ price }}",
+      "price_max": "Maximum price",
+      "price_min": "Minimum price",
+      "product_count": {
+        "one": "{{ count }} product",
+        "other": "{{ count }} products"
+      },
+      "remove": "Remove filter",
+      "results_count": {
+        "one": "{{ count }} product",
+        "other": "{{ count }} products"
+      },
+      "show_results": "Show results",
+      "sort_by": "Sort by",
+      "title": "Filters"
+    },
+    "collection": {
+      "all_products": "All products",
+      "browse_all": "Browse all products",
+      "empty": "This category is empty for now",
+      "empty_text": "New products are added all the time. In the meantime, take a look at everything else.",
+      "product_count": {
+        "one": "{{ count }} product",
+        "other": "{{ count }} products"
+      },
+      "subcategories": "Subcategories"
+    },
+    "search": {
+      "no_results": "No results for “{{ terms }}”",
+      "no_results_text": "Check the spelling, try a more general word, or browse the popular products below.",
+      "results_count": {
+        "one": "{{ count }} result for “{{ terms }}”",
+        "other": "{{ count }} results for “{{ terms }}”"
+      },
+      "results_for": "Results for “{{ terms }}”",
+      "title": "Search",
+      "type_article": "Article",
+      "type_page": "Page"
+    },
+    "product": {
+      "add_to_cart": "Add to cart",
+      "added": "Added to cart",
+      "adding": "Adding to cart",
+      "deal": "Deal",
+      "details": "Product details",
+      "error": "This item couldn't be added to your cart. Please try again.",
+      "gallery": "Product media",
+      "in_stock": "In stock, ready to ship",
+      "review_count": {
+        "one": "{{ count }} review",
+        "other": "{{ count }} reviews"
+      },
+      "shipping_policy_html": "<a href=\"{{ link }}\">Shipping</a> calculated at checkout.",
+      "show_media": "Show media {{ index }}",
+      "taxes_included": "Taxes included.",
+      "unavailable": "Unavailable",
+      "unit_price": "Unit price",
+      "zoom": "Zoom image {{ index }}"
+    },
     "card": {
       "add_to_cart": "Add {{ title }} to cart",
       "choose_options": "Choose options for {{ title }}",
@@ -56,6 +125,8 @@
       "subscribed": "Thanks for subscribing. Check your inbox for your coupon."
     },
     "general": {
+      "breadcrumbs": "Breadcrumbs",
+      "home": "Home",
       "next": "Next",
       "previous": "Previous",
       "view_all": "View all"

@@ -1,0 +1,326 @@
+{%- liquid
+  assign form_id = 'EmFacets-' | append: section.id
+  assign clear_url = collection.url
+  if collection.sort_by != blank
+    assign clear_url = collection.url | append: '?sort_by=' | append: collection.sort_by
+  endif
+
+  assign title = collection.title
+  if collection.handle == 'all'
+    assign title = 'emasole.collection.all_products' | t
+  endif
+
+  assign banner_image = collection.image
+  if section.settings.show_image == false
+    assign banner_image = blank
+  endif
+
+  assign chip_menu = linklists[collection.handle]
+-%}
+
+<div class="em-section em-collection">
+  <div class="em-container">
+    {%- render 'em-breadcrumbs', title: title -%}
+
+    <header class="em-panel em-collection__hero{% if banner_image %} em-collection__hero--image{% endif %}">
+      {%- if banner_image -%}
+        <div class="em-collection__image">
+          {{
+            banner_image
+            | image_url: width: 1200
+            | image_tag:
+              loading: 'eager',
+              fetchpriority: 'high',
+              widths: '400, 600, 800, 1200',
+              sizes: '(min-width: 990px) 320px, 100vw',
+              alt: banner_image.alt | default: title
+          }}
+        </div>
+      {%- endif -%}
+      <div class="em-collection__intro">
+        <h1 class="em-collection__title">{{ title | escape }}</h1>
+        {%- if section.settings.show_description and collection.description != blank -%}
+          <div class="em-collection__desc em-rte">{{ collection.description }}</div>
+        {%- endif -%}
+        <p class="em-collection__meta">
+          {%- render 'em-icon', icon: 'package' -%}
+          {{ 'emasole.collection.product_count' | t: count: collection.all_products_count }}
+        </p>
+      </div>
+    </header>
+
+    {%- if chip_menu.links.size > 0 -%}
+      <nav class="em-collection__chips" aria-label="{{ 'emasole.collection.subcategories' | t }}">
+        <ul class="em-collection__chip-list" role="list">
+          {%- for link in chip_menu.links -%}
+            <li>
+              <a class="em-chip{% if link.active %} em-chip--active{% endif %}" href="{{ link.url }}">
+                {{- link.title | escape -}}
+              </a>
+            </li>
+          {%- endfor -%}
+        </ul>
+      </nav>
+    {%- endif -%}
+
+    {%- paginate collection.products by section.settings.products_per_page -%}
+      {%- liquid
+        assign count = collection.products_count
+        assign message = 'emasole.filters.results_count' | t: count: count
+      -%}
+      <em-facets class="em-results" data-section-id="{{ section.id }}">
+        <p class="em-visually-hidden" role="status" data-em-results-status></p>
+        <div class="em-results__layout" data-em-results data-message="{{ message | escape }}">
+          <aside class="em-results__aside">
+            {%- render 'em-facets',
+              results: collection,
+              form_id: form_id,
+              clear_url: clear_url,
+              show_filters: section.settings.enable_filtering
+            -%}
+          </aside>
+
+          <div class="em-results__main" id="EmResults-{{ section.id }}">
+            <div class="em-panel em-results__bar">
+              {%- render 'em-facets-toolbar',
+                results: collection,
+                form_id: form_id,
+                clear_url: clear_url,
+                count: count,
+                show_filters: section.settings.enable_filtering,
+                show_sort: section.settings.enable_sorting
+              -%}
+            </div>
+
+            {%- if collection.products.size > 0 -%}
+              <ul
+                class="em-grid em-results__grid"
+                role="list"
+                style="--em-cols: {{ section.settings.columns }};"
+                data-em-results-grid
+              >
+                {%- for product in collection.products -%}
+                  <li>
+                    {%- liquid
+                      assign eager = false
+                      if forloop.index <= 4 and paginate.current_page == 1
+                        assign eager = true
+                      endif
+                    -%}
+                    {%- render 'em-product-card',
+                      product: product,
+                      eager: eager,
+                      sizes: '(min-width: 1320px) 250px, (min-width: 990px) 20vw, (min-width: 750px) 30vw, 46vw',
+                      show_rating: section.settings.show_rating,
+                      low_stock: section.settings.low_stock
+                    -%}
+                  </li>
+                {%- endfor -%}
+              </ul>
+
+              {%- render 'em-pagination', paginate: paginate -%}
+            {%- elsif collection.products_count == 0 and collection.all_products_count > 0 -%}
+              <div class="em-panel em-empty">
+                <span class="em-empty__icon">{%- render 'em-icon', icon: 'sliders' -%}</span>
+                <h2 class="em-empty__title">{{ 'emasole.filters.no_matches' | t }}</h2>
+                <p class="em-empty__text">{{ 'emasole.filters.no_matches_text' | t }}</p>
+                <a class="em-btn" href="{{ clear_url }}" data-em-facets-link>{{ 'emasole.filters.clear_all' | t }}</a>
+              </div>
+            {%- elsif request.design_mode -%}
+              <ul class="em-grid em-results__grid" role="list" style="--em-cols: {{ section.settings.columns }};">
+                {%- for i in (1..8) -%}
+                  <li>{%- render 'em-product-card', index: i -%}</li>
+                {%- endfor -%}
+              </ul>
+            {%- else -%}
+              <div class="em-panel em-empty">
+                <span class="em-empty__icon">{%- render 'em-icon', icon: 'package' -%}</span>
+                <h2 class="em-empty__title">{{ 'emasole.collection.empty' | t }}</h2>
+                <p class="em-empty__text">{{ 'emasole.collection.empty_text' | t }}</p>
+                <a class="em-btn" href="{{ routes.all_products_collection_url }}">{{ 'emasole.collection.browse_all' | t }}</a>
+              </div>
+            {%- endif -%}
+          </div>
+        </div>
+      </em-facets>
+    {%- endpaginate -%}
+  </div>
+</div>
+
+{% stylesheet %}
+  .em-collection__hero {
+    display: grid;
+    gap: var(--em-space-4);
+    margin-block-start: var(--em-space-3);
+    overflow: hidden;
+  }
+
+  .em-collection__hero--image {
+    padding: 0;
+  }
+
+  .em-collection__hero--image .em-collection__intro {
+    padding: 0 var(--em-space-4) var(--em-space-4);
+  }
+
+  .em-collection__image {
+    aspect-ratio: 16 / 7;
+    overflow: hidden;
+    background: var(--em-ink-100);
+  }
+
+  .em-collection__image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .em-collection__intro {
+    display: grid;
+    align-content: center;
+    gap: var(--em-space-2);
+  }
+
+  .em-collection__title {
+    margin: 0;
+    font-family: var(--em-font-display);
+    font-size: var(--em-text-2xl);
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+  }
+
+  .em-collection__desc {
+    max-width: 72ch;
+    color: var(--em-color-text-muted);
+    font-size: var(--em-text-sm);
+  }
+
+  .em-collection__meta {
+    display: flex;
+    align-items: center;
+    gap: var(--em-space-2);
+    margin: 0;
+    color: var(--em-mint-700);
+    font-size: var(--em-text-sm);
+    font-weight: 600;
+  }
+
+  @media screen and (min-width: 750px) {
+    .em-collection__hero--image {
+      grid-template-columns: 320px minmax(0, 1fr);
+      align-items: stretch;
+    }
+
+    .em-collection__hero--image .em-collection__intro {
+      padding: var(--em-space-5) var(--em-space-5) var(--em-space-5) 0;
+    }
+
+    .em-collection__image {
+      aspect-ratio: auto;
+      min-height: 180px;
+    }
+  }
+
+  .em-collection__chips {
+    margin-block-start: var(--em-space-3);
+  }
+
+  .em-collection__chip-list {
+    display: flex;
+    gap: var(--em-space-2);
+    margin: 0;
+    padding: 0 0 var(--em-space-1);
+    overflow-x: auto;
+    list-style: none;
+    scrollbar-width: none;
+  }
+
+  .em-collection__chip-list::-webkit-scrollbar {
+    display: none;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:emasole.names.collection_page",
+  "tag": "section",
+  "class": "em-collection-section",
+  "disabled_on": {
+    "groups": ["header", "footer"]
+  },
+  "settings": [
+    {
+      "type": "header",
+      "content": "t:emasole.settings.banner"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_image",
+      "label": "t:emasole.settings.show_collection_image",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_description",
+      "label": "t:emasole.settings.show_collection_description",
+      "default": true
+    },
+    {
+      "type": "paragraph",
+      "content": "t:emasole.info.subcategory_chips"
+    },
+    {
+      "type": "header",
+      "content": "t:emasole.settings.results"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_filtering",
+      "label": "t:emasole.settings.enable_filtering",
+      "info": "t:emasole.info.filtering",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_sorting",
+      "label": "t:emasole.settings.enable_sorting",
+      "default": true
+    },
+    {
+      "type": "range",
+      "id": "products_per_page",
+      "label": "t:emasole.settings.products_per_page",
+      "min": 12,
+      "max": 48,
+      "step": 4,
+      "default": 24
+    },
+    {
+      "type": "range",
+      "id": "columns",
+      "label": "t:emasole.settings.columns_desktop",
+      "min": 3,
+      "max": 5,
+      "step": 1,
+      "default": 4
+    },
+    {
+      "type": "checkbox",
+      "id": "show_rating",
+      "label": "t:emasole.settings.show_rating",
+      "default": true
+    },
+    {
+      "type": "range",
+      "id": "low_stock",
+      "label": "t:emasole.settings.low_stock",
+      "info": "t:emasole.info.low_stock",
+      "min": 0,
+      "max": 50,
+      "step": 1,
+      "default": 10
+    }
+  ]
+}
+{% endschema %}

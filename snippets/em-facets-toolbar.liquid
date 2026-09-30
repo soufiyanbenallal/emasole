@@ -1,0 +1,223 @@
+{% doc %}
+  Renders the toolbar above Emasole results: the Filters button (drawer, below 990px),
+  the result count, the sort menu and removable chips for every active filter.
+  Place it inside the `[data-em-results]` element of an `<em-facets>` wrapper.
+
+  @param {object} results - The collection or search object being filtered
+  @param {string} form_id - Id of the filter form rendered by `em-facets`
+  @param {string} clear_url - URL that removes every filter
+  @param {number} count - Number of results to announce
+  @param {boolean} [show_filters] - Show the Filters button and filter chips (default true)
+  @param {boolean} [show_sort] - Show the sort menu (default true)
+
+  @example
+  {% render 'em-facets-toolbar', results: collection, form_id: form_id, clear_url: collection.url, count: collection.products_count %}
+{% enddoc %}
+{%- liquid
+  if show_filters == false or results.filters.size == 0
+    assign filters_enabled = false
+  else
+    assign filters_enabled = true
+  endif
+
+  if show_sort == false
+    assign sort_enabled = false
+  else
+    assign sort_enabled = true
+  endif
+
+  assign active_total = 0
+  if filters_enabled
+    for filter in results.filters
+      if filter.type == 'price_range'
+        if filter.min_value.value != null or filter.max_value.value != null
+          assign active_total = active_total | plus: 1
+        endif
+      else
+        assign active_total = active_total | plus: filter.active_values.size
+      endif
+    endfor
+  endif
+
+  assign sort_by = results.sort_by | default: results.default_sort_by
+-%}
+
+<div class="em-toolbar">
+  {%- if filters_enabled -%}
+    <button
+      type="button"
+      class="em-chip em-toolbar__filters"
+      data-em-facets-open
+      aria-controls="{{ form_id }}-panel"
+      aria-expanded="false"
+    >
+      {%- render 'em-icon', icon: 'sliders' -%}
+      {{ 'emasole.filters.title' | t }}
+      {%- if active_total > 0 -%}
+        <span class="em-toolbar__badge">{{ active_total }}</span>
+      {%- endif -%}
+    </button>
+  {%- endif -%}
+
+  <p class="em-toolbar__count">
+    {{- 'emasole.filters.results_count' | t: count: count -}}
+  </p>
+
+  {%- if sort_enabled and results.sort_options.size > 0 -%}
+    <div class="em-toolbar__sort">
+      <label class="em-toolbar__sort-label" for="{{ form_id }}-sort">{{ 'emasole.filters.sort_by' | t }}</label>
+      <select class="em-select em-toolbar__select" id="{{ form_id }}-sort" name="sort_by" form="{{ form_id }}">
+        {%- for option in results.sort_options -%}
+          <option
+            value="{{ option.value | escape }}"
+            {% if option.value == sort_by %}
+              selected
+            {% endif %}
+          >
+            {{- option.name | escape -}}
+          </option>
+        {%- endfor -%}
+      </select>
+    </div>
+  {%- endif -%}
+</div>
+
+{%- if active_total > 0 -%}
+  <ul class="em-active" role="list" aria-label="{{ 'emasole.filters.active' | t }}">
+    {%- for filter in results.filters -%}
+      {%- if filter.type == 'price_range' -%}
+        {%- if filter.min_value.value != null or filter.max_value.value != null -%}
+          <li>
+            <a class="em-chip em-active__chip" href="{{ filter.url_to_remove }}" data-em-facets-link>
+              <span class="em-visually-hidden">{{ 'emasole.filters.remove' | t }}</span>
+              {{- filter.min_value.value | default: 0 | money -}}
+              –
+              {{- filter.max_value.value | default: filter.range_max | money -}}
+              {%- render 'em-icon', icon: 'close' -%}
+            </a>
+          </li>
+        {%- endif -%}
+      {%- else -%}
+        {%- for value in filter.active_values -%}
+          <li>
+            <a class="em-chip em-active__chip" href="{{ value.url_to_remove }}" data-em-facets-link>
+              <span class="em-visually-hidden">{{ 'emasole.filters.remove' | t }}</span>
+              {{- filter.label | escape }}: {{ value.label | escape -}}
+              {%- render 'em-icon', icon: 'close' -%}
+            </a>
+          </li>
+        {%- endfor -%}
+      {%- endif -%}
+    {%- endfor -%}
+    <li>
+      <a class="em-active__clear" href="{{ clear_url }}" data-em-facets-link>{{ 'emasole.filters.clear_all' | t }}</a>
+    </li>
+  </ul>
+{%- endif -%}
+
+{% stylesheet %}
+  .em-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--em-space-2) var(--em-space-3);
+    font-family: var(--em-font-body);
+  }
+
+  .em-toolbar__filters {
+    min-height: 40px;
+  }
+
+  .em-toolbar__badge {
+    display: inline-grid;
+    place-items: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: var(--em-radius-pill);
+    background: var(--em-ember-600);
+    color: #ffffff;
+    font-size: var(--em-text-xs);
+  }
+
+  .em-toolbar__count {
+    flex: 1;
+    margin: 0;
+    color: var(--em-color-text-muted);
+    font-size: var(--em-text-sm);
+  }
+
+  .em-toolbar__sort {
+    display: flex;
+    align-items: center;
+    gap: var(--em-space-2);
+  }
+
+  .em-toolbar__sort-label {
+    color: var(--em-color-text-muted);
+    font-size: var(--em-text-sm);
+    white-space: nowrap;
+  }
+
+  .em-toolbar__select {
+    font-weight: 600;
+  }
+
+  @media screen and (min-width: 990px) {
+    .em-toolbar__filters {
+      display: none;
+    }
+  }
+
+  @media screen and (max-width: 749px) {
+    .em-toolbar__count {
+      flex-basis: 100%;
+      order: -1;
+    }
+
+    .em-toolbar__sort {
+      margin-inline-start: auto;
+    }
+
+    .em-toolbar__sort-label {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+    }
+  }
+
+  .em-active {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--em-space-2);
+    margin: var(--em-space-3) 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .em-active__chip {
+    border-color: var(--em-ember-100);
+    background: var(--em-ember-50);
+    color: var(--em-ember-700);
+  }
+
+  .em-active__chip:hover {
+    border-color: var(--em-ember-600);
+  }
+
+  .em-active__chip .em-icon {
+    width: 14px;
+    height: 14px;
+  }
+
+  .em-active__clear {
+    color: var(--em-ink-900);
+    font-size: var(--em-text-sm);
+    font-weight: 600;
+    text-underline-offset: 3px;
+  }
+{% endstylesheet %}

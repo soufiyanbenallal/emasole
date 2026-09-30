@@ -1,0 +1,763 @@
+{% doc %}
+  Renders the Emasole filter panel for a collection or product search, and defines the
+  `<em-facets>` element that applies filters and sorting in place.
+
+  On desktop the panel is a sticky sidebar that applies each change immediately. Below
+  990px it becomes a drawer, opened by the toolbar's Filters button, that applies on
+  "Show results". Every control lives in one GET form, so filtering, sorting and
+  paging all work without JavaScript.
+
+  Wrap the section's results in `<em-facets data-section-id="{{ section.id }}">` with a
+  `[data-em-results]` child; the element swaps that child with the server's re-render and
+  announces the child's `data-message` in a `[data-em-results-status]` live region placed
+  outside it.
+  Pair it with the `em-facets-toolbar` snippet, whose sort control joins this form.
+
+  @param {object} results - The collection or search object being filtered
+  @param {string} form_id - Unique id for the filter form; the toolbar's sort control uses it
+  @param {string} clear_url - URL that removes every filter but keeps sorting and search terms
+  @param {boolean} [show_filters] - Render the filters (default true); off leaves only the form
+  @param {string} [terms] - Search terms, kept as hidden fields on the search page
+
+  @example
+  {% render 'em-facets', results: collection, form_id: form_id, clear_url: collection.url %}
+{% enddoc %}
+{%- liquid
+  if show_filters == false
+    assign filters_enabled = false
+  else
+    assign filters_enabled = true
+  endif
+
+  if results.filters.size == 0
+    assign filters_enabled = false
+  endif
+
+  if terms != blank
+    assign form_action = routes.search_url
+  else
+    assign form_action = results.url
+  endif
+-%}
+
+<div
+  class="em-facets"
+  id="{{ form_id }}-panel"
+  data-em-facets-panel
+  aria-labelledby="{{ form_id }}-title"
+  {% unless filters_enabled %}
+    hidden
+  {% endunless %}
+>
+  <div class="em-facets__head">
+    <h2 class="em-facets__title" id="{{ form_id }}-title">
+      {%- render 'em-icon', icon: 'sliders' -%}
+      {{ 'emasole.filters.title' | t }}
+    </h2>
+    <button
+      type="button"
+      class="em-icon-btn em-facets__close"
+      data-em-facets-close
+      aria-label="{{ 'emasole.filters.close' | t }}"
+    >
+      {%- render 'em-icon', icon: 'close' -%}
+    </button>
+  </div>
+
+  <form
+    id="{{ form_id }}"
+    class="em-facets__form"
+    action="{{ form_action }}"
+    method="get"
+    data-em-facets-form
+  >
+    {%- if terms != blank -%}
+      <input type="hidden" name="q" value="{{ terms | escape }}">
+      <input type="hidden" name="type" value="product">
+      <input type="hidden" name="options[prefix]" value="last">
+    {%- endif -%}
+
+    {%- if filters_enabled -%}
+      <div class="em-facets__groups">
+        {%- for filter in results.filters -%}
+          {%- liquid
+            assign facet_id = form_id | append: '-' | append: forloop.index
+            assign active_count = filter.active_values.size
+            if filter.type == 'price_range'
+              assign active_count = 0
+              if filter.min_value.value != null or filter.max_value.value != null
+                assign active_count = 1
+              endif
+            endif
+          -%}
+          <details
+            class="em-facet"
+            data-em-facet="{{ filter.param_name | escape }}"
+            {% if forloop.index <= 4 or active_count > 0 %}
+              open
+            {% endif %}
+          >
+            <summary class="em-facet__summary">
+              <span class="em-facet__label">{{ filter.label | escape }}</span>
+              {%- if active_count > 0 and filter.type != 'price_range' -%}
+                <span class="em-facet__count">{{ active_count }}</span>
+              {%- endif -%}
+              {%- render 'em-icon', icon: 'chevron-down', class: 'em-facet__chevron' -%}
+            </summary>
+
+            {%- case filter.type -%}
+              {%- when 'price_range' -%}
+                <div class="em-facet__price">
+                  <label class="em-facet__price-field" for="{{ facet_id }}-min">
+                    <span class="em-visually-hidden">{{ 'emasole.filters.price_min' | t }}</span>
+                    <span class="em-facet__currency" aria-hidden="true">{{ cart.currency.symbol }}</span>
+                    <input
+                      class="em-input em-facet__price-input"
+                      id="{{ facet_id }}-min"
+                      name="{{ filter.min_value.param_name }}"
+                      type="text"
+                      inputmode="decimal"
+                      autocomplete="off"
+                      placeholder="0"
+                      {% if filter.min_value.value != null %}
+                        value="{{ filter.min_value.value | money_without_currency }}"
+                      {% endif %}
+                      data-em-price
+                    >
+                  </label>
+                  <span class="em-facet__price-sep" aria-hidden="true">–</span>
+                  <label class="em-facet__price-field" for="{{ facet_id }}-max">
+                    <span class="em-visually-hidden">{{ 'emasole.filters.price_max' | t }}</span>
+                    <span class="em-facet__currency" aria-hidden="true">{{ cart.currency.symbol }}</span>
+                    <input
+                      class="em-input em-facet__price-input"
+                      id="{{ facet_id }}-max"
+                      name="{{ filter.max_value.param_name }}"
+                      type="text"
+                      inputmode="decimal"
+                      autocomplete="off"
+                      placeholder="{{ filter.range_max | money_without_currency }}"
+                      {% if filter.max_value.value != null %}
+                        value="{{ filter.max_value.value | money_without_currency }}"
+                      {% endif %}
+                      data-em-price
+                    >
+                  </label>
+                </div>
+                <p class="em-facet__hint">
+                  {{ 'emasole.filters.price_highest' | t: price: filter.range_max | money }}
+                </p>
+              {%- else -%}
+                <ul
+                  class="em-facet__list{% if filter.presentation == 'swatch' %} em-facet__list--swatch{% endif %}"
+                  role="list"
+                >
+                  {%- for value in filter.values -%}
+                    {%- liquid
+                      assign value_id = facet_id | append: '-' | append: forloop.index
+                      assign is_empty = false
+                      if value.count == 0 and value.active == false
+                        assign is_empty = true
+                      endif
+                    -%}
+                    <li>
+                      <label
+                        class="em-check{% if is_empty %} em-check--empty{% endif %}"
+                        for="{{ value_id }}"
+                      >
+                        <input
+                          class="em-check__input"
+                          type="checkbox"
+                          id="{{ value_id }}"
+                          name="{{ value.param_name }}"
+                          value="{{ value.value }}"
+                          {% if value.active %}
+                            checked
+                          {% endif %}
+                          {% if is_empty %}
+                            disabled
+                          {% endif %}
+                        >
+                        {%- if filter.presentation == 'swatch' and value.swatch != blank -%}
+                          {%- liquid
+                            if value.swatch.image
+                              assign swatch_style = value.swatch.image | image_url: width: 60 | prepend: 'url(' | append: ')'
+                            else
+                              assign swatch_style = value.swatch.color
+                            endif
+                          -%}
+                          <span class="em-check__swatch" style="--em-swatch: {{ swatch_style }};" aria-hidden="true"></span>
+                        {%- else -%}
+                          <span class="em-check__box" aria-hidden="true">
+                            {%- render 'em-icon', icon: 'check' -%}
+                          </span>
+                        {%- endif -%}
+                        <span class="em-check__label">{{ value.label | escape }}</span>
+                        <span class="em-check__count">
+                          <span aria-hidden="true">{{ value.count }}</span>
+                          <span class="em-visually-hidden">{{ 'emasole.filters.product_count' | t: count: value.count }}</span>
+                        </span>
+                      </label>
+                    </li>
+                  {%- endfor -%}
+                </ul>
+            {%- endcase -%}
+          </details>
+        {%- endfor -%}
+      </div>
+    {%- endif -%}
+
+    <div class="em-facets__foot">
+      <a class="em-btn em-btn--secondary em-btn--sm em-facets__clear" href="{{ clear_url }}" data-em-facets-link>
+        {{- 'emasole.filters.clear_all' | t -}}
+      </a>
+      <button type="submit" class="em-btn em-btn--sm em-facets__submit">
+        {{- 'emasole.filters.show_results' | t -}}
+      </button>
+    </div>
+  </form>
+</div>
+<div class="em-facets__backdrop" data-em-facets-close aria-hidden="true"></div>
+
+{% stylesheet %}
+  .em-facets {
+    font-family: var(--em-font-body);
+    color: var(--em-color-text);
+  }
+
+  .em-facets[hidden] {
+    display: none;
+  }
+
+  .em-facets__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--em-space-3);
+    padding-block-end: var(--em-space-3);
+    border-block-end: 1px solid var(--em-color-border);
+  }
+
+  .em-facets__title {
+    display: flex;
+    align-items: center;
+    gap: var(--em-space-2);
+    margin: 0;
+    font-family: var(--em-font-display);
+    font-size: var(--em-text-lg);
+    font-weight: 700;
+  }
+
+  .em-facets__form {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+  }
+
+  .em-facet {
+    border-block-end: 1px solid var(--em-ink-100);
+  }
+
+  .em-facet__summary {
+    display: flex;
+    align-items: center;
+    gap: var(--em-space-2);
+    padding-block: var(--em-space-3);
+    font-size: var(--em-text-sm);
+    font-weight: 700;
+    list-style: none;
+    cursor: pointer;
+  }
+
+  .em-facet__summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .em-facet__label {
+    flex: 1;
+  }
+
+  .em-facet__count {
+    display: inline-grid;
+    place-items: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: var(--em-radius-pill);
+    background: var(--em-ember-600);
+    color: #ffffff;
+    font-size: var(--em-text-xs);
+  }
+
+  .em-facet__chevron {
+    width: 16px;
+    height: 16px;
+    color: var(--em-ink-600);
+    transition: rotate var(--em-duration) var(--em-ease);
+  }
+
+  .em-facet[open] .em-facet__chevron {
+    rotate: 180deg;
+  }
+
+  .em-facet__list {
+    display: grid;
+    gap: 2px;
+    max-height: 264px;
+    margin: 0;
+    padding: 0 0 var(--em-space-3);
+    overflow-y: auto;
+    list-style: none;
+    scrollbar-width: thin;
+  }
+
+  .em-check {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--em-space-2);
+    min-height: 32px;
+    padding: 2px var(--em-space-1);
+    border-radius: var(--em-radius-xs);
+    font-size: var(--em-text-sm);
+    cursor: pointer;
+  }
+
+  .em-check:hover {
+    background: var(--em-surface);
+  }
+
+  .em-check--empty {
+    color: var(--em-ink-400);
+    cursor: not-allowed;
+  }
+
+  .em-check__input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .em-check__box {
+    display: inline-grid;
+    place-items: center;
+    width: 18px;
+    height: 18px;
+    flex: none;
+    border: 1.5px solid var(--em-ink-400);
+    border-radius: var(--em-radius-xs);
+    background: var(--em-card);
+    color: transparent;
+  }
+
+  .em-check__box .em-icon {
+    width: 14px;
+    height: 14px;
+    stroke-width: 3;
+  }
+
+  .em-check__input:checked + .em-check__box {
+    border-color: var(--em-ember-600);
+    background: var(--em-ember-600);
+    color: #ffffff;
+  }
+
+  .em-check__swatch {
+    width: 20px;
+    height: 20px;
+    flex: none;
+    border-radius: var(--em-radius-pill);
+    background: var(--em-swatch);
+    background-size: cover;
+    box-shadow: inset 0 0 0 1px rgb(23 23 28 / 0.15);
+  }
+
+  .em-check__input:checked + .em-check__swatch {
+    outline: 2px solid var(--em-ember-600);
+    outline-offset: 2px;
+  }
+
+  .em-check__input:focus-visible + :is(.em-check__box, .em-check__swatch) {
+    outline: 2px solid var(--em-color-focus);
+    outline-offset: 2px;
+  }
+
+  .em-check__label {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .em-check__input:checked ~ .em-check__label {
+    font-weight: 700;
+  }
+
+  .em-check__count {
+    color: var(--em-color-text-muted);
+    font-size: var(--em-text-xs);
+  }
+
+  .em-facet__price {
+    display: flex;
+    align-items: center;
+    gap: var(--em-space-2);
+  }
+
+  .em-facet__price-field {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .em-facet__currency {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: var(--em-space-3);
+    display: grid;
+    place-items: center;
+    color: var(--em-color-text-muted);
+    font-size: var(--em-text-sm);
+  }
+
+  .em-facet__price-input {
+    width: 100%;
+    padding-inline-start: 28px;
+  }
+
+  .em-facet__price-sep {
+    color: var(--em-color-text-muted);
+  }
+
+  .em-facet__hint {
+    margin: var(--em-space-2) 0 var(--em-space-3);
+    color: var(--em-color-text-muted);
+    font-size: var(--em-text-xs);
+  }
+
+  .em-facets__foot {
+    display: flex;
+    gap: var(--em-space-2);
+    padding-block-start: var(--em-space-4);
+  }
+
+  .em-facets__foot .em-btn {
+    flex: 1;
+  }
+
+  .em-facets__backdrop {
+    display: none;
+  }
+
+  /* Drawer below 990px */
+  @media screen and (max-width: 989px) {
+    .em-facets {
+      position: fixed;
+      inset-block: 0;
+      inset-inline-start: 0;
+      z-index: 1001;
+      display: flex;
+      flex-direction: column;
+      width: min(380px, 88vw);
+      padding: var(--em-space-4);
+      background: var(--em-card);
+      box-shadow: var(--em-shadow-3);
+      transform: translateX(-105%);
+      visibility: hidden;
+      transition: transform 240ms var(--em-ease), visibility 0s linear 240ms;
+    }
+
+    em-facets[data-drawer-open] .em-facets {
+      transform: none;
+      visibility: visible;
+      transition: transform 240ms var(--em-ease);
+    }
+
+    .em-facets__form {
+      flex: 1;
+      min-height: 0;
+    }
+
+    .em-facets__groups {
+      flex: 1;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+    }
+
+    .em-facets__foot {
+      padding-block-start: var(--em-space-3);
+      border-block-start: 1px solid var(--em-color-border);
+    }
+
+    em-facets[data-drawer-open] .em-facets__backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      display: block;
+      background: rgb(23 23 28 / 0.45);
+    }
+  }
+
+  /* Sidebar from 990px: changes apply immediately, so the head and submit button go */
+  @media screen and (min-width: 990px) {
+    .em-facets {
+      position: sticky;
+      top: var(--em-space-4);
+    }
+
+    .em-facets__head {
+      padding-block-start: 0;
+    }
+
+    .em-facets__close {
+      display: none;
+    }
+
+    em-facets:defined .em-facets__submit {
+      display: none;
+    }
+  }
+
+  em-facets[data-loading] [data-em-results-grid] {
+    opacity: 0.45;
+    pointer-events: none;
+    transition: opacity var(--em-duration) var(--em-ease);
+  }
+
+  /* Results layout around the panel, shared by the collection and search pages */
+  .em-results {
+    display: block;
+    margin-block-start: var(--em-space-3);
+  }
+
+  .em-results__layout {
+    display: grid;
+    gap: var(--em-space-3);
+  }
+
+  .em-results__main {
+    display: grid;
+    align-content: start;
+    gap: var(--em-space-3);
+    min-width: 0;
+  }
+
+  .em-results__bar {
+    padding: var(--em-space-3) var(--em-space-4);
+  }
+
+  @media screen and (min-width: 990px) {
+    .em-results__layout {
+      grid-template-columns: 248px minmax(0, 1fr);
+      align-items: start;
+      gap: var(--em-space-4);
+    }
+
+    .em-results__aside {
+      position: sticky;
+      top: var(--em-space-4);
+      padding: var(--em-space-4);
+      border-radius: var(--em-radius-lg);
+      background: var(--em-card);
+      box-shadow: var(--em-shadow-1);
+    }
+
+    .em-results__aside:has(.em-facets[hidden]) {
+      display: none;
+    }
+
+    .em-results__layout:has(.em-facets[hidden]) {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .em-results__aside .em-facets {
+      position: static;
+    }
+  }
+
+  /* Below 990px the panel is a fixed drawer, so its wrapper takes no space */
+  @media screen and (max-width: 989px) {
+    .em-results__aside {
+      display: contents;
+    }
+  }
+
+  .em-results__grid .em-card {
+    box-shadow: var(--em-shadow-1);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .em-facets,
+    .em-facet__chevron {
+      transition: none !important;
+    }
+  }
+{% endstylesheet %}
+
+{% javascript %}
+  /**
+   * Applies filters, sorting and chip links in place through the Section Rendering API,
+   * keeping the URL in sync so results can be shared and the back button works.
+   */
+  if (!customElements.get('em-facets')) {
+    class EmFacets extends HTMLElement {
+      static DRAWER_QUERY = '(max-width: 989px)';
+
+      connectedCallback() {
+        this.drawerQuery = window.matchMedia(EmFacets.DRAWER_QUERY);
+        this.addEventListener('change', this.onChange);
+        this.addEventListener('submit', this.onSubmit);
+        this.addEventListener('click', this.onClick);
+        this.addEventListener('keydown', this.onKeydown);
+        window.addEventListener('popstate', this.onPopState);
+      }
+
+      disconnectedCallback() {
+        window.removeEventListener('popstate', this.onPopState);
+        this.unlockScroll();
+      }
+
+      get form() {
+        return this.querySelector('[data-em-facets-form]');
+      }
+
+      get inDrawer() {
+        return this.drawerQuery.matches;
+      }
+
+      onChange = (event) => {
+        const form = this.form;
+        if (!form || event.target.form !== form) return;
+
+        // In the drawer, shoppers pick several options and then press "Show results".
+        // Sorting lives in the toolbar, outside the drawer, so it always applies at once.
+        if (this.inDrawer && event.target.name !== 'sort_by') return;
+
+        window.clearTimeout(this.timer);
+        const delay = event.target.hasAttribute('data-em-price') ? 500 : 0;
+        this.timer = window.setTimeout(() => this.render(this.urlFromForm()), delay);
+      };
+
+      onSubmit = (event) => {
+        if (event.target !== this.form) return;
+        event.preventDefault();
+        this.close();
+        this.render(this.urlFromForm());
+      };
+
+      onClick = (event) => {
+        const target = event.target.closest('[data-em-facets-open], [data-em-facets-close], [data-em-facets-link]');
+        if (!target || !this.contains(target)) return;
+
+        if (target.hasAttribute('data-em-facets-open')) {
+          this.open(target);
+        } else if (target.hasAttribute('data-em-facets-close')) {
+          this.close();
+        } else {
+          event.preventDefault();
+          this.close();
+          this.render(target.href);
+        }
+      };
+
+      onKeydown = (event) => {
+        if (event.key === 'Escape' && this.hasAttribute('data-drawer-open')) {
+          event.stopPropagation();
+          this.close();
+        }
+      };
+
+      onPopState = () => {
+        this.render(window.location.href, false);
+      };
+
+      open(opener) {
+        const panel = this.querySelector('[data-em-facets-panel]');
+        if (!panel) return;
+
+        this.opener = opener;
+        this.setAttribute('data-drawer-open', '');
+        panel.setAttribute('role', 'dialog');
+        panel.setAttribute('aria-modal', 'true');
+        opener.setAttribute('aria-expanded', 'true');
+        document.documentElement.style.overflow = 'hidden';
+        this.scrollLocked = true;
+        panel.querySelector('[data-em-facets-close]')?.focus();
+      }
+
+      close() {
+        if (!this.hasAttribute('data-drawer-open')) return;
+
+        const panel = this.querySelector('[data-em-facets-panel]');
+        this.removeAttribute('data-drawer-open');
+        panel?.removeAttribute('role');
+        panel?.removeAttribute('aria-modal');
+        this.unlockScroll();
+
+        const opener = this.querySelector('[data-em-facets-open]');
+        opener?.setAttribute('aria-expanded', 'false');
+        opener?.focus();
+      }
+
+      unlockScroll() {
+        if (!this.scrollLocked) return;
+        document.documentElement.style.overflow = '';
+        this.scrollLocked = false;
+      }
+
+      urlFromForm() {
+        const form = this.form;
+        const url = new URL(form.getAttribute('action'), window.location.origin);
+        for (const [key, value] of new FormData(form)) {
+          if (String(value).trim() !== '') url.searchParams.append(key, value);
+        }
+        return url.toString();
+      }
+
+      async render(href, pushState = true) {
+        const url = new URL(href, window.location.origin);
+        const request = new URL(url);
+        request.searchParams.set('section_id', this.dataset.sectionId);
+
+        this.controller?.abort();
+        this.controller = new AbortController();
+        this.setAttribute('data-loading', '');
+
+        const focusedId = document.activeElement && this.contains(document.activeElement) ? document.activeElement.id : null;
+        const openFacets = new Map(
+          [...this.querySelectorAll('[data-em-facet]')].map((details) => [details.dataset.emFacet, details.open])
+        );
+
+        try {
+          const response = await fetch(request.toString(), { signal: this.controller.signal });
+          if (!response.ok) throw new Error(response.statusText);
+
+          const html = new DOMParser().parseFromString(await response.text(), 'text/html');
+          const next = html.querySelector('[data-em-results]');
+          const current = this.querySelector('[data-em-results]');
+          if (!next || !current) throw new Error('Missing results');
+
+          next.querySelectorAll('[data-em-facet]').forEach((details) => {
+            if (openFacets.has(details.dataset.emFacet)) details.open = openFacets.get(details.dataset.emFacet);
+          });
+          current.replaceWith(next);
+
+          if (pushState) window.history.pushState({ emFacets: true }, '', url.toString());
+          if (focusedId) document.getElementById(focusedId)?.focus({ preventScroll: true });
+
+          // The live region sits outside the swapped results so screen readers hear the update.
+          const status = this.querySelector('[data-em-results-status]');
+          if (status) status.textContent = next.dataset.message || '';
+
+          const top = this.getBoundingClientRect().top;
+          if (top < 0) this.scrollIntoView({ block: 'start' });
+        } catch (error) {
+          if (error.name === 'AbortError') return;
+          window.location.href = url.toString();
+        } finally {
+          this.removeAttribute('data-loading');
+        }
+      }
+    }
+
+    customElements.define('em-facets', EmFacets);
+  }
+{% endjavascript %}
