@@ -258,13 +258,13 @@
           "type": "text",
           "id": "amount",
           "label": "t:emasole.settings.coupon_amount",
-          "default": "$3 OFF"
+          "default": "10% OFF"
         },
         {
           "type": "text",
           "id": "condition",
           "label": "t:emasole.settings.coupon_condition",
-          "default": "Orders over $29"
+          "default": "Selected orders"
         },
         {
           "type": "text",
@@ -291,10 +291,10 @@
       "name": "t:emasole.names.coupons",
       "category": "t:emasole.names.category",
       "blocks": [
-        { "type": "coupon", "settings": { "amount": "$3 OFF", "condition": "Orders over $29" } },
-        { "type": "coupon", "settings": { "amount": "$8 OFF", "condition": "Orders over $59" } },
-        { "type": "coupon", "settings": { "amount": "15% OFF", "condition": "Orders over $99" } },
-        { "type": "coupon", "settings": { "amount": "Free gift", "condition": "Orders over $120" } }
+        { "type": "coupon", "settings": { "amount": "10% OFF", "condition": "Selected orders" } },
+        { "type": "coupon", "settings": { "amount": "15% OFF", "condition": "Selected categories" } },
+        { "type": "coupon", "settings": { "amount": "15% OFF", "condition": "Selected brands" } },
+        { "type": "coupon", "settings": { "amount": "Free gift", "condition": "Limited time" } }
       ]
     }
   ]

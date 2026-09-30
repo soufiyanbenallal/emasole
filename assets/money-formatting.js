@@ -63,7 +63,7 @@ const CURRENCY_DECIMALS = {
  * @param {string} currency - The currency code (e.g., 'USD', 'JPY')
  * @returns {number} The decimal precision
  */
-function getCurrencyPrecision(currency) {
+export function getCurrencyPrecision(currency) {
   return CURRENCY_DECIMALS[currency.toUpperCase()] ?? DEFAULT_CURRENCY_DECIMALS;
 }
 

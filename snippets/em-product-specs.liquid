@@ -1,0 +1,69 @@
+{% doc %}
+  Renders a product's specification table from real store data: SKU, barcode, brand, type,
+  the selected option values, weight and collection. Rows with no value are skipped.
+
+  @param {product} product - The product
+  @param {variant} variant - The selected variant, for its SKU, barcode and weight
+  @param {collection} [collection] - The collection the shopper came from, if any
+
+  @example
+  {% render 'em-product-specs', product: product, variant: product.selected_or_first_available_variant %}
+{% enddoc %}
+<dl class="em-specs">
+  {%- if variant.sku != blank -%}
+    <div class="em-specs__row"><dt>{{ 'emasole.product.spec_sku' | t }}</dt><dd>{{ variant.sku | escape }}</dd></div>
+  {%- endif -%}
+  {%- if variant.barcode != blank -%}
+    <div class="em-specs__row"><dt>{{ 'emasole.product.spec_barcode' | t }}</dt><dd>{{ variant.barcode | escape }}</dd></div>
+  {%- endif -%}
+  {%- if product.vendor != blank -%}
+    <div class="em-specs__row"><dt>{{ 'emasole.product.spec_brand' | t }}</dt><dd>{{ product.vendor | escape }}</dd></div>
+  {%- endif -%}
+  {%- if product.type != blank -%}
+    <div class="em-specs__row"><dt>{{ 'emasole.product.spec_type' | t }}</dt><dd>{{ product.type | escape }}</dd></div>
+  {%- endif -%}
+  {%- for option in product.options_with_values -%}
+    {%- unless product.has_only_default_variant -%}
+      <div class="em-specs__row"><dt>{{ option.name | escape }}</dt><dd>{{ option.selected_value | escape }}</dd></div>
+    {%- endunless -%}
+  {%- endfor -%}
+  {%- if variant.weight > 0 -%}
+    <div class="em-specs__row"><dt>{{ 'emasole.product.spec_weight' | t }}</dt><dd>{{ variant.weight | weight_with_unit: variant.weight_unit }}</dd></div>
+  {%- endif -%}
+  {%- if collection != blank -%}
+    <div class="em-specs__row"><dt>{{ 'emasole.product.spec_collection' | t }}</dt><dd><a href="{{ collection.url }}">{{ collection.title | escape }}</a></dd></div>
+  {%- endif -%}
+</dl>
+
+{% stylesheet %}
+  .em-specs {
+    display: grid;
+    margin: 0;
+  }
+
+  .em-specs__row {
+    display: grid;
+    grid-template-columns: minmax(90px, 0.6fr) 1fr;
+    gap: var(--em-space-3);
+    padding: var(--em-space-2) var(--em-space-3);
+    border-radius: var(--em-radius-xs);
+  }
+
+  .em-specs__row:nth-child(odd) {
+    background: var(--em-surface);
+  }
+
+  .em-specs dt {
+    color: var(--em-color-text-muted);
+  }
+
+  .em-specs dd {
+    margin: 0;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+
+  .em-specs a {
+    color: var(--em-color-action);
+  }
+{% endstylesheet %}

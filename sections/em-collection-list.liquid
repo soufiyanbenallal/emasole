@@ -7,7 +7,7 @@
   <div class="em-container">
     {%- render 'em-breadcrumbs', title: section.settings.title -%}
 
-    <header class="em-panel em-catalog__hero">
+    <header class="em-catalog__hero em-mesh">
       <span class="em-catalog__icon" aria-hidden="true">{%- render 'em-icon', icon: 'grid' -%}</span>
       <div>
         <h1 class="em-catalog__title">{{ section.settings.title | escape }}</h1>
@@ -55,6 +55,15 @@
     align-items: center;
     gap: var(--em-space-3) var(--em-space-4);
     margin-block-start: var(--em-space-3);
+    padding: var(--em-space-5) var(--em-space-4);
+    border-radius: var(--em-radius-lg);
+    box-shadow: var(--em-shadow-1);
+  }
+
+  @media screen and (min-width: 750px) {
+    .em-catalog__hero {
+      padding: var(--em-space-6);
+    }
   }
 
   .em-catalog__hero > div {
@@ -68,8 +77,9 @@
     width: 52px;
     height: 52px;
     border-radius: var(--em-radius-md);
-    background: var(--em-ember-50);
+    background: #ffffff;
     color: var(--em-ember-600);
+    box-shadow: var(--em-shadow-1);
   }
 
   .em-catalog__icon .em-icon {
@@ -80,10 +90,10 @@
   .em-catalog__title {
     margin: 0;
     font-family: var(--em-font-display);
-    font-size: var(--em-text-2xl);
+    font-size: var(--em-text-display);
     font-weight: 800;
-    line-height: 1.15;
-    letter-spacing: -0.02em;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
   }
 
   .em-catalog__subtitle {

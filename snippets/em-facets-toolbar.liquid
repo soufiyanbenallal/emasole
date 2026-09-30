@@ -9,6 +9,7 @@
   @param {number} count - Number of results to announce
   @param {boolean} [show_filters] - Show the Filters button and filter chips (default true)
   @param {boolean} [show_sort] - Show the sort menu (default true)
+  @param {number} [columns] - Desktop grid columns the section renders by default (3 to 5)
 
   @example
   {% render 'em-facets-toolbar', results: collection, form_id: form_id, clear_url: collection.url, count: collection.products_count %}
@@ -62,6 +63,31 @@
   <p class="em-toolbar__count">
     {{- 'emasole.filters.results_count' | t: count: count -}}
   </p>
+
+  {%- if results.filters.size > 0 or count > 0 -%}
+    {%- assign default_cols = columns | default: 4 -%}
+    <fieldset class="em-density" data-em-density-group>
+      <legend class="em-visually-hidden">{{ 'emasole.filters.grid_size' | t }}</legend>
+      {%- for cols in (3..5) -%}
+        <label class="em-density__option" title="{{ 'emasole.filters.columns' | t: count: cols }}">
+          <input
+            class="em-density__input"
+            type="radio"
+            name="em-density-{{ form_id }}"
+            value="{{ cols }}"
+            data-em-density
+            {% if cols == default_cols %}
+              checked
+            {% endif %}
+          >
+          <span class="em-density__icon" style="--em-dens: {{ cols }};" aria-hidden="true">
+            {%- for i in (1..cols) -%}<i></i>{%- endfor -%}
+          </span>
+          <span class="em-visually-hidden">{{ 'emasole.filters.columns' | t: count: cols }}</span>
+        </label>
+      {%- endfor -%}
+    </fieldset>
+  {%- endif -%}
 
   {%- if sort_enabled and results.sort_options.size > 0 -%}
     <div class="em-toolbar__sort">
@@ -161,6 +187,67 @@
 
   .em-toolbar__select {
     font-weight: 600;
+  }
+
+  /* Grid density: only useful where there is room for more than one size */
+  .em-density {
+    display: none;
+    margin: 0;
+    padding: 3px;
+    border: 0;
+    border-radius: var(--em-radius-pill);
+    background: var(--em-surface);
+  }
+
+  .em-density__option {
+    position: relative;
+    display: block;
+    cursor: pointer;
+  }
+
+  .em-density__input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .em-density__icon {
+    display: grid;
+    grid-template-columns: repeat(var(--em-dens), 3px);
+    gap: 2px;
+    align-items: stretch;
+    height: 28px;
+    padding: 6px 9px;
+    border-radius: var(--em-radius-pill);
+    transition: background-color var(--em-duration) var(--em-ease);
+  }
+
+  .em-density__icon i {
+    border-radius: 1px;
+    background: var(--em-ink-400);
+  }
+
+  .em-density__input:checked + .em-density__icon {
+    background: var(--em-card);
+    box-shadow: var(--em-shadow-1);
+  }
+
+  .em-density__input:checked + .em-density__icon i {
+    background: var(--em-ink-900);
+  }
+
+  .em-density__input:focus-visible + .em-density__icon {
+    outline: 2px solid var(--em-color-focus);
+  }
+
+  em-facets:not(:defined) .em-density {
+    display: none !important;
+  }
+
+  @media screen and (min-width: 990px) {
+    .em-density {
+      display: inline-flex;
+    }
   }
 
   @media screen and (min-width: 990px) {

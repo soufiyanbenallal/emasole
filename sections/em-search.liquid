@@ -30,7 +30,7 @@
     {%- assign crumb_title = 'emasole.search.title' | t -%}
     {%- render 'em-breadcrumbs', title: crumb_title -%}
 
-    <header class="em-panel em-search-page__hero">
+    <header class="em-search-page__hero em-mesh">
       <h1 class="em-search-page__title">
         {%- if search.performed -%}
           {{ 'emasole.search.results_for' | t: terms: terms }}
@@ -62,7 +62,7 @@
         </button>
       </form>
 
-      {%- if suggestions.size > 0 and section.settings.suggestions != blank -%}
+      {%- if section.settings.suggestions != blank -%}
         <div class="em-search-page__suggest">
           <span class="em-search-page__suggest-label">
             {%- render 'em-icon', icon: 'flame' -%}
@@ -84,6 +84,20 @@
             {%- endfor -%}
           </ul>
         </div>
+      {%- elsif collections.size > 0 -%}
+        <div class="em-search-page__suggest">
+          <span class="em-search-page__suggest-label">
+            {%- render 'em-icon', icon: 'grid' -%}
+            {{ 'emasole.search.popular_categories' | t }}
+          </span>
+          <ul class="em-search-page__chips" role="list">
+            {%- for item in collections limit: 8 -%}
+              {%- if item.all_products_count > 0 -%}
+                <li><a class="em-chip" href="{{ item.url }}">{{ item.title | escape }}</a></li>
+              {%- endif -%}
+            {%- endfor -%}
+          </ul>
+        </div>
       {%- endif -%}
     </header>
 
@@ -93,7 +107,13 @@
           assign count = search.results_count
           assign message = 'emasole.search.results_count' | t: count: count, terms: terms
         -%}
-        <em-facets class="em-results" data-section-id="{{ section.id }}">
+        <em-facets
+          class="em-results"
+          data-section-id="{{ section.id }}"
+          data-currency="{{ localization.country.currency.iso_code }}"
+          data-locale="{{ request.locale.iso_code }}-{{ localization.country.iso_code }}"
+          data-money-format="{{ shop.money_format | strip_html | escape }}"
+        >
           <p class="em-visually-hidden" role="status" data-em-results-status></p>
           <div class="em-results__layout" data-em-results data-message="{{ message | escape }}">
             <aside class="em-results__aside">
@@ -102,6 +122,7 @@
                 form_id: form_id,
                 clear_url: clear_url,
                 terms: terms,
+                count: count,
                 show_filters: section.settings.enable_filtering
               -%}
             </aside>
@@ -115,7 +136,8 @@
                     clear_url: clear_url,
                     count: count,
                     show_filters: section.settings.enable_filtering,
-                    show_sort: section.settings.enable_sorting
+                    show_sort: section.settings.enable_sorting,
+                    columns: section.settings.columns
                   -%}
                 </div>
               {%- endif -%}
@@ -229,21 +251,33 @@
   </div>
 </div>
 
+<script src="{{ 'em-facets.js' | asset_url }}" type="module" fetchpriority="low"></script>
+
 {% stylesheet %}
   .em-search-page__hero {
     display: grid;
     gap: var(--em-space-4);
     margin-block-start: var(--em-space-3);
+    padding: var(--em-space-5) var(--em-space-4);
+    border-radius: var(--em-radius-lg);
+    box-shadow: var(--em-shadow-1);
+  }
+
+  @media screen and (min-width: 750px) {
+    .em-search-page__hero {
+      padding: var(--em-space-6);
+    }
   }
 
   .em-search-page__title {
     margin: 0;
     font-family: var(--em-font-display);
-    font-size: var(--em-text-2xl);
+    font-size: var(--em-text-display);
     font-weight: 800;
-    line-height: 1.2;
-    letter-spacing: -0.02em;
+    line-height: 1.08;
+    letter-spacing: -0.03em;
     overflow-wrap: anywhere;
+    text-wrap: balance;
   }
 
   .em-search-page__form {
@@ -275,6 +309,7 @@
     border: 2px solid var(--em-ink-900);
     border-radius: var(--em-radius-pill);
     background: var(--em-card);
+    box-shadow: var(--em-shadow-2);
     color: var(--em-ink-900);
     font-family: var(--em-font-body);
     font-size: var(--em-text-md);
@@ -403,8 +438,7 @@
       "type": "text",
       "id": "suggestions",
       "label": "t:emasole.settings.trending_searches",
-      "info": "t:emasole.info.comma_separated",
-      "default": "Wireless earbuds, Summer dresses, Phone cases, Smart watch, Kitchen gadgets"
+      "info": "t:emasole.info.search_suggestions"
     },
     {
       "type": "header",

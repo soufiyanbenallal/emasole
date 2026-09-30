@@ -31,17 +31,37 @@
   elsif variant.inventory_management == 'shopify' and variant.inventory_policy == 'deny'
     if low_stock > 0 and variant.inventory_quantity > 0 and variant.inventory_quantity <= low_stock
       assign stock_state = 'low'
+      assign stock_percent = variant.inventory_quantity | times: 100.0 | divided_by: low_stock | round
     endif
   endif
 
   assign tags = product.tags | join: ',' | downcase | split: ','
-
   assign featured_media_id = variant.featured_media.id | default: product.featured_media.id
 
   assign collection_parent = collection
   if collection_parent == blank
     assign collection_parent = product.collections.first
   endif
+
+  assign rule = variant.quantity_rule
+  assign in_cart = 0
+  if variant != blank
+    assign in_cart = cart | item_count_for_variant: variant.id
+  endif
+
+  assign active_currency = localization.country.currency.iso_code
+  assign multi_market = false
+  if localization.available_countries.size > 1
+    assign multi_market = true
+  endif
+
+  assign plan_allocations = variant.selling_plan_allocations
+  assign image_count = 0
+  for media in product.media
+    if media.media_type == 'image'
+      assign image_count = image_count | plus: 1
+    endif
+  endfor
 -%}
 
 <script type="application/ld+json">
@@ -54,6 +74,9 @@
   data-product-url="{{ product.url }}"
   data-variant-id="{{ variant.id }}"
   data-media-id="{{ featured_media_id }}"
+  data-currency="{{ active_currency }}"
+  data-locale="{{ request.locale.iso_code }}-{{ localization.country.iso_code }}"
+  data-money-format="{{ shop.money_format | strip_html | escape }}"
 >
   <div class="em-container">
     {%- render 'em-breadcrumbs',
@@ -66,13 +89,49 @@
       {%- comment -%} Gallery {%- endcomment -%}
       <div class="em-product__gallery">
         <em-gallery class="em-panel em-gallery" data-media-count="{{ product.media.size }}">
+          {%- if product.media.size > 1 -%}
+            <ul class="em-gallery__thumbs" role="list">
+              {%- for media in product.media -%}
+                <li>
+                  <button
+                    type="button"
+                    class="em-gallery__thumb"
+                    data-em-gallery-thumb="{{ media.id }}"
+                    aria-label="{{ 'emasole.product.show_media' | t: index: forloop.index }}"
+                    {% if forloop.first %}
+                      aria-current="true"
+                    {% endif %}
+                  >
+                    {{
+                      media.preview_image
+                      | image_url: width: 160
+                      | image_tag: loading: 'lazy', class: 'em-gallery__thumb-img', alt: ''
+                    }}
+                    {%- if media.media_type != 'image' -%}
+                      <span class="em-gallery__play" aria-hidden="true"></span>
+                    {%- endif -%}
+                  </button>
+                </li>
+              {%- endfor -%}
+            </ul>
+          {%- endif -%}
+
           <div class="em-gallery__stage">
-            <ul class="em-gallery__track" role="list" data-em-gallery-track tabindex="0" aria-label="{{ 'emasole.product.gallery' | t }}">
+            <ul
+              class="em-gallery__track"
+              role="list"
+              data-em-gallery-track
+              tabindex="0"
+              aria-label="{{ 'emasole.product.gallery' | t }}"
+            >
+              {%- assign zoom_index = 0 -%}
               {%- for media in product.media -%}
                 <li
                   class="em-gallery__slide"
                   data-media-id="{{ media.id }}"
-                  aria-label="{{ 'emasole.hero.slide_count' | t: index: forloop.index, count: product.media.size }}"
+                  {% if forloop.first %}
+                    data-active
+                  {% endif %}
                 >
                   {%- case media.media_type -%}
                     {%- when 'image' -%}
@@ -88,8 +147,8 @@
                       <button
                         type="button"
                         class="em-gallery__zoom"
-                        data-em-zoom="{{ media | image_url: width: 2048 }}"
-                        data-em-zoom-alt="{{ media.alt | default: product.title | escape }}"
+                        data-em-zoom
+                        data-em-zoom-index="{{ zoom_index }}"
                         aria-label="{{ 'emasole.product.zoom' | t: index: forloop.index }}"
                       >
                         {{
@@ -99,11 +158,12 @@
                             loading: media_loading,
                             fetchpriority: media_priority,
                             widths: '400, 600, 800, 1000, 1200, 1400',
-                            sizes: '(min-width: 1320px) 640px, (min-width: 990px) 50vw, 100vw',
+                            sizes: '(min-width: 1320px) 600px, (min-width: 990px) 46vw, 100vw',
                             class: 'em-gallery__img',
                             alt: media.alt | default: product.title
                         }}
                       </button>
+                      {%- assign zoom_index = zoom_index | plus: 1 -%}
                     {%- else -%}
                       <div class="em-gallery__media">
                         {{ media | media_tag: image_size: '1400x' }}
@@ -111,7 +171,7 @@
                   {%- endcase -%}
                 </li>
               {%- else -%}
-                <li class="em-gallery__slide">
+                <li class="em-gallery__slide" data-active>
                   {{ 'product-1' | placeholder_svg_tag: 'em-gallery__img em-gallery__placeholder' }}
                 </li>
               {%- endfor -%}
@@ -121,7 +181,24 @@
               {%- if on_sale -%}
                 <span class="em-badge em-badge--deal">{{ 'emasole.card.discount' | t: percent: discount }}</span>
               {%- endif -%}
+              {%- if tags contains 'ema-pick' -%}
+                <span class="em-badge em-badge--pick">{{ 'emasole.card.ema_pick' | t }}</span>
+              {%- elsif tags contains 'bestseller' -%}
+                <span class="em-badge em-badge--hot">{{ 'emasole.card.bestseller' | t }}</span>
+              {%- elsif tags contains 'new' -%}
+                <span class="em-badge em-badge--dark">{{ 'emasole.card.new' | t }}</span>
+              {%- endif -%}
             </span>
+
+            <button
+              type="button"
+              class="em-icon-btn em-gallery__share"
+              data-em-share
+              aria-label="{{ 'emasole.product.share' | t }}"
+            >
+              {%- render 'em-icon', icon: 'share', class: 'em-gallery__share-icon' -%}
+              {%- render 'em-icon', icon: 'check', class: 'em-gallery__copied-icon' -%}
+            </button>
 
             {%- if product.media.size > 1 -%}
               <span class="em-gallery__counter" aria-hidden="true">
@@ -143,42 +220,95 @@
               >
                 {%- render 'em-icon', icon: 'chevron-right' -%}
               </button>
-            {%- endif -%}
-          </div>
-
-          {%- if product.media.size > 1 -%}
-            <ul class="em-gallery__thumbs" role="list">
-              {%- for media in product.media -%}
-                <li>
+              <div class="em-gallery__dots" role="group" aria-label="{{ 'emasole.product.gallery' | t }}">
+                {%- for media in product.media -%}
                   <button
                     type="button"
-                    class="em-gallery__thumb"
-                    data-em-gallery-thumb="{{ media.id }}"
+                    class="em-gallery__dot"
+                    data-em-gallery-dot="{{ forloop.index0 }}"
                     aria-label="{{ 'emasole.product.show_media' | t: index: forloop.index }}"
                     {% if forloop.first %}
                       aria-current="true"
                     {% endif %}
-                  >
-                    {{
-                      media.preview_image
-                      | image_url: width: 160
-                      | image_tag: loading: 'lazy', class: 'em-gallery__thumb-img', alt: ''
-                    }}
-                    {%- if media.media_type == 'video' or media.media_type == 'external_video' -%}
-                      <span class="em-gallery__play" aria-hidden="true"></span>
-                    {%- endif -%}
-                  </button>
-                </li>
-              {%- endfor -%}
-            </ul>
-          {%- endif -%}
+                  ></button>
+                {%- endfor -%}
+              </div>
+            {%- endif -%}
+          </div>
 
-          <dialog class="em-zoom" data-em-zoom-dialog aria-label="{{ 'emasole.product.gallery' | t }}">
-            <button type="button" class="em-icon-btn em-zoom__close" data-em-zoom-close aria-label="{{ 'emasole.filters.close' | t }}">
-              {%- render 'em-icon', icon: 'close' -%}
-            </button>
-            <img class="em-zoom__img" alt="" width="2048" height="2048" data-em-zoom-img>
-          </dialog>
+          {%- if image_count > 0 -%}
+            <em-lightbox>
+              <dialog class="em-lightbox" aria-label="{{ 'emasole.product.gallery' | t }}">
+                <div class="em-lightbox__bar">
+                  <span class="em-lightbox__count">
+                    <span data-em-lightbox-index>1</span> / {{ image_count }}
+                  </span>
+                  <button
+                    type="button"
+                    class="em-icon-btn"
+                    data-em-lightbox-close
+                    aria-label="{{ 'emasole.filters.close' | t }}"
+                  >
+                    {%- render 'em-icon', icon: 'close' -%}
+                  </button>
+                </div>
+                <div class="em-lightbox__stage">
+                  {%- if image_count > 1 -%}
+                    <button
+                      type="button"
+                      class="em-icon-btn em-lightbox__arrow em-lightbox__arrow--prev"
+                      data-em-lightbox-prev
+                      aria-label="{{ 'emasole.general.previous' | t }}"
+                    >
+                      {%- render 'em-icon', icon: 'chevron-left' -%}
+                    </button>
+                  {%- endif -%}
+                  <img class="em-lightbox__img" alt="" width="2048" height="2048" data-em-lightbox-img>
+                  {%- if image_count > 1 -%}
+                    <button
+                      type="button"
+                      class="em-icon-btn em-lightbox__arrow em-lightbox__arrow--next"
+                      data-em-lightbox-next
+                      aria-label="{{ 'emasole.general.next' | t }}"
+                    >
+                      {%- render 'em-icon', icon: 'chevron-right' -%}
+                    </button>
+                  {%- endif -%}
+                </div>
+                {%- if image_count > 1 -%}
+                  <ul class="em-lightbox__thumbs" role="list">
+                    {%- for media in product.media -%}
+                      {%- if media.media_type == 'image' -%}
+                        <li>
+                          <button
+                            type="button"
+                            class="em-lightbox__thumb"
+                            data-em-lightbox-item
+                            data-src="{{ media | image_url: width: 2048 }}"
+                            data-alt="{{ media.alt | default: product.title | escape }}"
+                            aria-label="{{ 'emasole.product.show_media' | t: index: forloop.index }}"
+                          >
+                            {{ media | image_url: width: 120 | image_tag: loading: 'lazy', alt: '' }}
+                          </button>
+                        </li>
+                      {%- endif -%}
+                    {%- endfor -%}
+                  </ul>
+                {%- else -%}
+                  {%- for media in product.media -%}
+                    {%- if media.media_type == 'image' -%}
+                      <span
+                        hidden
+                        data-em-lightbox-item
+                        data-src="{{ media | image_url: width: 2048 }}"
+                        data-alt="{{ media.alt | default: product.title | escape }}"
+                      ></span>
+                    {%- endif -%}
+                  {%- endfor -%}
+                {%- endif -%}
+              </dialog>
+            </em-lightbox>
+          {%- endif -%}
         </em-gallery>
       </div>
 
@@ -186,18 +316,14 @@
       <div class="em-product__buy">
         <div class="em-panel em-buy">
           <div class="em-buy__eyebrow">
-            {%- if tags contains 'ema-pick' -%}
-              <span class="em-badge em-badge--pick">{{ 'emasole.card.ema_pick' | t }}</span>
-            {%- elsif tags contains 'bestseller' -%}
-              <span class="em-badge em-badge--hot">{{ 'emasole.card.bestseller' | t }}</span>
-            {%- elsif tags contains 'new' -%}
-              <span class="em-badge em-badge--dark">{{ 'emasole.card.new' | t }}</span>
-            {%- endif -%}
             {%- if section.settings.show_vendor and product.vendor != blank -%}
               <a class="em-buy__vendor" href="{{ product.vendor | url_for_vendor }}">
                 {%- render 'em-icon', icon: 'badge-check' -%}
                 {{ product.vendor | escape }}
               </a>
+            {%- endif -%}
+            {%- if section.settings.show_type and product.type != blank -%}
+              <a class="em-chip em-chip--sm" href="{{ product.type | url_for_type }}">{{ product.type | escape }}</a>
             {%- endif -%}
           </div>
 
@@ -220,133 +346,95 @@
             </p>
           {%- endif -%}
 
-          <div class="em-buy__price-box{% if on_sale %} em-buy__price-box--sale{% endif %}" data-em-live="price">
-            {%- if on_sale -%}
-              <p class="em-buy__deal">
-                {%- render 'em-icon', icon: 'bolt' -%}
-                {{ 'emasole.product.deal' | t }}
-              </p>
-            {%- endif -%}
-            <div class="em-price em-buy__price{% if on_sale %} em-price--sale{% endif %}">
-              <span class="em-visually-hidden">
-                {%- if on_sale -%}
-                  {{- 'emasole.card.sale_price' | t -}}
-                {%- else -%}
-                  {{- 'emasole.card.price' | t -}}
-                {%- endif -%}
-              </span>
-              <span class="em-price__current">{{ price_formatted }}</span>
+          {%- comment -%} Price {%- endcomment -%}
+          <div class="em-buy__price-wrap" data-em-live="price">
+            <div class="em-buy__price-box em-ticket{% if on_sale %} em-buy__price-box--sale{% endif %}">
               {%- if on_sale -%}
-                <span class="em-visually-hidden">{{ 'emasole.card.regular_price' | t }}</span>
-                <s class="em-price__compare">{{ compare_formatted }}</s>
-                <span class="em-badge em-badge--deal">{{ 'emasole.card.discount' | t: percent: discount }}</span>
+                <p class="em-buy__deal">
+                  {%- render 'em-icon', icon: 'bolt' -%}
+                  {{ 'emasole.product.deal' | t }}
+                  <span class="em-badge em-badge--deal">{{ 'emasole.card.discount' | t: percent: discount }}</span>
+                </p>
+              {%- endif -%}
+              <div class="em-price em-buy__price{% if on_sale %} em-price--sale{% endif %}">
+                <span class="em-visually-hidden">
+                  {%- if on_sale -%}
+                    {{- 'emasole.card.sale_price' | t -}}
+                  {%- else -%}
+                    {{- 'emasole.card.price' | t -}}
+                  {%- endif -%}
+                </span>
+                <span class="em-price__current">{{ price_formatted }}</span>
+                {%- if on_sale -%}
+                  <span class="em-visually-hidden">{{ 'emasole.card.regular_price' | t }}</span>
+                  <s class="em-price__compare">{{ compare_formatted }}</s>
+                {%- endif -%}
+              </div>
+              {%- if on_sale -%}
+                <p class="em-buy__save">
+                  {%- render 'em-icon', icon: 'tag' -%}
+                  {{ 'emasole.card.you_save' | t: amount: saved_formatted }}
+                </p>
               {%- endif -%}
             </div>
-            {%- if on_sale -%}
-              <p class="em-buy__save">{{ 'emasole.card.you_save' | t: amount: saved_formatted }}</p>
-            {%- endif -%}
-            {%- if variant.unit_price_measurement -%}
-              <p class="em-buy__note">
-                <span class="em-visually-hidden">{{ 'emasole.product.unit_price' | t }}</span>
-                {{ variant.unit_price | unit_price_with_measurement: variant.unit_price_measurement }}
-              </p>
-            {%- endif -%}
-            {%- if cart.taxes_included or shop.shipping_policy.body != blank -%}
-              <p class="em-buy__note">
-                {%- if cart.taxes_included -%}
-                  {{ 'emasole.product.taxes_included' | t }}
-                {%- endif -%}
-                {%- if shop.shipping_policy.body != blank -%}
-                  {{ 'emasole.product.shipping_policy_html' | t: link: shop.shipping_policy.url }}
-                {%- endif -%}
-              </p>
-            {%- endif -%}
+
+            <ul class="em-buy__notes" role="list">
+              {%- if variant.unit_price_measurement -%}
+                <li>
+                  <span class="em-visually-hidden">{{ 'emasole.product.unit_price' | t }}</span>
+                  {{ variant.unit_price | unit_price_with_measurement: variant.unit_price_measurement }}
+                </li>
+              {%- endif -%}
+              {%- if cart.taxes_included -%}
+                <li>{{ 'emasole.product.taxes_included' | t }}</li>
+              {%- endif -%}
+              {%- if multi_market -%}
+                <li>
+                  {%- render 'em-icon', icon: 'globe' -%}
+                  {{ 'emasole.product.market_note' | t: country: localization.country.name, currency: active_currency }}
+                </li>
+              {%- endif -%}
+            </ul>
           </div>
 
+          {%- comment -%} Options {%- endcomment -%}
           {%- unless product.has_only_default_variant -%}
             <div class="em-buy__options" data-em-live="options">
               {%- for option in product.options_with_values -%}
-                {%- liquid
-                  assign option_index = forloop.index
-                  assign has_swatches = false
-                  if option.values.first.swatch != blank
-                    assign has_swatches = true
-                  endif
+                {%- render 'em-product-option',
+                  option: option,
+                  option_index: forloop.index,
+                  section_id: section.id,
+                  size_guide: section.settings.size_guide
                 -%}
-                <fieldset class="em-option" data-em-option>
-                  <legend class="em-option__legend">
-                    {{ option.name | escape }}:
-                    <span class="em-option__selected">{{ option.selected_value | escape }}</span>
-                  </legend>
-                  <div class="em-option__values">
-                    {%- for value in option.values -%}
-                      {%- liquid
-                        assign value_id = section.id | append: '-' | append: option_index | append: '-' | append: forloop.index
-                      -%}
-                      <input
-                        class="em-option__input"
-                        type="radio"
-                        id="EmOption-{{ value_id }}"
-                        name="EmOption-{{ section.id }}-{{ option_index }}"
-                        value="{{ value | escape }}"
-                        data-option-value-id="{{ value.id }}"
-                        {% if value.selected %}
-                          checked
-                        {% endif %}
-                      >
-                      {%- if has_swatches and value.swatch != blank -%}
-                        {%- liquid
-                          if value.swatch.image
-                            assign swatch_style = value.swatch.image | image_url: width: 80 | prepend: 'url(' | append: ')'
-                          else
-                            assign swatch_style = value.swatch.color
-                          endif
-                        -%}
-                        <label
-                          class="em-option__swatch{% unless value.available %} em-option__value--unavailable{% endunless %}"
-                          for="EmOption-{{ value_id }}"
-                          style="--em-swatch: {{ swatch_style }};"
-                          title="{{ value | escape }}"
-                        >
-                          <span class="em-visually-hidden">
-                            {{- value | escape -}}
-                            {%- unless value.available %}, {{ 'emasole.card.sold_out' | t }}{% endunless -%}
-                          </span>
-                        </label>
-                      {%- else -%}
-                        <label
-                          class="em-option__value{% unless value.available %} em-option__value--unavailable{% endunless %}"
-                          for="EmOption-{{ value_id }}"
-                        >
-                          {{- value | escape -}}
-                          {%- unless value.available -%}
-                            <span class="em-visually-hidden">, {{ 'emasole.card.sold_out' | t }}</span>
-                          {%- endunless -%}
-                        </label>
-                      {%- endif -%}
-                    {%- endfor -%}
-                  </div>
-                </fieldset>
               {%- endfor -%}
             </div>
           {%- endunless -%}
 
-          <p class="em-buy__stock em-buy__stock--{{ stock_state }}" data-em-live="stock">
-            {%- case stock_state -%}
-              {%- when 'low' -%}
-                {%- render 'em-icon', icon: 'flame' -%}
-                {{ 'emasole.card.only_left' | t: count: variant.inventory_quantity }}
-              {%- when 'sold_out' -%}
-                {%- render 'em-icon', icon: 'close' -%}
-                {{ 'emasole.card.sold_out' | t }}
-              {%- when 'unavailable' -%}
-                {%- render 'em-icon', icon: 'close' -%}
-                {{ 'emasole.product.unavailable' | t }}
-              {%- else -%}
-                {%- render 'em-icon', icon: 'check' -%}
-                {{ 'emasole.product.in_stock' | t }}
-            {%- endcase -%}
-          </p>
+          {%- comment -%} Stock {%- endcomment -%}
+          <div class="em-buy__stock-wrap" data-em-live="stock">
+            <p class="em-buy__stock em-buy__stock--{{ stock_state }}">
+              {%- case stock_state -%}
+                {%- when 'low' -%}
+                  {%- render 'em-icon', icon: 'flame' -%}
+                  {{ 'emasole.card.only_left' | t: count: variant.inventory_quantity }}
+                {%- when 'sold_out' -%}
+                  {%- render 'em-icon', icon: 'close' -%}
+                  {{ 'emasole.card.sold_out' | t }}
+                {%- when 'unavailable' -%}
+                  {%- render 'em-icon', icon: 'close' -%}
+                  {{ 'emasole.product.unavailable' | t }}
+                {%- else -%}
+                  {%- render 'em-icon', icon: 'check' -%}
+                  {{ 'emasole.product.in_stock' | t }}
+              {%- endcase -%}
+            </p>
+            {%- if stock_state == 'low' -%}
+              <span class="em-meter" aria-hidden="true">
+                <span class="em-meter__bar" style="--em-meter: {{ stock_percent }}%;"></span>
+              </span>
+            {%- endif -%}
+          </div>
 
           {%- form 'product', product, id: form_id, class: 'em-buy__form', novalidate: 'novalidate' -%}
             <input
@@ -359,7 +447,62 @@
               {% endif %}
             >
 
-            <div class="em-buy__actions">
+            <span
+              hidden
+              data-em-live="rules"
+              data-em-rules
+              data-min="{{ rule.min | default: 1 }}"
+              data-max="{{ rule.max }}"
+              data-step="{{ rule.increment | default: 1 }}"
+              data-price="{{ price }}"
+            ></span>
+
+            {%- comment -%} Subscriptions {%- endcomment -%}
+            <div data-em-live="plans">
+              {%- if plan_allocations.size > 0 -%}
+                <fieldset class="em-plans">
+                  <legend class="em-plans__legend">{{ 'emasole.product.purchase_options' | t }}</legend>
+                  <label class="em-plan">
+                    <input class="em-plan__input" type="radio" name="selling_plan" value="" data-price="{{ price }}" checked>
+                    <span class="em-plan__dot" aria-hidden="true"></span>
+                    <span class="em-plan__text">
+                      <span class="em-plan__name">{{ 'emasole.product.one_time' | t }}</span>
+                    </span>
+                    <span class="em-plan__price">{{ price_formatted }}</span>
+                  </label>
+                  {%- for allocation in plan_allocations -%}
+                    {%- liquid
+                      if settings.currency_code_enabled_product_pages
+                        assign plan_price = allocation.price | money_with_currency
+                      else
+                        assign plan_price = allocation.price | money
+                      endif
+                      assign plan_save = allocation.compare_at_price | minus: allocation.price
+                    -%}
+                    <label class="em-plan">
+                      <input
+                        class="em-plan__input"
+                        type="radio"
+                        name="selling_plan"
+                        value="{{ allocation.selling_plan.id }}"
+                        data-price="{{ allocation.price }}"
+                      >
+                      <span class="em-plan__dot" aria-hidden="true"></span>
+                      <span class="em-plan__text">
+                        <span class="em-plan__name">{{ allocation.selling_plan.name | escape }}</span>
+                        {%- if plan_save > 0 -%}
+                          {%- assign plan_save_formatted = plan_save | money -%}
+                          <span class="em-badge em-badge--trust">{{ 'emasole.product.plan_save' | t: amount: plan_save_formatted }}</span>
+                        {%- endif -%}
+                      </span>
+                      <span class="em-plan__price">{{ plan_price }}</span>
+                    </label>
+                  {%- endfor -%}
+                </fieldset>
+              {%- endif -%}
+            </div>
+
+            <div class="em-buy__qty-row">
               {%- if section.settings.show_quantity -%}
                 <div class="em-qty" data-em-qty>
                   <button type="button" class="em-qty__btn" data-em-qty-step="-1" aria-label="{{ 'accessibility.decrease_quantity' | t }}">
@@ -371,12 +514,12 @@
                     id="EmQty-{{ section.id }}"
                     type="number"
                     name="quantity"
-                    value="1"
-                    min="1"
-                    {% if variant.quantity_rule.max != null %}
-                      max="{{ variant.quantity_rule.max }}"
+                    value="{{ rule.min | default: 1 }}"
+                    min="{{ rule.min | default: 1 }}"
+                    {% if rule.max != null %}
+                      max="{{ rule.max }}"
                     {% endif %}
-                    step="1"
+                    step="{{ rule.increment | default: 1 }}"
                     inputmode="numeric"
                   >
                   <button type="button" class="em-qty__btn" data-em-qty-step="1" aria-label="{{ 'accessibility.increase_quantity' | t }}">
@@ -384,28 +527,69 @@
                   </button>
                 </div>
               {%- endif -%}
-
-              <div class="em-buy__button" data-em-live="button">
-                <button
-                  type="submit"
-                  name="add"
-                  class="em-btn em-btn--block em-buy__add"
-                  data-em-add
-                  {% if stock_state == 'sold_out' or stock_state == 'unavailable' %}
-                    disabled
-                  {% endif %}
-                >
-                  {%- case stock_state -%}
-                    {%- when 'sold_out' -%}
-                      {{ 'emasole.card.sold_out' | t }}
-                    {%- when 'unavailable' -%}
-                      {{ 'emasole.product.unavailable' | t }}
-                    {%- else -%}
-                      {%- render 'em-icon', icon: 'cart-plus' -%}
-                      <span data-em-add-label>{{ 'emasole.product.add_to_cart' | t }}</span>
-                  {%- endcase -%}
-                </button>
+              <div class="em-buy__qty-notes">
+                <div data-em-live="qty-note">
+                  {%- if rule.min > 1 or rule.increment > 1 -%}
+                    <p class="em-buy__note">
+                      {%- if rule.increment > 1 -%}
+                        {{ 'emasole.product.quantity_rules_step' | t: min: rule.min, step: rule.increment }}
+                      {%- else -%}
+                        {{ 'emasole.product.quantity_rules_min' | t: min: rule.min }}
+                      {%- endif -%}
+                    </p>
+                  {%- endif -%}
+                </div>
+                <p class="em-buy__total" data-em-total hidden>
+                  {{ 'emasole.product.total' | t }}
+                  <strong data-em-total-value></strong>
+                </p>
+                <div data-em-live="incart">
+                  <p class="em-buy__incart" data-em-in-cart data-count="{{ in_cart }}" {% if in_cart == 0 %}hidden{% endif %}>
+                    {%- render 'em-icon', icon: 'cart-plus' -%}
+                    {{ 'emasole.product.in_cart_html' | t: count: in_cart }}
+                  </p>
+                </div>
               </div>
+            </div>
+
+            {%- assign price_breaks = variant.quantity_price_breaks -%}
+            <div data-em-live="breaks">
+              {%- if price_breaks.size > 0 -%}
+                <div class="em-breaks">
+                  <p class="em-breaks__title">{{ 'emasole.product.price_breaks' | t }}</p>
+                  <ul class="em-breaks__list" role="list">
+                    {%- for price_break in price_breaks -%}
+                      {%- assign break_price = price_break.price | money -%}
+                      <li class="em-breaks__item">
+                        <span>{{ 'emasole.product.price_break_from' | t: count: price_break.minimum_quantity }}</span>
+                        <strong>{{ 'emasole.product.price_break_each' | t: price: break_price }}</strong>
+                      </li>
+                    {%- endfor -%}
+                  </ul>
+                </div>
+              {%- endif -%}
+            </div>
+
+            <div class="em-buy__actions" data-em-live="button">
+              <button
+                type="submit"
+                name="add"
+                class="em-btn em-btn--block em-buy__add"
+                data-em-add
+                {% if stock_state == 'sold_out' or stock_state == 'unavailable' %}
+                  disabled
+                {% endif %}
+              >
+                {%- case stock_state -%}
+                  {%- when 'sold_out' -%}
+                    {{ 'emasole.card.sold_out' | t }}
+                  {%- when 'unavailable' -%}
+                    {{ 'emasole.product.unavailable' | t }}
+                  {%- else -%}
+                    {%- render 'em-icon', icon: 'cart-plus' -%}
+                    <span>{{ 'emasole.product.add_to_cart' | t }}</span>
+                {%- endcase -%}
+              </button>
             </div>
 
             {%- if section.settings.show_dynamic_checkout -%}
@@ -417,8 +601,29 @@
             <p class="em-visually-hidden" role="status" data-em-status></p>
           {%- endform -%}
 
+          {%- comment -%} Pickup {%- endcomment -%}
+          <div data-em-live="pickup">
+            {%- if section.settings.show_pickup and variant.store_availabilities.size > 0 -%}
+              {%- assign pickups = variant.store_availabilities | where: 'available', true -%}
+              {%- if pickups.size > 0 -%}
+                <div class="em-pickup">
+                  <span class="em-pickup__icon">{%- render 'em-icon', icon: 'package' -%}</span>
+                  <div class="em-pickup__text">
+                    <strong>{{ 'emasole.product.pickup_available' | t: location: pickups.first.location.name }}</strong>
+                    <span>{{ pickups.first.pick_up_time }}</span>
+                    {%- if pickups.size > 1 -%}
+                      {%- assign other_pickups = pickups.size | minus: 1 -%}
+                      <span>{{ 'emasole.product.pickup_more' | t: count: other_pickups }}</span>
+                    {%- endif -%}
+                  </div>
+                </div>
+              {%- endif -%}
+            {%- endif -%}
+          </div>
+
+          {%- comment -%} Reassurance built from the store's own settings {%- endcomment -%}
           {%- assign trust_blocks = section.blocks | where: 'type', 'trust' -%}
-          {%- if trust_blocks.size > 0 -%}
+          {%- if trust_blocks.size > 0 or shop.refund_policy.body != blank or shop.shipping_policy.body != blank -%}
             <ul class="em-buy__trust" role="list">
               {%- for block in trust_blocks -%}
                 <li class="em-trust" {{ block.shopify_attributes }}>
@@ -437,49 +642,83 @@
                   </span>
                 </li>
               {%- endfor -%}
+              {%- if section.settings.show_policies -%}
+                {%- render 'em-policy-links' -%}
+              {%- endif -%}
             </ul>
           {%- endif -%}
-        </div>
-      </div>
 
-      {%- comment -%} Details {%- endcomment -%}
-      <div class="em-product__details">
-        {%- if product.description != blank -%}
-          <section class="em-panel em-details" aria-labelledby="EmDetails-{{ section.id }}">
-            <h2 class="em-head__title em-details__title" id="EmDetails-{{ section.id }}">
-              {%- render 'em-icon', icon: 'package' -%}
-              {{ 'emasole.product.details' | t }}
-            </h2>
-            <div class="em-rte em-details__body">{{ product.description }}</div>
-          </section>
-        {%- endif -%}
-
-        {%- for block in section.blocks -%}
-          {%- if block.type == 'collapsible' -%}
-            {%- liquid
-              assign row_content = block.settings.content
-              if block.settings.page != blank
-                assign row_content = block.settings.page.content
-              endif
-            -%}
-            {%- if row_content != blank -%}
-              <details class="em-panel em-accordion" {{ block.shopify_attributes }} {% if block.settings.open %}open{% endif %}>
-                <summary class="em-accordion__summary">
-                  {%- render 'em-icon', icon: block.settings.icon -%}
-                  <span class="em-accordion__title">{{ block.settings.heading | escape }}</span>
-                  {%- render 'em-icon', icon: 'chevron-down', class: 'em-accordion__chevron' -%}
-                </summary>
-                <div class="em-rte em-accordion__body">{{ row_content }}</div>
-              </details>
-            {%- endif -%}
+          {%- if section.settings.show_payment_icons and shop.enabled_payment_types.size > 0 -%}
+            <div class="em-pay">
+              <p class="em-pay__title">
+                {%- render 'em-icon', icon: 'lock' -%}
+                {{ 'emasole.product.secure_checkout' | t }}
+              </p>
+              <ul class="em-pay__list" role="list">
+                {%- for type in shop.enabled_payment_types -%}
+                  <li>{{ type | payment_type_svg_tag: class: 'em-pay__icon' }}</li>
+                {%- endfor -%}
+              </ul>
+            </div>
           {%- endif -%}
-        {%- endfor -%}
+        </div>
+
+        {%- comment -%} Details {%- endcomment -%}
+        <div class="em-product__details">
+          {%- if product.description != blank -%}
+            <details class="em-panel em-accordion" open>
+              <summary class="em-accordion__summary">
+                {%- render 'em-icon', icon: 'package' -%}
+                <span class="em-accordion__title">{{ 'emasole.product.details' | t }}</span>
+                {%- render 'em-icon', icon: 'chevron-down', class: 'em-accordion__chevron' -%}
+              </summary>
+              <div class="em-rte em-accordion__body">{{ product.description }}</div>
+            </details>
+          {%- endif -%}
+
+          <details class="em-panel em-accordion"{% if product.description == blank %} open{% endif %}>
+            <summary class="em-accordion__summary">
+              {%- render 'em-icon', icon: 'tag' -%}
+              <span class="em-accordion__title">{{ 'emasole.product.specifications' | t }}</span>
+              {%- render 'em-icon', icon: 'chevron-down', class: 'em-accordion__chevron' -%}
+            </summary>
+            <div class="em-accordion__body" data-em-live="specs">
+              {%- render 'em-product-specs', product: product, variant: variant, collection: collection_parent -%}
+            </div>
+          </details>
+
+          {%- for block in section.blocks -%}
+            {%- if block.type == 'collapsible' -%}
+              {%- liquid
+                assign row_content = block.settings.content
+                if block.settings.page != blank
+                  assign row_content = block.settings.page.content
+                endif
+              -%}
+              {%- if row_content != blank -%}
+                <details class="em-panel em-accordion" {{ block.shopify_attributes }} {% if block.settings.open %}open{% endif %}>
+                  <summary class="em-accordion__summary">
+                    {%- render 'em-icon', icon: block.settings.icon -%}
+                    <span class="em-accordion__title">{{ block.settings.heading | escape }}</span>
+                    {%- render 'em-icon', icon: 'chevron-down', class: 'em-accordion__chevron' -%}
+                  </summary>
+                  <div class="em-rte em-accordion__body">{{ row_content }}</div>
+                </details>
+              {%- endif -%}
+            {%- endif -%}
+          {%- endfor -%}
+        </div>
       </div>
     </div>
   </div>
 
   {%- comment -%} Mobile buy bar, shown once the main button scrolls away {%- endcomment -%}
   <div class="em-sticky-buy" data-em-sticky aria-hidden="true">
+    {%- if product.featured_media -%}
+      <span class="em-sticky-buy__thumb">
+        {{ product.featured_media | image_url: width: 120 | image_tag: loading: 'lazy', alt: '' }}
+      </span>
+    {%- endif -%}
     <div class="em-sticky-buy__info">
       <span class="em-sticky-buy__title">{{ product.title | escape }}</span>
       <span class="em-sticky-buy__price{% if on_sale %} em-sticky-buy__price--sale{% endif %}" data-em-live="sticky-price">
@@ -511,8 +750,11 @@
     <span data-key="adding">{{ 'emasole.product.adding' | t }}</span>
     <span data-key="added">{{ 'emasole.product.added' | t }}</span>
     <span data-key="error">{{ 'emasole.product.error' | t }}</span>
+    <span data-key="copied">{{ 'emasole.product.copied' | t }}</span>
   </template>
 </em-product>
+
+<script src="{{ 'em-product.js' | asset_url }}" type="module" fetchpriority="low"></script>
 
 {% stylesheet %}
   .em-product {
@@ -526,9 +768,19 @@
   }
 
   .em-product__gallery,
-  .em-product__buy,
-  .em-product__details {
+  .em-product__buy {
     min-width: 0;
+  }
+
+  /* The lightbox element only hosts the dialog, which lives in the top layer */
+  em-lightbox {
+    display: contents;
+  }
+
+  .em-product__buy {
+    display: grid;
+    align-content: start;
+    gap: var(--em-space-3);
   }
 
   .em-product__details {
@@ -539,31 +791,18 @@
 
   @media screen and (min-width: 990px) {
     .em-product__layout {
-      grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
-      grid-template-areas:
-        'gallery buy'
-        'details buy';
-      grid-template-rows: auto 1fr;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
       align-items: start;
       gap: var(--em-space-4);
     }
 
     .em-product__gallery {
-      grid-area: gallery;
-    }
-
-    .em-product__buy {
-      grid-area: buy;
       position: sticky;
       top: var(--em-space-4);
     }
-
-    .em-product__details {
-      grid-area: details;
-    }
   }
 
-  /* Gallery */
+  /* Gallery ---------------------------------------------------------------------------- */
   .em-gallery {
     display: grid;
     gap: var(--em-space-3);
@@ -572,6 +811,7 @@
 
   .em-gallery__stage {
     position: relative;
+    min-width: 0;
   }
 
   .em-gallery__track {
@@ -602,7 +842,9 @@
     position: relative;
     aspect-ratio: 1;
     overflow: hidden;
-    background: var(--em-ink-100);
+    background:
+      radial-gradient(70% 70% at 50% 40%, #ffffff 0, transparent 100%),
+      var(--em-ink-100);
     scroll-snap-align: start;
   }
 
@@ -611,6 +853,7 @@
     width: 100%;
     height: 100%;
     padding: 0;
+    overflow: hidden;
     border: 0;
     background: none;
     cursor: zoom-in;
@@ -634,17 +877,61 @@
     fill: var(--em-ink-400);
   }
 
+  /* Magnify under the cursor where a mouse is available */
+  @media (hover: hover) and (pointer: fine) {
+    .em-gallery__zoom .em-gallery__img {
+      transform-origin: var(--em-zx, 50%) var(--em-zy, 50%);
+      transition: transform 260ms var(--em-ease);
+    }
+
+    .em-gallery__zoom:hover .em-gallery__img {
+      transform: scale(1.9);
+    }
+  }
+
   .em-gallery__badges {
     position: absolute;
     inset-block-start: var(--em-space-3);
     inset-inline-start: var(--em-space-3);
+    z-index: 1;
     display: flex;
+    flex-wrap: wrap;
     gap: var(--em-space-1);
     pointer-events: none;
   }
 
   .em-gallery__badges .em-badge {
+    padding: 3px 9px;
+    border-radius: var(--em-radius-pill);
     font-size: var(--em-text-sm);
+    box-shadow: var(--em-shadow-1);
+  }
+
+  .em-gallery__share {
+    position: absolute;
+    inset-block-start: var(--em-space-3);
+    inset-inline-end: var(--em-space-3);
+    z-index: 1;
+    width: 40px;
+    height: 40px;
+    border-color: transparent;
+    background: rgb(255 255 255 / 0.85);
+    backdrop-filter: blur(8px);
+  }
+
+  .em-gallery__share .em-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .em-gallery__copied-icon,
+  .em-gallery__share[data-copied] .em-gallery__share-icon {
+    display: none;
+  }
+
+  .em-gallery__share[data-copied] .em-gallery__copied-icon {
+    display: inline-block;
+    color: var(--em-mint-700);
   }
 
   .em-gallery__counter {
@@ -663,8 +950,16 @@
   .em-gallery__arrow {
     position: absolute;
     inset-block-start: 50%;
+    z-index: 1;
     display: none;
     translate: 0 -50%;
+    opacity: 0;
+    transition: opacity var(--em-duration) var(--em-ease);
+  }
+
+  .em-gallery__stage:hover .em-gallery__arrow,
+  .em-gallery__arrow:focus-visible {
+    opacity: 1;
   }
 
   .em-gallery__arrow--prev {
@@ -675,6 +970,32 @@
     inset-inline-end: var(--em-space-3);
   }
 
+  .em-gallery__dots {
+    position: absolute;
+    inset-block-end: var(--em-space-3);
+    inset-inline: 0;
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    pointer-events: none;
+  }
+
+  .em-gallery__dot {
+    width: 7px;
+    height: 7px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--em-radius-pill);
+    background: rgb(23 23 28 / 0.25);
+    transition: width var(--em-duration) var(--em-ease), background-color var(--em-duration) var(--em-ease);
+    pointer-events: auto;
+  }
+
+  .em-gallery__dot[aria-current='true'] {
+    width: 20px;
+    background: var(--em-ember-600);
+  }
+
   .em-gallery__thumbs {
     display: flex;
     gap: var(--em-space-2);
@@ -683,6 +1004,7 @@
     overflow-x: auto;
     list-style: none;
     scrollbar-width: none;
+    order: 2;
   }
 
   .em-gallery__thumbs::-webkit-scrollbar {
@@ -700,10 +1022,17 @@
     border-radius: var(--em-radius-sm);
     background: var(--em-ink-100);
     cursor: pointer;
+    opacity: 0.75;
+    transition: opacity var(--em-duration) var(--em-ease), border-color var(--em-duration) var(--em-ease);
+  }
+
+  .em-gallery__thumb:hover {
+    opacity: 1;
   }
 
   .em-gallery__thumb[aria-current='true'] {
     border-color: var(--em-ember-600);
+    opacity: 1;
   }
 
   .em-gallery__thumb-img {
@@ -726,51 +1055,152 @@
   }
 
   @media screen and (min-width: 990px) {
+    .em-gallery {
+      grid-template-columns: 76px minmax(0, 1fr);
+      align-items: start;
+    }
+
+    .em-gallery__thumbs {
+      order: 0;
+      flex-direction: column;
+      max-height: min(640px, 70vh);
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    .em-gallery__thumb {
+      width: 70px;
+      height: 70px;
+      flex: none;
+    }
+
     .em-gallery__arrow {
       display: inline-grid;
     }
 
-    .em-gallery__counter {
+    .em-gallery__counter,
+    .em-gallery__dots {
       display: none;
     }
 
-    .em-gallery__thumb {
-      width: 76px;
-      height: 76px;
+    .em-gallery__track {
+      border-radius: var(--em-radius-md);
     }
   }
 
-  .em-zoom {
+  @media screen and (max-width: 989px) {
+    .em-gallery__thumbs {
+      display: none;
+    }
+  }
+
+  /* Lightbox */
+  .em-lightbox {
     width: 100vw;
     max-width: none;
-    height: 100vh;
+    height: 100dvh;
     max-height: none;
     margin: 0;
     padding: 0;
     border: 0;
-    background: var(--em-card);
+    background: #0d0d11;
+    color: #ffffff;
   }
 
-  .em-zoom::backdrop {
-    background: rgb(23 23 28 / 0.6);
+  .em-lightbox[open] {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
   }
 
-  .em-zoom__img {
-    display: block;
+  .em-lightbox::backdrop {
+    background: #0d0d11;
+  }
+
+  .em-lightbox__bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--em-space-3) var(--em-space-4);
+  }
+
+  .em-lightbox__count {
+    font-size: var(--em-text-sm);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .em-lightbox__stage {
+    position: relative;
+    display: grid;
+    grid-template: minmax(0, 1fr) / minmax(0, 1fr);
+    min-height: 0;
+    padding: 0 var(--em-space-4);
+  }
+
+  /* Fill the stage and let object-fit scale the photo; percentage max-sizes would not
+     resolve inside an auto-sized grid. */
+  .em-lightbox__img {
     width: 100%;
     height: 100%;
+    min-height: 0;
     object-fit: contain;
-    cursor: zoom-out;
+    transition: opacity 180ms var(--em-ease);
   }
 
-  .em-zoom__close {
-    position: fixed;
-    inset-block-start: var(--em-space-4);
-    inset-inline-end: var(--em-space-4);
+  .em-lightbox__img.is-changing {
+    opacity: 0.35;
+  }
+
+  .em-lightbox__arrow {
+    position: absolute;
+    inset-block-start: 50%;
     z-index: 1;
+    translate: 0 -50%;
   }
 
-  /* Buy box */
+  .em-lightbox__arrow--prev {
+    inset-inline-start: var(--em-space-4);
+  }
+
+  .em-lightbox__arrow--next {
+    inset-inline-end: var(--em-space-4);
+  }
+
+  .em-lightbox__thumbs {
+    display: flex;
+    justify-content: center;
+    gap: var(--em-space-2);
+    margin: 0;
+    padding: var(--em-space-3) var(--em-space-4) calc(var(--em-space-3) + env(safe-area-inset-bottom));
+    overflow-x: auto;
+    list-style: none;
+  }
+
+  .em-lightbox__thumb {
+    display: block;
+    width: 56px;
+    height: 56px;
+    padding: 0;
+    overflow: hidden;
+    border: 2px solid transparent;
+    border-radius: var(--em-radius-sm);
+    background: #1d1d24;
+    cursor: pointer;
+    opacity: 0.55;
+  }
+
+  .em-lightbox__thumb[aria-current='true'] {
+    border-color: var(--em-sun-400);
+    opacity: 1;
+  }
+
+  .em-lightbox__thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* Buy box ---------------------------------------------------------------------------- */
   .em-buy {
     display: grid;
     gap: var(--em-space-4);
@@ -782,11 +1212,17 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: var(--em-space-2);
+    gap: var(--em-space-2) var(--em-space-3);
   }
 
   .em-buy__eyebrow:empty {
     display: none;
+  }
+
+  .em-chip--sm {
+    min-height: 26px;
+    padding: 0 var(--em-space-2);
+    font-size: var(--em-text-xs);
   }
 
   .em-buy__vendor {
@@ -795,7 +1231,7 @@
     gap: var(--em-space-1);
     color: var(--em-color-text-muted);
     font-size: var(--em-text-sm);
-    font-weight: 600;
+    font-weight: 700;
     text-decoration: none;
   }
 
@@ -813,9 +1249,10 @@
     margin: calc(var(--em-space-2) * -1) 0 0;
     font-family: var(--em-font-display);
     font-size: var(--em-text-xl);
-    font-weight: 700;
-    line-height: 1.25;
-    letter-spacing: -0.01em;
+    font-weight: 800;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
   }
 
   @media screen and (min-width: 750px) {
@@ -833,40 +1270,52 @@
   }
 
   .em-buy__rating-value {
-    font-weight: 700;
+    font-weight: 800;
   }
 
   .em-buy__rating-count {
     color: var(--em-color-text-muted);
   }
 
+  .em-buy__price-wrap {
+    display: grid;
+    gap: var(--em-space-2);
+  }
+
   .em-buy__price-box {
     display: grid;
     gap: var(--em-space-1);
-    padding: var(--em-space-3) var(--em-space-4);
-    border-radius: var(--em-radius-md);
+    padding: var(--em-space-4) var(--em-space-5);
     background: var(--em-surface);
   }
 
   .em-buy__price-box--sale {
-    background: linear-gradient(135deg, var(--em-ember-50), var(--em-sun-100));
+    background:
+      radial-gradient(80% 140% at 100% 0%, rgb(255 197 61 / 0.45) 0, transparent 60%),
+      linear-gradient(135deg, var(--em-ember-50), #fff7ef);
+    box-shadow: inset 0 0 0 1px var(--em-ember-100);
   }
 
   .em-buy__deal {
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    gap: var(--em-space-1);
+    gap: var(--em-space-2);
     margin: 0;
     color: var(--em-ember-700);
     font-size: var(--em-text-xs);
     font-weight: 800;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
   }
 
-  .em-buy__deal .em-icon {
+  .em-buy__deal > .em-icon {
     width: 14px;
     height: 14px;
+  }
+
+  .em-buy__deal .em-badge {
+    margin-inline-start: auto;
+    letter-spacing: 0;
   }
 
   .em-buy__price {
@@ -874,29 +1323,59 @@
   }
 
   .em-buy__price .em-price__current {
-    font-size: var(--em-text-2xl);
+    font-size: var(--em-text-display);
     font-weight: 800;
+    letter-spacing: -0.03em;
   }
 
   .em-buy__price .em-price__compare {
-    font-size: var(--em-text-sm);
+    font-size: var(--em-text-md);
   }
 
   .em-buy__save {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--em-space-1);
     margin: 0;
     color: var(--em-mint-700);
     font-size: var(--em-text-sm);
     font-weight: 700;
   }
 
-  .em-buy__note {
+  .em-buy__save .em-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .em-buy__notes {
+    display: grid;
+    gap: 2px;
     margin: 0;
+    padding: 0 var(--em-space-1);
+    list-style: none;
+  }
+
+  .em-buy__notes:empty {
+    display: none;
+  }
+
+  .em-buy__notes li {
+    display: flex;
+    align-items: center;
+    gap: var(--em-space-1);
     color: var(--em-color-text-muted);
     font-size: var(--em-text-xs);
   }
 
-  .em-buy__note a {
-    color: inherit;
+  .em-buy__notes .em-icon {
+    width: 14px;
+    height: 14px;
+  }
+
+  .em-buy__note {
+    margin: 0;
+    color: var(--em-color-text-muted);
+    font-size: var(--em-text-xs);
   }
 
   /* Options */
@@ -906,22 +1385,41 @@
   }
 
   .em-option {
+    min-width: 0;
     margin: 0;
     padding: 0;
     border: 0;
-    min-width: 0;
   }
 
   .em-option__legend {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--em-space-3);
     padding: 0;
     margin-block-end: var(--em-space-2);
     font-size: var(--em-text-sm);
-    font-weight: 700;
+    font-weight: 800;
   }
 
   .em-option__selected {
     color: var(--em-color-text-muted);
     font-weight: 500;
+  }
+
+  .em-option__guide {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--em-space-1);
+    color: var(--em-color-action);
+    font-weight: 700;
+    text-underline-offset: 3px;
+  }
+
+  .em-option__guide .em-icon {
+    width: 14px;
+    height: 14px;
   }
 
   .em-option__values {
@@ -939,7 +1437,7 @@
   .em-option__value {
     display: inline-flex;
     align-items: center;
-    min-height: 40px;
+    min-height: 42px;
     padding: 0 var(--em-space-4);
     border: 1.5px solid var(--em-color-border);
     border-radius: var(--em-radius-sm);
@@ -947,7 +1445,7 @@
     font-size: var(--em-text-sm);
     font-weight: 600;
     cursor: pointer;
-    transition: border-color var(--em-duration) var(--em-ease);
+    transition: border-color var(--em-duration) var(--em-ease), background-color var(--em-duration) var(--em-ease);
   }
 
   .em-option__value:hover {
@@ -955,24 +1453,31 @@
   }
 
   .em-option__swatch {
-    width: 40px;
-    height: 40px;
-    border: 2px solid var(--em-card);
+    width: 42px;
+    height: 42px;
+    border: 3px solid var(--em-card);
     border-radius: var(--em-radius-pill);
     background: var(--em-swatch);
     background-size: cover;
-    box-shadow: 0 0 0 1px var(--em-color-border);
+    background-position: center;
+    box-shadow: 0 0 0 1px var(--em-color-border), inset 0 0 0 1px rgb(23 23 28 / 0.12);
     cursor: pointer;
+    transition: box-shadow var(--em-duration) var(--em-ease), scale var(--em-duration) var(--em-ease);
+  }
+
+  .em-option__swatch:hover {
+    scale: 1.06;
   }
 
   .em-option__input:checked + .em-option__value {
     border-color: var(--em-ember-600);
     background: var(--em-ember-50);
     color: var(--em-ember-700);
+    box-shadow: 0 0 0 1px var(--em-ember-600);
   }
 
   .em-option__input:checked + .em-option__swatch {
-    box-shadow: 0 0 0 2px var(--em-ember-600);
+    box-shadow: 0 0 0 2px var(--em-ember-600), inset 0 0 0 1px rgb(23 23 28 / 0.12);
   }
 
   .em-option__input:focus-visible + :is(.em-option__value, .em-option__swatch) {
@@ -981,8 +1486,8 @@
   }
 
   .em-option__value--unavailable {
-    color: var(--em-ink-400);
     border-style: dashed;
+    color: var(--em-ink-400);
     text-decoration: line-through;
   }
 
@@ -994,18 +1499,23 @@
   .em-option__swatch.em-option__value--unavailable::after {
     content: '';
     position: absolute;
-    inset: 50% -2px auto;
+    inset: 50% -3px auto;
     height: 2px;
     background: var(--em-ink-900);
     rotate: -45deg;
   }
 
   em-product[data-loading] [data-em-live] {
-    opacity: 0.6;
+    opacity: 0.55;
     transition: opacity var(--em-duration) var(--em-ease);
   }
 
   /* Stock */
+  .em-buy__stock-wrap {
+    display: grid;
+    gap: var(--em-space-2);
+  }
+
   .em-buy__stock {
     display: flex;
     align-items: center;
@@ -1033,6 +1543,110 @@
     color: var(--em-color-text-muted);
   }
 
+  .em-meter {
+    display: block;
+    height: 6px;
+    overflow: hidden;
+    border-radius: var(--em-radius-pill);
+    background: var(--em-ember-100);
+  }
+
+  .em-meter__bar {
+    display: block;
+    width: var(--em-meter, 100%);
+    min-width: 8%;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--em-grad-ember);
+  }
+
+  /* Purchase options (subscriptions) */
+  .em-plans {
+    display: grid;
+    gap: var(--em-space-2);
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .em-plans__legend {
+    padding: 0;
+    margin-block-end: var(--em-space-2);
+    font-size: var(--em-text-sm);
+    font-weight: 800;
+  }
+
+  .em-plan {
+    position: relative;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: var(--em-space-3);
+    padding: var(--em-space-3) var(--em-space-4);
+    border: 1.5px solid var(--em-color-border);
+    border-radius: var(--em-radius-md);
+    background: var(--em-card);
+    cursor: pointer;
+    transition: border-color var(--em-duration) var(--em-ease), background-color var(--em-duration) var(--em-ease);
+  }
+
+  .em-plan:has(:checked) {
+    border-color: var(--em-ember-600);
+    background: var(--em-ember-50);
+  }
+
+  .em-plan:has(:focus-visible) {
+    outline: 2px solid var(--em-color-focus);
+    outline-offset: 2px;
+  }
+
+  .em-plan__input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .em-plan__dot {
+    display: grid;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--em-ink-400);
+    border-radius: 50%;
+  }
+
+  .em-plan:has(:checked) .em-plan__dot {
+    border-color: var(--em-ember-600);
+  }
+
+  .em-plan:has(:checked) .em-plan__dot::after {
+    content: '';
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--em-ember-600);
+  }
+
+  .em-plan__text {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--em-space-2);
+    min-width: 0;
+  }
+
+  .em-plan__name {
+    font-size: var(--em-text-sm);
+    font-weight: 700;
+  }
+
+  .em-plan__price {
+    font-family: var(--em-font-display);
+    font-size: var(--em-text-md);
+    font-weight: 800;
+  }
+
   /* Form */
   .em-buy__form {
     display: grid;
@@ -1040,19 +1654,105 @@
     margin: 0;
   }
 
-  .em-buy__actions {
+  .em-buy__qty-row {
     display: flex;
-    gap: var(--em-space-2);
+    align-items: center;
+    gap: var(--em-space-4);
   }
 
-  .em-buy__button {
-    flex: 1;
+  .em-buy__qty-notes {
+    display: grid;
+    gap: 2px;
     min-width: 0;
   }
 
-  .em-buy__add {
-    min-height: 52px;
+  .em-buy__total {
+    margin: 0;
+    color: var(--em-color-text-muted);
+    font-size: var(--em-text-sm);
+  }
+
+  .em-buy__total[hidden] {
+    display: none;
+  }
+
+  .em-buy__total strong {
+    color: var(--em-ink-900);
+    font-family: var(--em-font-display);
     font-size: var(--em-text-md);
+  }
+
+  .em-buy__incart {
+    display: flex;
+    align-items: center;
+    gap: var(--em-space-1);
+    margin: 0;
+    color: var(--em-mint-700);
+    font-size: var(--em-text-xs);
+    font-weight: 700;
+  }
+
+  .em-buy__incart[hidden] {
+    display: none;
+  }
+
+  .em-buy__incart .em-icon {
+    width: 14px;
+    height: 14px;
+  }
+
+  .em-breaks {
+    padding: var(--em-space-3) var(--em-space-4);
+    border-radius: var(--em-radius-md);
+    background: var(--em-surface);
+  }
+
+  .em-breaks__title {
+    margin: 0 0 var(--em-space-2);
+    font-size: var(--em-text-sm);
+    font-weight: 800;
+  }
+
+  .em-breaks__list {
+    display: grid;
+    gap: var(--em-space-1);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .em-breaks__item {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--em-space-3);
+    font-size: var(--em-text-sm);
+  }
+
+  .em-buy__actions {
+    display: grid;
+  }
+
+  .em-buy__add {
+    --em-btn-bg: transparent;
+
+    min-height: 54px;
+    border-color: transparent;
+    background: var(--em-grad-ember);
+    box-shadow: 0 12px 24px -10px rgb(230 58 0 / 0.7);
+    font-family: var(--em-font-display);
+    font-size: var(--em-text-md);
+    letter-spacing: 0.01em;
+  }
+
+  .em-buy__add:hover {
+    --em-btn-bg: transparent;
+
+    background: linear-gradient(135deg, #ff8a52 0%, #cc3500 100%);
+  }
+
+  .em-buy__add .em-icon {
+    width: 22px;
+    height: 22px;
   }
 
   em-product[data-adding] .em-buy__add {
@@ -1061,7 +1761,8 @@
   }
 
   em-product[data-added] .em-buy__add {
-    --em-btn-bg: var(--em-mint-700);
+    background: linear-gradient(135deg, #12a05f 0%, #0a7a4a 100%);
+    box-shadow: 0 12px 24px -10px rgb(10 122 74 / 0.7);
   }
 
   .em-qty {
@@ -1073,10 +1774,14 @@
     background: var(--em-card);
   }
 
+  .em-qty:focus-within {
+    border-color: var(--em-ink-900);
+  }
+
   .em-qty__btn {
     display: grid;
     place-items: center;
-    width: 40px;
+    width: 42px;
     height: 48px;
     padding: 0;
     border: 0;
@@ -1085,23 +1790,31 @@
     cursor: pointer;
   }
 
+  .em-qty__btn:hover {
+    color: var(--em-color-action);
+  }
+
   .em-qty__btn .em-icon {
     width: 16px;
     height: 16px;
   }
 
   .em-qty__input {
-    width: 36px;
+    width: 40px;
     padding: 0;
     border: 0;
     background: none;
     color: var(--em-ink-900);
     font-family: var(--em-font-body);
     font-size: var(--em-text-md);
-    font-weight: 700;
+    font-weight: 800;
     text-align: center;
     appearance: textfield;
     -moz-appearance: textfield;
+  }
+
+  .em-qty__input:focus-visible {
+    outline: none;
   }
 
   .em-qty__input::-webkit-outer-spin-button,
@@ -1111,15 +1824,15 @@
   }
 
   .em-buy__checkout .shopify-payment-button__button {
-    min-height: 48px;
-    border-radius: var(--em-radius-pill);
+    min-height: 50px;
     overflow: hidden;
+    border-radius: var(--em-radius-pill);
   }
 
   .em-buy__checkout .shopify-payment-button__button--unbranded {
     background: var(--em-ink-900);
     color: #ffffff;
-    font-family: var(--em-font-body);
+    font-family: var(--em-font-display);
     font-size: var(--em-text-md);
     font-weight: 700;
   }
@@ -1134,8 +1847,8 @@
   }
 
   .em-buy__terms {
-    font-size: var(--em-text-xs);
     color: var(--em-color-text-muted);
+    font-size: var(--em-text-xs);
   }
 
   .em-buy__error {
@@ -1152,20 +1865,58 @@
     display: none;
   }
 
+  /* Pickup */
+  .em-pickup {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--em-space-3);
+    padding: var(--em-space-3) var(--em-space-4);
+    border-radius: var(--em-radius-md);
+    background: var(--em-surface);
+    font-size: var(--em-text-sm);
+  }
+
+  .em-pickup__icon {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 34px;
+    height: 34px;
+    border-radius: var(--em-radius-pill);
+    background: var(--em-card);
+    color: var(--em-ember-600);
+  }
+
+  .em-pickup__icon .em-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .em-pickup__text {
+    display: grid;
+    gap: 2px;
+  }
+
+  .em-pickup__text span {
+    color: var(--em-color-text-muted);
+    font-size: var(--em-text-xs);
+  }
+
   /* Trust */
   .em-buy__trust {
     display: grid;
     gap: var(--em-space-3);
     margin: 0;
-    padding: var(--em-space-3) var(--em-space-4);
+    padding: var(--em-space-4);
     border-radius: var(--em-radius-md);
-    background: var(--em-mint-50);
+    background: linear-gradient(135deg, var(--em-mint-50), #f2faf5);
+    box-shadow: inset 0 0 0 1px rgb(10 122 74 / 0.12);
     list-style: none;
   }
 
   .em-trust {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: var(--em-space-3);
   }
 
@@ -1173,11 +1924,12 @@
     display: grid;
     place-items: center;
     flex: none;
-    width: 32px;
-    height: 32px;
+    width: 34px;
+    height: 34px;
     border-radius: var(--em-radius-pill);
     background: var(--em-card);
     color: var(--em-mint-700);
+    box-shadow: var(--em-shadow-1);
   }
 
   .em-trust__icon .em-icon {
@@ -1205,11 +1957,43 @@
     font-size: var(--em-text-xs);
   }
 
-  /* Details */
-  .em-details__title {
-    margin-block-end: var(--em-space-4);
+  /* Payment methods the store actually accepts */
+  .em-pay {
+    display: grid;
+    gap: var(--em-space-2);
   }
 
+  .em-pay__title {
+    display: flex;
+    align-items: center;
+    gap: var(--em-space-1);
+    margin: 0;
+    color: var(--em-color-text-muted);
+    font-size: var(--em-text-xs);
+    font-weight: 700;
+  }
+
+  .em-pay__title .em-icon {
+    width: 14px;
+    height: 14px;
+  }
+
+  .em-pay__list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--em-space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .em-pay__icon {
+    display: block;
+    width: 38px;
+    height: 24px;
+  }
+
+  /* Details */
   .em-accordion {
     padding-block: 0;
   }
@@ -1218,10 +2002,10 @@
     display: flex;
     align-items: center;
     gap: var(--em-space-3);
-    min-height: 56px;
+    min-height: 58px;
     font-family: var(--em-font-display);
     font-size: var(--em-text-md);
-    font-weight: 700;
+    font-weight: 800;
     list-style: none;
     cursor: pointer;
   }
@@ -1251,6 +2035,7 @@
     font-size: var(--em-text-sm);
   }
 
+
   /* Mobile sticky buy bar */
   .em-sticky-buy {
     position: fixed;
@@ -1261,7 +2046,8 @@
     align-items: center;
     gap: var(--em-space-3);
     padding: var(--em-space-2) var(--em-gutter) calc(var(--em-space-2) + env(safe-area-inset-bottom));
-    background: var(--em-card);
+    background: rgb(255 255 255 / 0.92);
+    backdrop-filter: blur(14px);
     box-shadow: 0 -6px 20px rgb(23 23 28 / 0.12);
     transform: translateY(110%);
     transition: transform 240ms var(--em-ease);
@@ -1269,6 +2055,21 @@
 
   em-product[data-sticky-visible] .em-sticky-buy {
     transform: none;
+  }
+
+  .em-sticky-buy__thumb {
+    flex: none;
+    width: 44px;
+    height: 44px;
+    overflow: hidden;
+    border-radius: var(--em-radius-sm);
+    background: var(--em-ink-100);
+  }
+
+  .em-sticky-buy__thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
 
   .em-sticky-buy__info {
@@ -1279,8 +2080,8 @@
 
   .em-sticky-buy__title {
     overflow: hidden;
-    font-size: var(--em-text-xs);
     color: var(--em-color-text-muted);
+    font-size: var(--em-text-xs);
     text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -1298,9 +2099,10 @@
   .em-sticky-buy__btn {
     flex: none;
     min-height: 44px;
+    border-color: transparent;
+    background: var(--em-grad-ember);
   }
 
-  /* Keep the footer clear of the buy bar on phones */
   @media screen and (max-width: 749px) {
     body:has(.em-sticky-buy) {
       padding-block-end: 72px;
@@ -1318,283 +2120,19 @@
       scroll-behavior: auto;
     }
 
+    .em-gallery__zoom:hover .em-gallery__img {
+      transform: none;
+    }
+
     .em-sticky-buy,
     .em-accordion__chevron,
-    .em-option__value {
+    .em-option__value,
+    .em-gallery__dot,
+    .em-lightbox__img {
       transition: none;
     }
   }
 {% endstylesheet %}
-
-{% javascript %}
-  /**
-   * Product gallery: a scroll-snap track with thumbnails, arrows, a slide counter and a
-   * full-screen zoom. Swiping works without JavaScript; this keeps the controls in sync.
-   */
-  if (!customElements.get('em-gallery')) {
-    class EmGallery extends HTMLElement {
-      connectedCallback() {
-        this.track = this.querySelector('[data-em-gallery-track]');
-        this.slides = [...this.querySelectorAll('.em-gallery__slide')];
-        this.thumbs = [...this.querySelectorAll('[data-em-gallery-thumb]')];
-        this.counter = this.querySelector('[data-em-gallery-index]');
-        this.dialog = this.querySelector('[data-em-zoom-dialog]');
-
-        this.addEventListener('click', this.onClick);
-        this.track?.addEventListener('keydown', this.onKeydown);
-
-        if ('IntersectionObserver' in window && this.slides.length > 1) {
-          this.observer = new IntersectionObserver(this.onIntersect, { root: this.track, threshold: 0.6 });
-          this.slides.forEach((slide) => this.observer.observe(slide));
-        }
-      }
-
-      disconnectedCallback() {
-        this.observer?.disconnect();
-      }
-
-      get index() {
-        return Math.max(0, this.slides.findIndex((slide) => slide.dataset.active === 'true'));
-      }
-
-      onIntersect = (entries) => {
-        entries.forEach((entry) => {
-          if (!entry.isIntersecting) return;
-          this.slides.forEach((slide) => (slide.dataset.active = String(slide === entry.target)));
-          this.markActive(entry.target.dataset.mediaId, this.slides.indexOf(entry.target));
-        });
-      };
-
-      markActive(mediaId, index) {
-        const list = this.querySelector('.em-gallery__thumbs');
-        this.thumbs.forEach((thumb) => {
-          const active = thumb.dataset.emGalleryThumb === mediaId;
-          thumb.setAttribute('aria-current', String(active));
-          if (!active || !list) return;
-
-          // Scroll only the thumbnail strip, never the page.
-          const listRect = list.getBoundingClientRect();
-          const thumbRect = thumb.getBoundingClientRect();
-          if (thumbRect.left < listRect.left || thumbRect.right > listRect.right) {
-            list.scrollBy({ left: thumbRect.left - listRect.left - (listRect.width - thumbRect.width) / 2 });
-          }
-        });
-        if (this.counter) this.counter.textContent = String(index + 1);
-        this.querySelectorAll('video').forEach((video) => {
-          if (!video.closest(`[data-media-id="${mediaId}"]`)) video.pause();
-        });
-      }
-
-      goTo(index) {
-        const slide = this.slides[(index + this.slides.length) % this.slides.length];
-        if (!slide || !this.track) return;
-        this.track.scrollTo({ left: slide.offsetLeft - this.track.offsetLeft });
-      }
-
-      select(mediaId) {
-        const index = this.slides.findIndex((slide) => slide.dataset.mediaId === String(mediaId));
-        if (index >= 0) this.goTo(index);
-      }
-
-      onClick = (event) => {
-        const thumb = event.target.closest('[data-em-gallery-thumb]');
-        if (thumb) return this.select(thumb.dataset.emGalleryThumb);
-
-        if (event.target.closest('[data-em-gallery-prev]')) return this.goTo(this.index - 1);
-        if (event.target.closest('[data-em-gallery-next]')) return this.goTo(this.index + 1);
-
-        const zoom = event.target.closest('[data-em-zoom]');
-        if (zoom && this.dialog?.showModal) return this.openZoom(zoom);
-
-        if (event.target.closest('[data-em-zoom-close]') || event.target.closest('[data-em-zoom-img]')) {
-          this.dialog?.close();
-        }
-      };
-
-      onKeydown = (event) => {
-        if (event.key === 'ArrowRight') {
-          event.preventDefault();
-          this.goTo(this.index + 1);
-        } else if (event.key === 'ArrowLeft') {
-          event.preventDefault();
-          this.goTo(this.index - 1);
-        }
-      };
-
-      openZoom(trigger) {
-        const img = this.dialog.querySelector('[data-em-zoom-img]');
-        img.src = trigger.dataset.emZoom;
-        img.alt = trigger.dataset.emZoomAlt || '';
-        this.dialog.showModal();
-        this.dialog.querySelector('[data-em-zoom-close]')?.focus();
-      }
-    }
-
-    customElements.define('em-gallery', EmGallery);
-  }
-
-  /**
-   * Product buy box: switches variants through the Section Rendering API (so prices, stock
-   * and availability are always rendered by the server), steps quantity, adds to cart
-   * through Shopify's cart action, and shows a buy bar on phones once the main button
-   * scrolls away. Without JavaScript the form posts to /cart/add as usual.
-   */
-  if (!customElements.get('em-product')) {
-    class EmProduct extends HTMLElement {
-      connectedCallback() {
-        this.form = this.querySelector('.em-buy__form');
-        this.variantInput = this.querySelector('[data-em-variant-input]');
-        this.gallery = this.querySelector('em-gallery');
-
-        this.addEventListener('change', this.onChange);
-        this.addEventListener('click', this.onClick);
-        this.form?.addEventListener('submit', this.onSubmit);
-        this.setupStickyBar();
-      }
-
-      disconnectedCallback() {
-        this.stickyObserver?.disconnect();
-        this.form?.removeEventListener('submit', this.onSubmit);
-      }
-
-      string(key) {
-        const template = this.querySelector('template[data-em-strings]');
-        return template?.content.querySelector(`[data-key="${key}"]`)?.textContent.trim() || '';
-      }
-
-      onChange = (event) => {
-        if (!event.target.matches('.em-option__input')) return;
-        const ids = [...this.querySelectorAll('[data-em-option]')]
-          .map((fieldset) => fieldset.querySelector('.em-option__input:checked')?.dataset.optionValueId)
-          .filter(Boolean);
-        this.renderVariant(ids, event.target.id);
-      };
-
-      onClick = (event) => {
-        const step = event.target.closest('[data-em-qty-step]');
-        if (!step) return;
-
-        const input = this.querySelector('.em-qty__input');
-        if (!input) return;
-        const min = Number(input.min) || 1;
-        const max = input.max ? Number(input.max) : Infinity;
-        const next = (Number(input.value) || min) + Number(step.dataset.emQtyStep);
-        input.value = String(Math.min(max, Math.max(min, next)));
-        input.dispatchEvent(new Event('change', { bubbles: true }));
-      };
-
-      async renderVariant(optionValueIds, focusId) {
-        const url = new URL(this.dataset.productUrl, window.location.origin);
-        url.searchParams.set('option_values', optionValueIds.join(','));
-        url.searchParams.set('section_id', this.dataset.sectionId);
-
-        this.controller?.abort();
-        this.controller = new AbortController();
-        this.setAttribute('data-loading', '');
-
-        try {
-          const response = await fetch(url.toString(), { signal: this.controller.signal });
-          if (!response.ok) throw new Error(response.statusText);
-
-          const html = new DOMParser().parseFromString(await response.text(), 'text/html');
-          const next = html.querySelector('em-product');
-          if (!next) throw new Error('Missing product');
-
-          this.querySelectorAll('[data-em-live]').forEach((region) => {
-            const replacement = next.querySelector(`[data-em-live="${region.dataset.emLive}"]`);
-            if (replacement) region.replaceWith(replacement);
-          });
-
-          const variantId = next.dataset.variantId;
-          this.dataset.variantId = variantId;
-          if (this.variantInput) {
-            this.variantInput.value = variantId;
-            this.variantInput.disabled = !variantId;
-          }
-
-          if (variantId) {
-            const pageUrl = new URL(window.location.href);
-            pageUrl.searchParams.set('variant', variantId);
-            window.history.replaceState(window.history.state, '', pageUrl.toString());
-          }
-
-          if (next.dataset.mediaId && next.dataset.mediaId !== this.dataset.mediaId) {
-            this.dataset.mediaId = next.dataset.mediaId;
-            this.gallery?.select(next.dataset.mediaId);
-          }
-
-          if (focusId) document.getElementById(focusId)?.focus({ preventScroll: true });
-          this.syncStickyBar();
-        } catch (error) {
-          if (error.name !== 'AbortError') console.error(error);
-        } finally {
-          this.removeAttribute('data-loading');
-        }
-      }
-
-      onSubmit = async (event) => {
-        const actions = window.Shopify?.actions;
-        const data = new FormData(this.form);
-        const hasExtras = [...data.keys()].some((key) => key.startsWith('properties') || key === 'selling_plan');
-        if (!actions?.updateCart || hasExtras) return;
-
-        event.preventDefault();
-        if (this.hasAttribute('data-adding')) return;
-
-        const id = data.get('id');
-        const quantity = Math.max(1, Number(data.get('quantity')) || 1);
-        const error = this.querySelector('[data-em-error]');
-        const status = this.querySelector('[data-em-status]');
-        if (!id) return;
-
-        this.setAttribute('data-adding', '');
-        if (error) error.hidden = true;
-        if (status) status.textContent = this.string('adding');
-
-        try {
-          const result = await actions.updateCart({ lines: [{ merchandiseId: String(id), quantity }] });
-          if (result?.userErrors?.length) throw new Error(result.userErrors[0].message);
-
-          this.setAttribute('data-added', '');
-          if (status) status.textContent = this.string('added');
-          actions.openCart?.();
-          window.setTimeout(() => this.removeAttribute('data-added'), 2000);
-        } catch (err) {
-          if (error) {
-            error.textContent = err?.message || this.string('error');
-            error.hidden = false;
-          }
-          if (status) status.textContent = '';
-        } finally {
-          this.removeAttribute('data-adding');
-        }
-      };
-
-      setupStickyBar() {
-        const bar = this.querySelector('[data-em-sticky]');
-        const anchor = this.querySelector('.em-buy__actions');
-        if (!bar || !anchor || !('IntersectionObserver' in window)) return;
-
-        this.stickyObserver = new IntersectionObserver(([entry]) => {
-          const passed = !entry.isIntersecting && entry.boundingClientRect.top < 0;
-          this.toggleAttribute('data-sticky-visible', passed);
-          this.syncStickyBar();
-        });
-        this.stickyObserver.observe(anchor);
-      }
-
-      syncStickyBar() {
-        const bar = this.querySelector('[data-em-sticky]');
-        if (!bar) return;
-        const visible = this.hasAttribute('data-sticky-visible');
-        bar.setAttribute('aria-hidden', String(!visible));
-        bar.querySelectorAll('button').forEach((button) => (button.tabIndex = visible ? 0 : -1));
-      }
-    }
-
-    customElements.define('em-product', EmProduct);
-  }
-{% endjavascript %}
 
 {% schema %}
 {
@@ -1613,6 +2151,12 @@
     },
     {
       "type": "checkbox",
+      "id": "show_type",
+      "label": "t:emasole.settings.show_product_type",
+      "default": true
+    },
+    {
+      "type": "checkbox",
       "id": "show_quantity",
       "label": "t:emasole.settings.show_quantity",
       "default": true
@@ -1623,6 +2167,33 @@
       "label": "t:emasole.settings.show_dynamic_checkout",
       "info": "t:emasole.info.dynamic_checkout",
       "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_pickup",
+      "label": "t:emasole.settings.show_pickup",
+      "info": "t:emasole.info.pickup",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_payment_icons",
+      "label": "t:emasole.settings.show_payment_icons",
+      "info": "t:emasole.info.payment_icons",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_policies",
+      "label": "t:emasole.settings.show_policies",
+      "info": "t:emasole.info.policies",
+      "default": true
+    },
+    {
+      "type": "page",
+      "id": "size_guide",
+      "label": "t:emasole.settings.size_guide",
+      "info": "t:emasole.info.size_guide"
     },
     {
       "type": "range",
@@ -1657,19 +2228,19 @@
             { "value": "badge-check", "label": "t:emasole.options.icon_badge" },
             { "value": "globe", "label": "t:emasole.options.icon_globe" }
           ],
-          "default": "truck"
+          "default": "shield"
         },
         {
           "type": "text",
           "id": "title",
           "label": "t:emasole.settings.heading",
-          "default": "Free shipping"
+          "default": "Buyer protection"
         },
         {
           "type": "text",
           "id": "text",
           "label": "t:emasole.settings.text",
-          "default": "On orders over $29"
+          "info": "t:emasole.info.no_fixed_prices"
         },
         {
           "type": "url",

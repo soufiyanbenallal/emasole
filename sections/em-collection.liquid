@@ -22,30 +22,62 @@
   <div class="em-container">
     {%- render 'em-breadcrumbs', title: title -%}
 
-    <header class="em-panel em-collection__hero{% if banner_image %} em-collection__hero--image{% endif %}">
-      {%- if banner_image -%}
-        <div class="em-collection__image">
-          {{
-            banner_image
-            | image_url: width: 1200
-            | image_tag:
-              loading: 'eager',
-              fetchpriority: 'high',
-              widths: '400, 600, 800, 1200',
-              sizes: '(min-width: 990px) 320px, 100vw',
-              alt: banner_image.alt | default: title
-          }}
-        </div>
-      {%- endif -%}
+    {%- assign price_filter = collection.filters | find: 'type', 'price_range' -%}
+    <header
+      class="em-collection__hero em-mesh{% if section.settings.banner_style == 'ink' %} em-mesh--ink{% endif %}{% if banner_image %} em-collection__hero--image{% endif %}"
+    >
       <div class="em-collection__intro">
+        <p class="em-collection__eyebrow">
+          {%- render 'em-icon', icon: 'grid' -%}
+          {{ 'emasole.collection.eyebrow' | t }}
+        </p>
         <h1 class="em-collection__title">{{ title | escape }}</h1>
         {%- if section.settings.show_description and collection.description != blank -%}
           <div class="em-collection__desc em-rte">{{ collection.description }}</div>
         {%- endif -%}
-        <p class="em-collection__meta">
-          {%- render 'em-icon', icon: 'package' -%}
-          {{ 'emasole.collection.product_count' | t: count: collection.all_products_count }}
-        </p>
+        <ul class="em-collection__facts" role="list">
+          <li class="em-collection__fact">
+            {%- render 'em-icon', icon: 'package' -%}
+            {{ 'emasole.collection.product_count' | t: count: collection.all_products_count }}
+          </li>
+          {%- if price_filter != blank and price_filter.range_max > 0 -%}
+            {%- assign max_price = price_filter.range_max | money_without_trailing_zeros -%}
+            <li class="em-collection__fact">
+              {%- render 'em-icon', icon: 'tag' -%}
+              {{ 'emasole.collection.up_to' | t: price: max_price }}
+            </li>
+          {%- endif -%}
+        </ul>
+      </div>
+
+      <div class="em-collection__visual" aria-hidden="true">
+        {%- if banner_image -%}
+          <div class="em-collection__photo">
+            {{
+              banner_image
+              | image_url: width: 1000
+              | image_tag:
+                loading: 'eager',
+                fetchpriority: 'high',
+                widths: '400, 600, 800, 1000',
+                sizes: '(min-width: 990px) 420px, 50vw',
+                alt: ''
+            }}
+          </div>
+        {%- else -%}
+          {%- for product in collection.products limit: 3 -%}
+            {%- if product.featured_media -%}
+              <figure class="em-float em-collection__float em-collection__float--{{ forloop.index }}">
+                {{
+                  product.featured_media
+                  | image_url: width: 400
+                  | image_tag: loading: 'eager', widths: '200, 300, 400', sizes: '160px', alt: ''
+                }}
+                <figcaption class="em-float__tag">{{ product.price | money_without_trailing_zeros }}</figcaption>
+              </figure>
+            {%- endif -%}
+          {%- endfor -%}
+        {%- endif -%}
       </div>
     </header>
 
@@ -68,7 +100,13 @@
         assign count = collection.products_count
         assign message = 'emasole.filters.results_count' | t: count: count
       -%}
-      <em-facets class="em-results" data-section-id="{{ section.id }}">
+      <em-facets
+        class="em-results"
+        data-section-id="{{ section.id }}"
+        data-currency="{{ localization.country.currency.iso_code }}"
+        data-locale="{{ request.locale.iso_code }}-{{ localization.country.iso_code }}"
+        data-money-format="{{ shop.money_format | strip_html | escape }}"
+      >
         <p class="em-visually-hidden" role="status" data-em-results-status></p>
         <div class="em-results__layout" data-em-results data-message="{{ message | escape }}">
           <aside class="em-results__aside">
@@ -76,6 +114,7 @@
               results: collection,
               form_id: form_id,
               clear_url: clear_url,
+              count: count,
               show_filters: section.settings.enable_filtering
             -%}
           </aside>
@@ -88,7 +127,8 @@
                 clear_url: clear_url,
                 count: count,
                 show_filters: section.settings.enable_filtering,
-                show_sort: section.settings.enable_sorting
+                show_sort: section.settings.enable_sorting,
+                columns: section.settings.columns
               -%}
             </div>
 
@@ -147,78 +187,176 @@
   </div>
 </div>
 
+<script src="{{ 'em-facets.js' | asset_url }}" type="module" fetchpriority="low"></script>
+
 {% stylesheet %}
   .em-collection__hero {
     display: grid;
     gap: var(--em-space-4);
     margin-block-start: var(--em-space-3);
-    overflow: hidden;
-  }
-
-  .em-collection__hero--image {
-    padding: 0;
-  }
-
-  .em-collection__hero--image .em-collection__intro {
-    padding: 0 var(--em-space-4) var(--em-space-4);
-  }
-
-  .em-collection__image {
-    aspect-ratio: 16 / 7;
-    overflow: hidden;
-    background: var(--em-ink-100);
-  }
-
-  .em-collection__image img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+    padding: var(--em-space-5) var(--em-space-4);
+    border-radius: var(--em-radius-lg);
+    box-shadow: var(--em-shadow-1);
   }
 
   .em-collection__intro {
     display: grid;
     align-content: center;
+    justify-items: start;
+    gap: var(--em-space-3);
+    min-width: 0;
+  }
+
+  .em-collection__eyebrow {
+    display: inline-flex;
+    align-items: center;
     gap: var(--em-space-2);
+    margin: 0;
+    padding: 4px 12px 4px 8px;
+    border-radius: var(--em-radius-pill);
+    background: rgb(255 255 255 / 0.75);
+    color: var(--em-ember-700);
+    font-size: var(--em-text-xs);
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    box-shadow: inset 0 0 0 1px rgb(255 106 43 / 0.25);
+  }
+
+  .em-collection__eyebrow .em-icon {
+    width: 16px;
+    height: 16px;
   }
 
   .em-collection__title {
     margin: 0;
     font-family: var(--em-font-display);
-    font-size: var(--em-text-2xl);
+    font-size: var(--em-text-display);
     font-weight: 800;
-    line-height: 1.15;
-    letter-spacing: -0.02em;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    text-wrap: balance;
   }
 
   .em-collection__desc {
-    max-width: 72ch;
+    max-width: 58ch;
     color: var(--em-color-text-muted);
     font-size: var(--em-text-sm);
   }
 
-  .em-collection__meta {
+  .em-mesh--ink .em-collection__desc {
+    color: rgb(255 255 255 / 0.78);
+  }
+
+  .em-mesh--ink .em-collection__eyebrow {
+    background: rgb(255 255 255 / 0.1);
+    color: var(--em-sun-400);
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.2);
+  }
+
+  .em-collection__facts {
     display: flex;
-    align-items: center;
+    flex-wrap: wrap;
     gap: var(--em-space-2);
     margin: 0;
-    color: var(--em-mint-700);
+    padding: 0;
+    list-style: none;
+  }
+
+  .em-collection__fact {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--em-space-2);
+    padding: 6px 12px;
+    border-radius: var(--em-radius-pill);
+    background: rgb(255 255 255 / 0.8);
+    color: var(--em-ink-900);
     font-size: var(--em-text-sm);
-    font-weight: 600;
+    font-weight: 700;
+    box-shadow: 0 1px 2px rgb(23 23 28 / 0.08);
+  }
+
+  .em-collection__fact .em-icon {
+    width: 16px;
+    height: 16px;
+    color: var(--em-ember-600);
+  }
+
+  .em-collection__visual {
+    position: relative;
+    display: none;
+  }
+
+  .em-collection__photo {
+    position: absolute;
+    inset: calc(var(--em-space-5) * -1) calc(var(--em-space-4) * -1) calc(var(--em-space-5) * -1) 0;
+    mask: linear-gradient(90deg, transparent 0, #000 38%);
+  }
+
+  .em-collection__photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .em-collection__float {
+    width: 150px;
+    height: 150px;
+  }
+
+  .em-collection__float--1 {
+    --em-tilt: -7deg;
+
+    inset-block-start: 4px;
+    inset-inline-end: 168px;
+    z-index: 2;
+  }
+
+  .em-collection__float--2 {
+    --em-tilt: 5deg;
+
+    inset-block-start: 26px;
+    inset-inline-end: 12px;
+    width: 172px;
+    height: 172px;
+    z-index: 3;
+  }
+
+  .em-collection__float--3 {
+    --em-tilt: -4deg;
+
+    inset-block-start: 56px;
+    inset-inline-end: 340px;
+    width: 120px;
+    height: 120px;
+    z-index: 1;
+  }
+
+  @media (hover: hover) {
+    .em-collection__hero:hover .em-collection__float--1 {
+      --em-tilt: -10deg;
+    }
+
+    .em-collection__hero:hover .em-collection__float--2 {
+      --em-tilt: 8deg;
+    }
   }
 
   @media screen and (min-width: 750px) {
-    .em-collection__hero--image {
-      grid-template-columns: 320px minmax(0, 1fr);
-      align-items: stretch;
+    .em-collection__hero {
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+      min-height: 236px;
+      padding: var(--em-space-6) var(--em-space-6);
     }
 
-    .em-collection__hero--image .em-collection__intro {
-      padding: var(--em-space-5) var(--em-space-5) var(--em-space-5) 0;
+    .em-collection__visual {
+      display: block;
+      min-height: 190px;
     }
 
-    .em-collection__image {
-      aspect-ratio: auto;
-      min-height: 180px;
+    .em-collection__photo {
+      inset-inline-end: calc(var(--em-space-6) * -1);
+      inset-block: calc(var(--em-space-6) * -1);
     }
   }
 
@@ -253,6 +391,16 @@
     {
       "type": "header",
       "content": "t:emasole.settings.banner"
+    },
+    {
+      "type": "select",
+      "id": "banner_style",
+      "label": "t:emasole.settings.banner_style",
+      "options": [
+        { "value": "mesh", "label": "t:emasole.options.banner_mesh" },
+        { "value": "ink", "label": "t:emasole.options.banner_ink" }
+      ],
+      "default": "mesh"
     },
     {
       "type": "checkbox",

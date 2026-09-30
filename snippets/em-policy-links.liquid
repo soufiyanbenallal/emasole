@@ -1,0 +1,28 @@
+{% doc %}
+  Renders trust rows linking to the shipping and refund policies set in Shopify admin.
+  A row only appears when its policy has content, so nothing here is invented.
+  Place it inside a `.em-buy__trust` list.
+
+  @example
+  {% render 'em-policy-links' %}
+{% enddoc %}
+{%- if shop.shipping_policy.body != blank -%}
+  <li class="em-trust">
+    <span class="em-trust__icon">{%- render 'em-icon', icon: 'truck' -%}</span>
+    <span class="em-trust__text">
+      <strong class="em-trust__title">
+        <a href="{{ shop.shipping_policy.url }}">{{ 'emasole.product.shipping_policy' | t }}</a>
+      </strong>
+    </span>
+  </li>
+{%- endif -%}
+{%- if shop.refund_policy.body != blank -%}
+  <li class="em-trust">
+    <span class="em-trust__icon">{%- render 'em-icon', icon: 'return' -%}</span>
+    <span class="em-trust__text">
+      <strong class="em-trust__title">
+        <a href="{{ shop.refund_policy.url }}">{{ 'emasole.product.refund_policy' | t }}</a>
+      </strong>
+    </span>
+  </li>
+{%- endif -%}
