@@ -1,0 +1,1204 @@
+{%- liquid
+  assign category_menu = section.settings.category_menu
+  assign nav_menu = section.settings.nav_menu
+  assign utility_menu = section.settings.utility_menu
+  assign placeholders = section.settings.search_placeholders | split: ','
+  assign trending = section.settings.trending_searches | split: ','
+  assign first_placeholder = placeholders | first | strip | default: ''
+-%}
+
+<em-header
+  class="em-header"
+  data-sticky="{{ section.settings.sticky }}"
+  {% if placeholders.size > 1 %}
+    data-placeholders="{{ section.settings.search_placeholders | escape }}"
+  {% endif %}
+>
+  {%- if section.settings.show_topbar -%}
+    <div class="em-header__topbar">
+      <div class="em-container em-header__topbar-inner">
+        <p class="em-header__promo">
+          {%- render 'em-icon', icon: 'truck' -%}
+          {%- if section.settings.promo_link != blank -%}
+            <a href="{{ section.settings.promo_link }}">{{ section.settings.promo_text }}</a>
+          {%- else -%}
+            <span>{{ section.settings.promo_text }}</span>
+          {%- endif -%}
+        </p>
+        {%- if utility_menu.links.size > 0 -%}
+          <ul class="em-header__utility" role="list">
+            {%- for link in utility_menu.links -%}
+              <li><a href="{{ link.url }}">{{ link.title | escape }}</a></li>
+            {%- endfor -%}
+          </ul>
+        {%- endif -%}
+      </div>
+    </div>
+  {%- endif -%}
+
+  <div class="em-header__bar">
+    <div class="em-container em-header__main">
+      <button
+        type="button"
+        class="em-header__burger"
+        popovertarget="EmDrawer-{{ section.id }}"
+        aria-label="{{ 'emasole.header.open_menu' | t }}"
+      >
+        {%- render 'em-icon', icon: 'menu' -%}
+      </button>
+
+      <a class="em-logo" href="{{ routes.root_url }}">
+        {%- if settings.logo != blank -%}
+          {%- liquid
+            assign logo_height = section.settings.logo_height
+            assign logo_width = settings.logo.aspect_ratio | times: logo_height | round
+            assign logo_width_2x = logo_width | times: 2
+          -%}
+          {{
+            settings.logo
+            | image_url: width: logo_width_2x
+            | image_tag:
+              class: 'em-logo__image',
+              width: logo_width,
+              height: logo_height,
+              alt: shop.name,
+              loading: 'eager',
+              fetchpriority: 'high'
+          }}
+        {%- else -%}
+          {%- render 'em-logo-mark', size: 36 -%}
+          <span class="em-logo__word">{{ shop.name | escape }}</span>
+        {%- endif -%}
+      </a>
+
+      <search class="em-search" role="search">
+        <form action="{{ routes.search_url }}" method="get" class="em-search__form">
+          <input type="hidden" name="type" value="product">
+          <input type="hidden" name="options[prefix]" value="last">
+          <label class="em-visually-hidden" for="EmSearch-{{ section.id }}">
+            {{- 'emasole.header.search_label' | t -}}
+          </label>
+          <input
+            id="EmSearch-{{ section.id }}"
+            class="em-search__input"
+            type="search"
+            name="q"
+            value="{{ search.terms | escape }}"
+            placeholder="{{ first_placeholder | escape }}"
+            autocomplete="off"
+            enterkeyhint="search"
+            data-em-search-input
+          >
+          <button type="submit" class="em-search__submit">
+            {%- render 'em-icon', icon: 'search' -%}
+            <span class="em-search__submit-text">{{ 'emasole.header.search_button' | t }}</span>
+          </button>
+        </form>
+
+        {%- if trending.size > 0 -%}
+          <div class="em-search__panel">
+            <p class="em-search__panel-title">
+              {%- render 'em-icon', icon: 'flame' -%}
+              {{ 'emasole.header.trending' | t }}
+            </p>
+            <ul class="em-search__chips" role="list">
+              {%- for term in trending -%}
+                {%- assign term_clean = term | strip -%}
+                {%- if term_clean != blank -%}
+                  <li>
+                    <a class="em-chip" href="{{ routes.search_url }}?type=product&q={{ term_clean | url_encode }}">
+                      {{- term_clean | escape -}}
+                    </a>
+                  </li>
+                {%- endif -%}
+              {%- endfor -%}
+            </ul>
+          </div>
+        {%- endif -%}
+      </search>
+
+      <div class="em-header__actions">
+        {%- if section.settings.help_link != blank -%}
+          <a class="em-header__help" href="{{ section.settings.help_link }}">
+            {%- render 'em-icon', icon: 'headset' -%}
+            <span>{{ 'emasole.header.help' | t }}</span>
+          </a>
+        {%- endif -%}
+        {%- render 'header-actions', display_style: 'icon', customer_account_menu: section.settings.customer_account_menu -%}
+      </div>
+    </div>
+  </div>
+
+  {%- if category_menu.links.size > 0 or nav_menu.links.size > 0 -%}
+    <nav class="em-header__nav" aria-label="{{ 'emasole.header.nav_label' | t }}">
+      <div class="em-container em-header__nav-inner">
+        {%- if category_menu.links.size > 0 -%}
+          <details class="em-mega" data-em-mega>
+            <summary class="em-mega__toggle">
+              {%- render 'em-icon', icon: 'grid' -%}
+              <span>{{ 'emasole.header.all_categories' | t }}</span>
+              {%- render 'em-icon', icon: 'chevron-down', class: 'em-mega__caret' -%}
+            </summary>
+            <div class="em-mega__panel">
+              <ul class="em-mega__list" role="list">
+                {%- for link in category_menu.links -%}
+                  <li class="em-mega__item">
+                    <a class="em-mega__link" href="{{ link.url }}">
+                      <span>{{ link.title | escape }}</span>
+                      {%- if link.links.size > 0 -%}
+                        {%- render 'em-icon', icon: 'chevron-right' -%}
+                      {%- endif -%}
+                    </a>
+                    {%- if link.links.size > 0 -%}
+                      <div class="em-mega__children">
+                        <p class="em-mega__children-title">
+                          <a href="{{ link.url }}">
+                            {{- 'emasole.header.shop_all' | t: title: link.title | escape -}}
+                          </a>
+                        </p>
+                        <ul class="em-mega__groups" role="list">
+                          {%- for child in link.links -%}
+                            <li>
+                              <a class="em-mega__child" href="{{ child.url }}">{{ child.title | escape }}</a>
+                              {%- if child.links.size > 0 -%}
+                                <ul class="em-mega__grandchildren" role="list">
+                                  {%- for grandchild in child.links -%}
+                                    <li><a href="{{ grandchild.url }}">{{ grandchild.title | escape }}</a></li>
+                                  {%- endfor -%}
+                                </ul>
+                              {%- endif -%}
+                            </li>
+                          {%- endfor -%}
+                        </ul>
+                      </div>
+                    {%- endif -%}
+                  </li>
+                {%- endfor -%}
+              </ul>
+            </div>
+          </details>
+        {%- endif -%}
+
+        {%- if nav_menu.links.size > 0 -%}
+          <ul class="em-header__links" role="list">
+            {%- for link in nav_menu.links -%}
+              <li>
+                <a
+                  href="{{ link.url }}"
+                  {% if link.active %}
+                    aria-current="page"
+                  {% endif %}
+                >
+                  {{- link.title | escape -}}
+                </a>
+              </li>
+            {%- endfor -%}
+          </ul>
+        {%- endif -%}
+
+        {%- if section.settings.highlight_label != blank -%}
+          <a class="em-header__highlight" href="{{ section.settings.highlight_link | default: routes.all_products_collection_url }}">
+            {%- render 'em-icon', icon: 'bolt' -%}
+            {{ section.settings.highlight_label | escape }}
+          </a>
+        {%- endif -%}
+      </div>
+    </nav>
+  {%- endif -%}
+
+  <div
+    id="EmDrawer-{{ section.id }}"
+    class="em-drawer"
+    popover
+    aria-label="{{ 'emasole.header.menu' | t }}"
+  >
+    <div class="em-drawer__head">
+      <a class="em-logo" href="{{ routes.root_url }}">
+        {%- render 'em-logo-mark', size: 30 -%}
+        <span class="em-logo__word">{{ shop.name | escape }}</span>
+      </a>
+      <button
+        type="button"
+        class="em-icon-btn"
+        popovertarget="EmDrawer-{{ section.id }}"
+        popovertargetaction="hide"
+        aria-label="{{ 'emasole.header.close_menu' | t }}"
+      >
+        {%- render 'em-icon', icon: 'close' -%}
+      </button>
+    </div>
+
+    <div class="em-drawer__body">
+      {%- if shop.customer_accounts_enabled -%}
+        <a class="em-drawer__account" href="{{ routes.account_url }}">
+          {%- render 'em-icon', icon: 'user' -%}
+          <span>
+            {%- if customer -%}
+              {%- assign customer_name = customer.first_name | default: customer.name -%}
+              {{ 'emasole.header.greeting' | t: name: customer_name }}
+            {%- else -%}
+              {{ 'emasole.header.sign_in' | t }}
+            {%- endif -%}
+          </span>
+          {%- render 'em-icon', icon: 'chevron-right' -%}
+        </a>
+      {%- endif -%}
+
+      {%- if category_menu.links.size > 0 -%}
+        <p class="em-drawer__label">{{ 'emasole.header.all_categories' | t }}</p>
+        <ul class="em-drawer__menu" role="list">
+          {%- for link in category_menu.links -%}
+            <li>
+              {%- if link.links.size > 0 -%}
+                <details class="em-drawer__group">
+                  <summary>
+                    <span>{{ link.title | escape }}</span>
+                    {%- render 'em-icon', icon: 'chevron-down' -%}
+                  </summary>
+                  <ul role="list">
+                    <li>
+                      <a href="{{ link.url }}">{{ 'emasole.header.shop_all' | t: title: link.title | escape }}</a>
+                    </li>
+                    {%- for child in link.links -%}
+                      <li><a href="{{ child.url }}">{{ child.title | escape }}</a></li>
+                    {%- endfor -%}
+                  </ul>
+                </details>
+              {%- else -%}
+                <a class="em-drawer__link" href="{{ link.url }}">{{ link.title | escape }}</a>
+              {%- endif -%}
+            </li>
+          {%- endfor -%}
+        </ul>
+      {%- endif -%}
+
+      {%- if nav_menu.links.size > 0 -%}
+        <p class="em-drawer__label">{{ 'emasole.header.explore' | t }}</p>
+        <ul class="em-drawer__menu" role="list">
+          {%- for link in nav_menu.links -%}
+            <li><a class="em-drawer__link" href="{{ link.url }}">{{ link.title | escape }}</a></li>
+          {%- endfor -%}
+        </ul>
+      {%- endif -%}
+
+      {%- if utility_menu.links.size > 0 -%}
+        <ul class="em-drawer__utility" role="list">
+          {%- for link in utility_menu.links -%}
+            <li><a href="{{ link.url }}">{{ link.title | escape }}</a></li>
+          {%- endfor -%}
+        </ul>
+      {%- endif -%}
+    </div>
+  </div>
+</em-header>
+
+{% stylesheet %}
+  #header-group:has(.em-header[data-sticky='true']) {
+    display: contents;
+  }
+
+  .shopify-section:has(> .em-header[data-sticky='true']) {
+    position: sticky;
+    top: 0;
+    z-index: var(--layer-menu-drawer, 50);
+  }
+
+  /* The promo strip scrolls away; the search bar and navigation stay pinned */
+  .shopify-section:has(> .em-header[data-sticky='true'] > .em-header__topbar) {
+    top: -34px;
+  }
+
+  .shopify-section:has(> .em-header) {
+    position: relative;
+    z-index: var(--layer-menu-drawer, 50);
+  }
+
+  .em-header {
+    display: block;
+    background: var(--em-card);
+    color: var(--em-color-text);
+    font-family: var(--em-font-body);
+  }
+
+  .em-header[data-scrolled] .em-header__bar {
+    box-shadow: var(--em-shadow-2);
+  }
+
+  /* Top promo strip */
+  .em-header__topbar {
+    height: 34px;
+    background: var(--em-ink-900);
+    color: #ffffff;
+    font-size: var(--em-text-xs);
+  }
+
+  .em-header__topbar-inner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--em-space-5);
+    height: 100%;
+  }
+
+  @media screen and (min-width: 990px) {
+    .em-header__topbar-inner {
+      justify-content: space-between;
+    }
+  }
+
+  .em-header__promo {
+    display: flex;
+    align-items: center;
+    gap: var(--em-space-2);
+    margin: 0;
+    overflow: hidden;
+    font-weight: 600;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .em-header__promo .em-icon {
+    color: var(--em-sun-400);
+  }
+
+  .em-header__promo a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .em-header__promo a:hover {
+    text-decoration: underline;
+  }
+
+  .em-header__utility {
+    display: none;
+    gap: var(--em-space-5);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  @media screen and (min-width: 990px) {
+    .em-header__utility {
+      display: flex;
+    }
+  }
+
+  .em-header__utility a {
+    color: #ffffff;
+    text-decoration: none;
+    opacity: 0.85;
+  }
+
+  .em-header__utility a:hover {
+    opacity: 1;
+    text-decoration: underline;
+  }
+
+  /* Main bar */
+  .em-header__bar {
+    position: relative;
+    z-index: 3;
+    background: var(--em-card);
+    transition: box-shadow var(--em-duration) var(--em-ease);
+  }
+
+  .em-header__main {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas:
+      'burger logo actions'
+      'search search search';
+    align-items: center;
+    column-gap: var(--em-space-2);
+    row-gap: var(--em-space-2);
+    padding-block: var(--em-space-2) var(--em-space-3);
+  }
+
+  @media screen and (min-width: 990px) {
+    .em-header__main {
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      grid-template-areas: 'logo search actions';
+      column-gap: var(--em-space-6);
+      padding-block: var(--em-space-4);
+    }
+  }
+
+  .em-header__burger {
+    grid-area: burger;
+    display: inline-grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    margin-inline-start: -8px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    cursor: pointer;
+  }
+
+  .em-header__burger .em-icon {
+    width: 24px;
+    height: 24px;
+  }
+
+  @media screen and (min-width: 990px) {
+    .em-header__burger {
+      display: none;
+    }
+  }
+
+  .em-logo {
+    grid-area: logo;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--em-space-2);
+    color: var(--em-ink-900);
+    text-decoration: none;
+  }
+
+  .em-logo__image {
+    display: block;
+    width: auto;
+    max-height: 44px;
+  }
+
+  .em-logo__word {
+    font-family: var(--em-font-display);
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    text-transform: lowercase;
+  }
+
+  .em-logo-mark {
+    flex: none;
+    display: block;
+  }
+
+  /* Search */
+  .em-search {
+    grid-area: search;
+    position: relative;
+    display: block;
+  }
+
+  .em-search__form {
+    display: flex;
+    align-items: center;
+    height: 44px;
+    margin: 0;
+    padding: 3px;
+    border: 2px solid var(--em-ink-900);
+    border-radius: var(--em-radius-pill);
+    background: var(--em-card);
+  }
+
+  @media screen and (min-width: 990px) {
+    .em-search__form {
+      height: 48px;
+    }
+  }
+
+  .em-search__form:focus-within {
+    border-color: var(--em-ember-600);
+  }
+
+  .em-search__input {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    padding: 0 var(--em-space-4);
+    border: 0;
+    background: transparent;
+    color: var(--em-color-text);
+    font: inherit;
+    font-size: var(--em-text-md);
+    outline: none;
+  }
+
+  .em-search__input::placeholder {
+    color: var(--em-color-text-muted);
+  }
+
+  .em-search__input::-webkit-search-cancel-button {
+    display: none;
+  }
+
+  .em-search__submit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--em-space-2);
+    height: 100%;
+    min-width: 44px;
+    padding: 0 var(--em-space-3);
+    border: 0;
+    border-radius: var(--em-radius-pill);
+    background: var(--em-ink-900);
+    color: #ffffff;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .em-search__submit:hover {
+    background: var(--em-ember-600);
+  }
+
+  .em-search__submit-text {
+    display: none;
+  }
+
+  @media screen and (min-width: 990px) {
+    .em-search__submit {
+      padding: 0 var(--em-space-5);
+    }
+
+    .em-search__submit-text {
+      display: inline;
+    }
+  }
+
+  .em-search__panel {
+    position: absolute;
+    inset: calc(100% + 6px) 0 auto;
+    z-index: 5;
+    display: none;
+    padding: var(--em-space-4);
+    border-radius: var(--em-radius-lg);
+    background: var(--em-card);
+    box-shadow: var(--em-shadow-3);
+  }
+
+  .em-search:focus-within .em-search__panel {
+    display: block;
+  }
+
+  .em-search__panel-title {
+    display: flex;
+    align-items: center;
+    gap: var(--em-space-2);
+    margin: 0 0 var(--em-space-3);
+    font-size: var(--em-text-sm);
+    font-weight: 700;
+  }
+
+  .em-search__panel-title .em-icon {
+    color: var(--em-ember-600);
+  }
+
+  .em-search__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--em-space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /* Actions */
+  .em-header__actions {
+    grid-area: actions;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--em-space-2);
+  }
+
+  .em-header__actions header-actions {
+    align-items: center;
+    gap: var(--em-space-1);
+  }
+
+  .em-header__actions .header-actions__action {
+    display: inline-grid;
+    place-items: center;
+    min-width: 44px;
+    height: 44px;
+    padding: 0;
+    border-radius: var(--em-radius-pill);
+    color: var(--em-ink-900);
+  }
+
+  .em-header__actions .header-actions__action:hover {
+    background: var(--em-ink-100);
+  }
+
+  .em-header__actions .svg-wrapper svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .em-header {
+    --color-account-icon: var(--em-ink-900);
+    --header-content-transition-timing: var(--em-duration);
+  }
+
+  .em-header__help {
+    display: none;
+    align-items: center;
+    gap: var(--em-space-2);
+    padding: var(--em-space-2) var(--em-space-3);
+    border-radius: var(--em-radius-pill);
+    color: var(--em-ink-900);
+    font-size: var(--em-text-sm);
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .em-header__help:hover {
+    background: var(--em-ink-100);
+  }
+
+  @media screen and (min-width: 990px) {
+    .em-header__help {
+      display: inline-flex;
+    }
+  }
+
+  /* Category navigation row */
+  .em-header__nav {
+    display: none;
+    position: relative;
+    z-index: 2;
+    border-block-start: 1px solid var(--em-color-border);
+    background: var(--em-card);
+  }
+
+  @media screen and (min-width: 990px) {
+    .em-header__nav {
+      display: block;
+    }
+  }
+
+  .em-header__nav-inner {
+    display: flex;
+    align-items: center;
+    gap: var(--em-space-5);
+    height: 46px;
+  }
+
+  .em-header__links {
+    display: flex;
+    flex: 1;
+    gap: var(--em-space-5);
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    list-style: none;
+  }
+
+  .em-header__links a {
+    display: block;
+    padding-block: var(--em-space-3);
+    color: var(--em-ink-900);
+    font-size: var(--em-text-sm);
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .em-header__links a:hover,
+  .em-header__links a[aria-current='page'] {
+    color: var(--em-ember-600);
+  }
+
+  .em-header__highlight {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--em-space-1);
+    margin-inline-start: auto;
+    padding: 6px var(--em-space-3);
+    border-radius: var(--em-radius-pill);
+    background: var(--em-sun-400);
+    color: var(--em-ink-900);
+    font-size: var(--em-text-sm);
+    font-weight: 700;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .em-header__highlight:hover {
+    background: var(--em-ink-900);
+    color: var(--em-sun-400);
+  }
+
+  /* Mega menu */
+  .em-mega {
+    position: static;
+  }
+
+  .em-mega__toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--em-space-2);
+    height: 34px;
+    padding: 0 var(--em-space-4);
+    border-radius: var(--em-radius-pill);
+    background: var(--em-ember-600);
+    color: #ffffff;
+    font-size: var(--em-text-sm);
+    font-weight: 700;
+    list-style: none;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .em-mega__toggle::-webkit-details-marker {
+    display: none;
+  }
+
+  .em-mega__toggle:hover,
+  .em-mega[open] .em-mega__toggle {
+    background: var(--em-ember-700);
+  }
+
+  .em-mega__caret {
+    width: 16px;
+    height: 16px;
+    transition: rotate var(--em-duration) var(--em-ease);
+  }
+
+  .em-mega[open] .em-mega__caret {
+    rotate: 180deg;
+  }
+
+  .em-mega__panel {
+    position: absolute;
+    inset-inline: var(--em-gutter);
+    inset-block-start: 100%;
+    max-width: var(--em-container);
+    margin-inline: auto;
+    padding: var(--em-space-3);
+    border-radius: 0 0 var(--em-radius-lg) var(--em-radius-lg);
+    background: var(--em-card);
+    box-shadow: var(--em-shadow-3);
+  }
+
+  .em-mega__list {
+    position: relative;
+    width: 260px;
+    min-height: 380px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .em-mega__link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--em-space-2);
+    padding: 10px var(--em-space-3);
+    border-radius: var(--em-radius-sm);
+    color: var(--em-ink-900);
+    font-size: var(--em-text-sm);
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .em-mega__link .em-icon {
+    width: 16px;
+    height: 16px;
+    color: var(--em-color-text-muted);
+  }
+
+  .em-mega__children {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: calc(100% + var(--em-space-3));
+    width: calc(min(var(--em-container), 100vw - var(--em-gutter) * 2) - 260px - var(--em-space-3) * 3);
+    display: none;
+    padding: var(--em-space-3) var(--em-space-5);
+    border-inline-start: 1px solid var(--em-color-border);
+    overflow-y: auto;
+  }
+
+  .em-mega__item:hover > .em-mega__link,
+  .em-mega__item:focus-within > .em-mega__link {
+    background: var(--em-ember-50);
+    color: var(--em-ember-700);
+  }
+
+  .em-mega__item:hover > .em-mega__children,
+  .em-mega__item:focus-within > .em-mega__children,
+  .em-mega__list:not(:hover, :focus-within) > .em-mega__item:first-child > .em-mega__children {
+    display: block;
+  }
+
+  .em-mega__children-title {
+    margin: 0 0 var(--em-space-4);
+    font-family: var(--em-font-display);
+    font-size: var(--em-text-lg);
+    font-weight: 700;
+  }
+
+  .em-mega__children-title a {
+    color: var(--em-ink-900);
+    text-decoration: none;
+  }
+
+  .em-mega__children-title a:hover {
+    color: var(--em-ember-600);
+  }
+
+  .em-mega__groups {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: var(--em-space-5);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .em-mega__child {
+    display: block;
+    margin-block-end: var(--em-space-2);
+    color: var(--em-ink-900);
+    font-size: var(--em-text-sm);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .em-mega__grandchildren {
+    display: grid;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .em-mega__grandchildren a {
+    color: var(--em-color-text-muted);
+    font-size: var(--em-text-sm);
+    text-decoration: none;
+  }
+
+  .em-mega__child:hover,
+  .em-mega__grandchildren a:hover {
+    color: var(--em-ember-600);
+  }
+
+  /* Mobile drawer */
+  .em-drawer {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: min(360px, 88vw);
+    height: 100dvh;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: var(--em-card);
+    color: var(--em-color-text);
+    font-family: var(--em-font-body);
+    overflow-y: auto;
+    box-shadow: var(--em-shadow-3);
+    transition: translate 240ms var(--em-ease), display 240ms allow-discrete, overlay 240ms allow-discrete;
+    translate: -100% 0;
+  }
+
+  .em-drawer:popover-open {
+    translate: 0 0;
+  }
+
+  @starting-style {
+    .em-drawer:popover-open {
+      translate: -100% 0;
+    }
+  }
+
+  .em-drawer::backdrop {
+    background: rgb(23 23 28 / 0.5);
+  }
+
+  .em-drawer__head {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--em-space-3) var(--em-space-4);
+    border-block-end: 1px solid var(--em-color-border);
+    background: var(--em-card);
+  }
+
+  .em-drawer__head .em-logo__word {
+    font-size: 1.25rem;
+  }
+
+  .em-drawer__body {
+    padding: var(--em-space-4);
+  }
+
+  .em-drawer__account {
+    display: flex;
+    align-items: center;
+    gap: var(--em-space-3);
+    padding: var(--em-space-3) var(--em-space-4);
+    border-radius: var(--em-radius-md);
+    background: var(--em-ember-50);
+    color: var(--em-ember-700);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .em-drawer__account span {
+    flex: 1;
+  }
+
+  .em-drawer__label {
+    margin: var(--em-space-5) 0 var(--em-space-2);
+    color: var(--em-color-text-muted);
+    font-size: var(--em-text-xs);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .em-drawer__menu,
+  .em-drawer__menu ul,
+  .em-drawer__utility {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .em-drawer__link,
+  .em-drawer__group summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 48px;
+    border-block-end: 1px solid var(--em-ink-100);
+    color: var(--em-ink-900);
+    font-weight: 600;
+    text-decoration: none;
+    list-style: none;
+    cursor: pointer;
+  }
+
+  .em-drawer__group summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .em-drawer__group[open] summary .em-icon {
+    rotate: 180deg;
+  }
+
+  .em-drawer__group ul {
+    padding: var(--em-space-2) 0 var(--em-space-3) var(--em-space-4);
+  }
+
+  .em-drawer__group ul a {
+    display: block;
+    padding: var(--em-space-2) 0;
+    color: var(--em-color-text-muted);
+    text-decoration: none;
+  }
+
+  .em-drawer__utility {
+    display: grid;
+    gap: var(--em-space-3);
+    margin-block-start: var(--em-space-5);
+    font-size: var(--em-text-sm);
+  }
+
+  .em-drawer__utility a {
+    color: var(--em-color-text-muted);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .em-drawer {
+      transition: none;
+    }
+  }
+{% endstylesheet %}
+
+{% javascript %}
+  if (!customElements.get('em-header')) {
+    class EmHeader extends HTMLElement {
+      connectedCallback() {
+        this.input = this.querySelector('[data-em-search-input]');
+        this.mega = this.querySelector('[data-em-mega]');
+        this.placeholders = (this.dataset.placeholders || '')
+          .split(',')
+          .map((term) => term.trim())
+          .filter(Boolean);
+
+        this.resizeObserver = new ResizeObserver(this.measure);
+        this.resizeObserver.observe(this);
+        window.addEventListener('scroll', this.onScroll, { passive: true });
+        document.addEventListener('click', this.onDocumentClick);
+        document.addEventListener('keydown', this.onKeydown);
+        this.measure();
+        this.onScroll();
+        this.startPlaceholderRotation();
+      }
+
+      disconnectedCallback() {
+        this.resizeObserver?.disconnect();
+        window.removeEventListener('scroll', this.onScroll);
+        document.removeEventListener('click', this.onDocumentClick);
+        document.removeEventListener('keydown', this.onKeydown);
+        window.clearInterval(this.placeholderTimer);
+      }
+
+      /** Publishes header heights for theme components that offset against the header. */
+      measure = () => {
+        const topbar = this.querySelector('.em-header__topbar');
+        const total = this.offsetHeight;
+        const sticky = total - (topbar?.offsetHeight || 0);
+        document.body.style.setProperty('--header-height', `${sticky}px`);
+        document.body.style.setProperty('--header-group-height', `${total}px`);
+      };
+
+      onScroll = () => {
+        this.toggleAttribute('data-scrolled', window.scrollY > 40);
+      };
+
+      onDocumentClick = (event) => {
+        if (this.mega?.open && !this.mega.contains(event.target)) this.mega.open = false;
+      };
+
+      onKeydown = (event) => {
+        if (event.key === 'Escape' && this.mega?.open) {
+          this.mega.open = false;
+          this.mega.querySelector('summary')?.focus();
+        }
+      };
+
+      startPlaceholderRotation() {
+        if (!this.input || this.placeholders.length < 2) return;
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+        let index = 0;
+        this.placeholderTimer = window.setInterval(() => {
+          if (document.activeElement === this.input || this.input.value) return;
+          index = (index + 1) % this.placeholders.length;
+          this.input.placeholder = this.placeholders[index];
+        }, 3200);
+      }
+    }
+
+    customElements.define('em-header', EmHeader);
+  }
+{% endjavascript %}
+
+{% schema %}
+{
+  "name": "t:emasole.names.header",
+  "class": "em-header-section",
+  "enabled_on": {
+    "groups": ["header"]
+  },
+  "settings": [
+    {
+      "type": "header",
+      "content": "t:emasole.settings.promo_strip"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_topbar",
+      "label": "t:emasole.settings.show_promo_strip",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "promo_text",
+      "label": "t:emasole.settings.promo_text",
+      "default": "Free shipping on orders over $29 · Free returns within 90 days",
+      "visible_if": "{{ section.settings.show_topbar }}"
+    },
+    {
+      "type": "url",
+      "id": "promo_link",
+      "label": "t:emasole.settings.link",
+      "visible_if": "{{ section.settings.show_topbar }}"
+    },
+    {
+      "type": "link_list",
+      "id": "utility_menu",
+      "label": "t:emasole.settings.utility_menu",
+      "info": "t:emasole.info.utility_menu"
+    },
+    {
+      "type": "header",
+      "content": "t:emasole.settings.logo_and_search"
+    },
+    {
+      "type": "range",
+      "id": "logo_height",
+      "label": "t:emasole.settings.logo_height",
+      "min": 24,
+      "max": 44,
+      "step": 2,
+      "unit": "px",
+      "default": 36
+    },
+    {
+      "type": "text",
+      "id": "search_placeholders",
+      "label": "t:emasole.settings.search_placeholders",
+      "info": "t:emasole.info.comma_separated",
+      "default": "Search wireless earbuds,Search summer dresses,Search kitchen gadgets,Search phone cases"
+    },
+    {
+      "type": "text",
+      "id": "trending_searches",
+      "label": "t:emasole.settings.trending_searches",
+      "info": "t:emasole.info.comma_separated",
+      "default": "Earbuds,Sneakers,Smart watch,Home decor,Skincare,Toys"
+    },
+    {
+      "type": "url",
+      "id": "help_link",
+      "label": "t:emasole.settings.help_link"
+    },
+    {
+      "type": "link_list",
+      "id": "customer_account_menu",
+      "label": "t:emasole.settings.customer_account_menu",
+      "default": "customer-account-main-menu"
+    },
+    {
+      "type": "header",
+      "content": "t:emasole.settings.navigation"
+    },
+    {
+      "type": "link_list",
+      "id": "category_menu",
+      "label": "t:emasole.settings.category_menu",
+      "info": "t:emasole.info.category_menu",
+      "default": "main-menu"
+    },
+    {
+      "type": "link_list",
+      "id": "nav_menu",
+      "label": "t:emasole.settings.nav_menu"
+    },
+    {
+      "type": "text",
+      "id": "highlight_label",
+      "label": "t:emasole.settings.highlight_label",
+      "default": "Flash deals"
+    },
+    {
+      "type": "url",
+      "id": "highlight_link",
+      "label": "t:emasole.settings.highlight_link"
+    },
+    {
+      "type": "checkbox",
+      "id": "sticky",
+      "label": "t:emasole.settings.sticky_header",
+      "default": true
+    }
+  ]
+}
+{% endschema %}

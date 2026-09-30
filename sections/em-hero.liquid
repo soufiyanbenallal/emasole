@@ -1,0 +1,1019 @@
+{%- liquid
+  assign menu = section.settings.menu
+  assign slides = section.blocks | where: 'type', 'slide'
+  assign picks = section.settings.picks_collection
+-%}
+
+<div class="em-section em-hero">
+  <div class="em-container">
+    <div class="em-hero__grid{% if menu.links.size == 0 %} em-hero__grid--no-menu{% endif %}{% unless section.settings.show_panel %} em-hero__grid--no-panel{% endunless %}">
+      {%- if menu.links.size > 0 -%}
+        <nav class="em-hero__menu em-panel" aria-label="{{ 'emasole.hero.categories' | t }}">
+          <p class="em-hero__menu-title">{{ 'emasole.hero.categories' | t }}</p>
+          <ul role="list">
+            {%- for link in menu.links limit: 12 -%}
+              <li>
+                <a href="{{ link.url }}">
+                  <span>{{ link.title | escape }}</span>
+                  {%- render 'em-icon', icon: 'chevron-right' -%}
+                </a>
+              </li>
+            {%- endfor -%}
+          </ul>
+        </nav>
+      {%- endif -%}
+
+      <em-carousel
+        class="em-hero__slider"
+        data-interval="{{ section.settings.autoplay_seconds | times: 1000 }}"
+        {% if section.settings.autoplay %}
+          data-autoplay
+        {% endif %}
+        aria-roledescription="{{ 'emasole.hero.carousel' | t }}"
+        aria-label="{{ 'emasole.hero.featured_offers' | t }}"
+      >
+        <div class="em-hero__track" data-em-track>
+          {%- for block in slides -%}
+            <div
+              class="em-slide em-slide--{{ block.settings.layout }} em-slide--{{ block.settings.text_tone }}{% if block.settings.image != blank %} em-slide--has-image{% endif %}"
+              style="--em-slide-bg: {{ block.settings.background }}; --em-art-ground: {{ block.settings.background }};"
+              role="group"
+              aria-roledescription="{{ 'emasole.hero.slide' | t }}"
+              aria-label="{{ 'emasole.hero.slide_count' | t: index: forloop.index, count: forloop.length }}"
+              {{ block.shopify_attributes }}
+            >
+              <div class="em-slide__media">
+                {%- if block.settings.image != blank -%}
+                  {%- liquid
+                    if forloop.first
+                      assign slide_loading = 'eager'
+                      assign slide_priority = 'high'
+                    else
+                      assign slide_loading = 'lazy'
+                      assign slide_priority = 'auto'
+                    endif
+                  -%}
+                  {{
+                    block.settings.image
+                    | image_url: width: 1600
+                    | image_tag:
+                      widths: '600, 800, 1000, 1200, 1600',
+                      sizes: '(min-width: 1320px) 760px, (min-width: 990px) 60vw, 100vw',
+                      loading: slide_loading,
+                      fetchpriority: slide_priority,
+                      class: 'em-slide__img'
+                  }}
+                {%- else -%}
+                  {%- liquid
+                    if block.settings.text_tone == 'light'
+                      assign art_tone = 'light'
+                    else
+                      assign art_tone = 'dark'
+                    endif
+                  -%}
+                  <div class="em-slide__art">
+                    {%- render 'em-brand-art', art: block.settings.art, tone: art_tone -%}
+                  </div>
+                {%- endif -%}
+              </div>
+              <div class="em-slide__content">
+                {%- if block.settings.eyebrow != blank -%}
+                  <p class="em-slide__eyebrow">{{ block.settings.eyebrow | escape }}</p>
+                {%- endif -%}
+                {%- if block.settings.heading != blank -%}
+                  {%- if forloop.first -%}
+                    <h2 class="em-slide__heading">{{ block.settings.heading | escape }}</h2>
+                  {%- else -%}
+                    <p class="em-slide__heading">{{ block.settings.heading | escape }}</p>
+                  {%- endif -%}
+                {%- endif -%}
+                {%- if block.settings.text != blank -%}
+                  <p class="em-slide__text">{{ block.settings.text | escape }}</p>
+                {%- endif -%}
+                {%- if block.settings.link != blank -%}
+                  <a
+                    class="em-btn {% if block.settings.text_tone == 'light' %}em-btn--light{% else %}em-btn--dark{% endif %} em-slide__cta{% if block.settings.button_label == blank %} em-slide__cta--hidden{% endif %}"
+                    href="{{ block.settings.link }}"
+                  >
+                    {%- if block.settings.button_label != blank -%}
+                      {{- block.settings.button_label | escape -}}
+                      {%- render 'em-icon', icon: 'arrow-right' -%}
+                    {%- else -%}
+                      <span class="em-visually-hidden">{{ block.settings.heading | escape }}</span>
+                    {%- endif -%}
+                  </a>
+                {%- elsif block.settings.button_label != blank -%}
+                  <span class="em-btn {% if block.settings.text_tone == 'light' %}em-btn--light{% else %}em-btn--dark{% endif %} em-slide__cta">
+                    {{- block.settings.button_label | escape -}}
+                    {%- render 'em-icon', icon: 'arrow-right' -%}
+                  </span>
+                {%- endif -%}
+              </div>
+            </div>
+          {%- endfor -%}
+        </div>
+
+        {%- if slides.size > 1 -%}
+          <div class="em-hero__controls">
+            <button type="button" class="em-hero__nav" data-em-prev aria-label="{{ 'emasole.general.previous' | t }}">
+              {%- render 'em-icon', icon: 'chevron-left' -%}
+            </button>
+            <div class="em-hero__dots" role="group" aria-label="{{ 'emasole.hero.choose_slide' | t }}">
+              {%- for block in slides -%}
+                <button
+                  type="button"
+                  class="em-hero__dot"
+                  data-em-dot="{{ forloop.index0 }}"
+                  aria-label="{{ 'emasole.hero.slide_count' | t: index: forloop.index, count: forloop.length }}"
+                  {% if forloop.first %}
+                    aria-current="true"
+                  {% endif %}
+                ></button>
+              {%- endfor -%}
+            </div>
+            <button type="button" class="em-hero__nav" data-em-next aria-label="{{ 'emasole.general.next' | t }}">
+              {%- render 'em-icon', icon: 'chevron-right' -%}
+            </button>
+            {%- if section.settings.autoplay -%}
+              <button
+                type="button"
+                class="em-hero__nav"
+                data-em-pause
+                aria-label="{{ 'emasole.hero.pause' | t }}"
+                data-label-pause="{{ 'emasole.hero.pause' | t }}"
+                data-label-play="{{ 'emasole.hero.play' | t }}"
+              >
+                <svg class="em-icon em-hero__pause-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5h3v14H8zM13 5h3v14h-3z" fill="currentColor"/></svg>
+                <svg class="em-icon em-hero__play-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>
+              </button>
+            {%- endif -%}
+          </div>
+        {%- endif -%}
+      </em-carousel>
+
+      {%- if section.settings.show_panel -%}
+        <aside class="em-hero__panel em-panel" aria-label="{{ 'emasole.hero.welcome_panel' | t }}">
+          <div class="em-hero__welcome">
+            <span class="em-hero__avatar" aria-hidden="true">{%- render 'em-icon', icon: 'user' -%}</span>
+            <div>
+              <p class="em-hero__hello">
+                {%- if customer -%}
+                  {%- assign customer_name = customer.first_name | default: customer.name -%}
+                  {{ 'emasole.header.greeting' | t: name: customer_name }}
+                {%- else -%}
+                  {{ 'emasole.hero.welcome' | t: shop: shop.name }}
+                {%- endif -%}
+              </p>
+              <p class="em-hero__sub">{{ section.settings.panel_text | escape }}</p>
+            </div>
+          </div>
+
+          {%- if customer == blank and shop.customer_accounts_enabled -%}
+            <div class="em-hero__auth">
+              <a class="em-btn em-btn--sm" href="{{ routes.account_register_url }}">{{ 'emasole.hero.join' | t }}</a>
+              <a class="em-btn em-btn--sm em-btn--secondary" href="{{ routes.account_login_url }}">{{ 'emasole.hero.sign_in' | t }}</a>
+            </div>
+          {%- endif -%}
+
+          {%- if section.settings.coupon_amount != blank -%}
+            <a
+              class="em-hero__coupon"
+              {% if section.settings.coupon_code != blank %}
+                href="/discount/{{ section.settings.coupon_code | url_encode }}?redirect={{ routes.all_products_collection_url | url_encode }}"
+              {% else %}
+                href="{{ routes.all_products_collection_url }}"
+              {% endif %}
+            >
+              <span class="em-hero__coupon-amount">{{ section.settings.coupon_amount | escape }}</span>
+              <span class="em-hero__coupon-text">{{ section.settings.coupon_text | escape }}</span>
+              <span class="em-hero__coupon-cta">{{ 'emasole.coupons.claim' | t }}</span>
+            </a>
+          {%- endif -%}
+
+          <div class="em-hero__picks">
+            <p class="em-hero__picks-title">{{ section.settings.picks_title | escape }}</p>
+            <ul class="em-hero__picks-grid" role="list">
+              {%- if picks != blank and picks.products_count > 0 -%}
+                {%- for product in picks.products limit: 2 -%}
+                  <li>
+                    <a class="em-mini" href="{{ product.url }}">
+                      <span class="em-mini__media">
+                        {%- if product.featured_media -%}
+                          {{
+                            product.featured_media
+                            | image_url: width: 300
+                            | image_tag: loading: 'lazy', sizes: '120px', widths: '150, 240, 300', alt: product.featured_media.alt
+                          }}
+                        {%- else -%}
+                          {{ 'product-2' | placeholder_svg_tag }}
+                        {%- endif -%}
+                      </span>
+                      <span class="em-visually-hidden">{{ product.title | escape }}</span>
+                      <span class="em-mini__price">{{ product.price | money }}</span>
+                    </a>
+                  </li>
+                {%- endfor -%}
+              {%- else -%}
+                {%- for i in (1..2) -%}
+                  <li>
+                    <span class="em-mini">
+                      <span class="em-mini__media">{{ 'product-' | append: i | placeholder_svg_tag }}</span>
+                      <span class="em-mini__price">{{ 1999 | money }}</span>
+                    </span>
+                  </li>
+                {%- endfor -%}
+              {%- endif -%}
+            </ul>
+          </div>
+        </aside>
+      {%- endif -%}
+    </div>
+  </div>
+</div>
+
+{% stylesheet %}
+  .em-hero__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--em-space-3);
+  }
+
+  @media screen and (min-width: 990px) {
+    .em-hero__grid {
+      grid-template-columns: 230px minmax(0, 1fr) 280px;
+      gap: var(--em-space-4);
+      height: 440px;
+    }
+
+    .em-hero__grid--no-menu {
+      grid-template-columns: minmax(0, 1fr) 280px;
+    }
+
+    .em-hero__grid--no-panel {
+      grid-template-columns: 230px minmax(0, 1fr);
+    }
+
+    .em-hero__grid--no-menu.em-hero__grid--no-panel {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  /* Category sidebar */
+  .em-hero__menu {
+    display: none;
+    padding: var(--em-space-3);
+    overflow: hidden;
+  }
+
+  @media screen and (min-width: 990px) {
+    .em-hero__menu {
+      display: flex;
+      flex-direction: column;
+    }
+  }
+
+  .em-hero__menu-title {
+    margin: var(--em-space-1) var(--em-space-2) var(--em-space-2);
+    font-family: var(--em-font-display);
+    font-size: var(--em-text-md);
+    font-weight: 700;
+  }
+
+  .em-hero__menu ul {
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+    list-style: none;
+    scrollbar-width: thin;
+  }
+
+  .em-hero__menu a {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px var(--em-space-2);
+    border-radius: var(--em-radius-sm);
+    color: var(--em-ink-900);
+    font-size: var(--em-text-sm);
+    text-decoration: none;
+  }
+
+  .em-hero__menu a .em-icon {
+    width: 14px;
+    height: 14px;
+    color: var(--em-ink-400);
+  }
+
+  .em-hero__menu a:hover {
+    background: var(--em-ember-50);
+    color: var(--em-ember-700);
+  }
+
+  /* Slider */
+  .em-hero__slider {
+    position: relative;
+    display: block;
+    overflow: hidden;
+    border-radius: var(--em-radius-lg);
+    background: var(--em-ink-100);
+  }
+
+  .em-hero__track {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 100%;
+    height: 100%;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    overscroll-behavior-x: contain;
+  }
+
+  .em-hero__track::-webkit-scrollbar {
+    display: none;
+  }
+
+  .em-slide {
+    position: relative;
+    display: grid;
+    min-height: 220px;
+    overflow: hidden;
+    background: var(--em-slide-bg);
+    color: var(--em-ink-900);
+    text-decoration: none;
+    scroll-snap-align: start;
+    isolation: isolate;
+  }
+
+  @media screen and (min-width: 750px) {
+    .em-slide {
+      min-height: 360px;
+    }
+  }
+
+  .em-slide--light {
+    color: #ffffff;
+  }
+
+  .em-slide__media {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+  }
+
+  .em-slide__img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* Brand artwork when no image is set: sits in the right half, never under the copy */
+  .em-slide__art {
+    position: absolute;
+    inset: 12% 4% 12% 55%;
+  }
+
+  @media screen and (max-width: 749px) {
+    .em-slide__art {
+      inset: 18% 0 22% 58%;
+    }
+  }
+
+  .em-slide--split.em-slide--has-image .em-slide__media {
+    inset: 0 0 0 45%;
+  }
+
+  .em-slide--split .em-slide__img {
+    mask-image: linear-gradient(90deg, transparent, #000 22%);
+  }
+
+  .em-slide--has-image.em-slide--cover.em-slide--light .em-slide__media::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, rgb(23 23 28 / 0.62), rgb(23 23 28 / 0.1) 70%);
+  }
+
+  .em-slide--has-image.em-slide--cover.em-slide--dark .em-slide__media::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, rgb(255 255 255 / 0.75), rgb(255 255 255 / 0) 70%);
+  }
+
+  .em-slide__content {
+    position: static;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: var(--em-space-2);
+    max-width: 60%;
+    padding: var(--em-space-5) var(--em-space-4) var(--em-space-7);
+  }
+
+  @media screen and (min-width: 750px) {
+    .em-slide__content {
+      max-width: 52%;
+      gap: var(--em-space-3);
+      padding: var(--em-space-6) var(--em-space-6) var(--em-space-7);
+    }
+  }
+
+  .em-slide__eyebrow {
+    margin: 0;
+    padding: 3px var(--em-space-2);
+    border-radius: var(--em-radius-xs);
+    background: var(--em-sun-400);
+    color: var(--em-ink-900);
+    font-size: var(--em-text-xs);
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .em-slide__heading {
+    margin: 0;
+    font-family: var(--em-font-display);
+    font-size: var(--em-text-display);
+    font-weight: 800;
+    line-height: 1.02;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+
+  .em-slide__text {
+    margin: 0;
+    font-size: var(--em-text-md);
+    line-height: 1.45;
+  }
+
+  @media screen and (max-width: 749px) {
+    .em-slide__text {
+      display: none;
+    }
+  }
+
+  .em-slide__cta {
+    position: static;
+    margin-block-start: var(--em-space-2);
+  }
+
+  /* The slide's link covers the whole banner */
+  a.em-slide__cta::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+  }
+
+  .em-slide__cta--hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  @media screen and (max-width: 749px) {
+    .em-slide__cta {
+      min-height: 36px;
+      padding: 0 var(--em-space-4);
+      font-size: var(--em-text-sm);
+    }
+  }
+
+  .em-hero__controls {
+    position: absolute;
+    z-index: 2;
+    inset-inline-start: var(--em-space-4);
+    inset-block-end: var(--em-space-3);
+    display: flex;
+    align-items: center;
+    gap: var(--em-space-1);
+    padding: 2px;
+    border-radius: var(--em-radius-pill);
+    background: rgb(23 23 28 / 0.55);
+    color: #ffffff;
+  }
+
+  @media screen and (min-width: 750px) {
+    .em-hero__controls {
+      inset-inline-start: var(--em-space-6);
+      inset-block-end: var(--em-space-4);
+    }
+  }
+
+  .em-hero__nav {
+    display: inline-grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--em-radius-pill);
+    background: none;
+    color: inherit;
+    cursor: pointer;
+  }
+
+  .em-hero__nav:hover {
+    background: rgb(255 255 255 / 0.2);
+  }
+
+  .em-hero__nav .em-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .em-hero__play-icon,
+  em-carousel[data-paused] .em-hero__pause-icon {
+    display: none;
+  }
+
+  em-carousel[data-paused] .em-hero__play-icon {
+    display: inline-block;
+  }
+
+  .em-hero__dots {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding-inline: var(--em-space-1);
+  }
+
+  .em-hero__dot {
+    width: 8px;
+    height: 8px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--em-radius-pill);
+    background: rgb(255 255 255 / 0.55);
+    cursor: pointer;
+    transition: width var(--em-duration) var(--em-ease), background-color var(--em-duration) var(--em-ease);
+  }
+
+  .em-hero__dot[aria-current='true'] {
+    width: 22px;
+    background: #ffffff;
+  }
+
+  /* Welcome panel */
+  .em-hero__panel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--em-space-3);
+  }
+
+  @media screen and (max-width: 989px) {
+    .em-hero__panel {
+      display: none;
+    }
+  }
+
+  .em-hero__welcome {
+    display: flex;
+    align-items: center;
+    gap: var(--em-space-3);
+  }
+
+  .em-hero__avatar {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--em-radius-pill);
+    background: var(--em-ember-50);
+    color: var(--em-ember-600);
+  }
+
+  .em-hero__hello {
+    margin: 0;
+    font-family: var(--em-font-display);
+    font-size: var(--em-text-md);
+    font-weight: 700;
+    line-height: 1.25;
+  }
+
+  .em-hero__sub {
+    margin: 2px 0 0;
+    color: var(--em-color-text-muted);
+    font-size: var(--em-text-xs);
+  }
+
+  .em-hero__auth {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--em-space-2);
+  }
+
+  .em-hero__coupon {
+    position: relative;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-areas:
+      'amount cta'
+      'text cta';
+    align-items: center;
+    column-gap: var(--em-space-3);
+    padding: var(--em-space-3) var(--em-space-4);
+    border: 1.5px dashed var(--em-ember-600);
+    border-radius: var(--em-radius-md);
+    background: var(--em-ember-50);
+    color: var(--em-ember-700);
+    text-decoration: none;
+  }
+
+  .em-hero__coupon-amount {
+    grid-area: amount;
+    font-family: var(--em-font-display);
+    font-size: var(--em-text-xl);
+    font-weight: 800;
+    line-height: 1.1;
+  }
+
+  .em-hero__coupon-text {
+    grid-area: text;
+    font-size: var(--em-text-xs);
+    font-weight: 600;
+  }
+
+  .em-hero__coupon-cta {
+    grid-area: cta;
+    justify-self: end;
+    padding: 6px var(--em-space-3);
+    border-radius: var(--em-radius-pill);
+    background: var(--em-ember-600);
+    color: #ffffff;
+    font-size: var(--em-text-xs);
+    font-weight: 700;
+  }
+
+  .em-hero__coupon:hover .em-hero__coupon-cta {
+    background: var(--em-ember-700);
+  }
+
+  .em-hero__picks {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .em-hero__picks-title {
+    margin: 0 0 var(--em-space-2);
+    font-size: var(--em-text-sm);
+    font-weight: 700;
+  }
+
+  .em-hero__picks-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--em-space-2);
+    flex: 1;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .em-mini {
+    position: relative;
+    display: block;
+    height: 100%;
+    overflow: hidden;
+    border-radius: var(--em-radius-md);
+    background: var(--em-ink-100);
+    color: var(--em-ink-900);
+    text-decoration: none;
+  }
+
+  .em-mini__media,
+  .em-mini__media img,
+  .em-mini__media svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .em-mini__media svg {
+    fill: var(--em-ink-400);
+  }
+
+  .em-mini__price {
+    position: absolute;
+    inset-inline-start: 6px;
+    inset-block-end: 6px;
+    padding: 2px 6px;
+    border-radius: var(--em-radius-xs);
+    background: var(--em-ember-600);
+    color: #ffffff;
+    font-family: var(--em-font-display);
+    font-size: var(--em-text-xs);
+    font-weight: 700;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .em-hero__dot {
+      transition: none;
+    }
+  }
+{% endstylesheet %}
+
+{% javascript %}
+  if (!customElements.get('em-carousel')) {
+    class EmCarousel extends HTMLElement {
+      connectedCallback() {
+        this.track = this.querySelector('[data-em-track]');
+        this.dots = [...this.querySelectorAll('[data-em-dot]')];
+        this.pauseButton = this.querySelector('[data-em-pause]');
+        if (!this.track || this.track.children.length < 2) return;
+
+        this.index = 0;
+        this.interval = Number(this.dataset.interval) || 5000;
+        this.reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        this.querySelector('[data-em-prev]')?.addEventListener('click', () => this.go(this.index - 1));
+        this.querySelector('[data-em-next]')?.addEventListener('click', () => this.go(this.index + 1));
+        this.dots.forEach((dot) => dot.addEventListener('click', () => this.go(Number(dot.dataset.emDot))));
+        this.pauseButton?.addEventListener('click', this.togglePause);
+
+        this.track.addEventListener('scroll', this.onScroll, { passive: true });
+        this.addEventListener('pointerenter', this.stop);
+        this.addEventListener('pointerleave', this.start);
+        this.addEventListener('focusin', this.stop);
+        this.addEventListener('focusout', this.start);
+
+        if (this.reducedMotion) this.setAttribute('data-paused', '');
+        this.start();
+      }
+
+      disconnectedCallback() {
+        this.stop();
+      }
+
+      get count() {
+        return this.track.children.length;
+      }
+
+      go(index) {
+        this.index = (index + this.count) % this.count;
+        const slide = this.track.children[this.index];
+        const rtl = getComputedStyle(this).direction === 'rtl' ? -1 : 1;
+        this.track.scrollTo({
+          left: slide.offsetLeft * rtl,
+          behavior: this.reducedMotion ? 'auto' : 'smooth',
+        });
+        this.sync();
+      }
+
+      sync() {
+        this.dots.forEach((dot, i) => dot.setAttribute('aria-current', String(i === this.index)));
+      }
+
+      onScroll = () => {
+        window.cancelAnimationFrame(this.frame);
+        this.frame = window.requestAnimationFrame(() => {
+          const width = this.track.clientWidth || 1;
+          this.index = Math.round(Math.abs(this.track.scrollLeft) / width);
+          this.sync();
+        });
+      };
+
+      start = () => {
+        if (!this.hasAttribute('data-autoplay') || this.hasAttribute('data-paused')) return;
+        if (this.contains(document.activeElement)) return;
+        this.stop();
+        this.timer = window.setInterval(() => this.go(this.index + 1), this.interval);
+      };
+
+      stop = () => {
+        window.clearInterval(this.timer);
+      };
+
+      togglePause = () => {
+        const paused = this.toggleAttribute('data-paused');
+        const button = this.pauseButton;
+        button.setAttribute('aria-label', paused ? button.dataset.labelPlay : button.dataset.labelPause);
+        if (paused) this.stop();
+      };
+    }
+
+    customElements.define('em-carousel', EmCarousel);
+  }
+{% endjavascript %}
+
+{% schema %}
+{
+  "name": "t:emasole.names.hero",
+  "tag": "section",
+  "class": "em-hero-section",
+  "disabled_on": {
+    "groups": ["header", "footer"]
+  },
+  "max_blocks": 6,
+  "settings": [
+    {
+      "type": "link_list",
+      "id": "menu",
+      "label": "t:emasole.settings.category_menu",
+      "info": "t:emasole.info.hero_menu",
+      "default": "main-menu"
+    },
+    {
+      "type": "checkbox",
+      "id": "autoplay",
+      "label": "t:emasole.settings.autoplay",
+      "default": true
+    },
+    {
+      "type": "range",
+      "id": "autoplay_seconds",
+      "label": "t:emasole.settings.autoplay_seconds",
+      "min": 3,
+      "max": 10,
+      "step": 1,
+      "unit": "s",
+      "default": 5,
+      "visible_if": "{{ section.settings.autoplay }}"
+    },
+    {
+      "type": "header",
+      "content": "t:emasole.settings.welcome_panel"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_panel",
+      "label": "t:emasole.settings.show_welcome_panel",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "panel_text",
+      "label": "t:emasole.settings.text",
+      "default": "Unlock member prices and free returns",
+      "visible_if": "{{ section.settings.show_panel }}"
+    },
+    {
+      "type": "text",
+      "id": "coupon_amount",
+      "label": "t:emasole.settings.coupon_amount",
+      "default": "$5 OFF",
+      "visible_if": "{{ section.settings.show_panel }}"
+    },
+    {
+      "type": "text",
+      "id": "coupon_text",
+      "label": "t:emasole.settings.coupon_condition",
+      "default": "Your first order over $25",
+      "visible_if": "{{ section.settings.show_panel }}"
+    },
+    {
+      "type": "text",
+      "id": "coupon_code",
+      "label": "t:emasole.settings.discount_code",
+      "info": "t:emasole.info.discount_code",
+      "visible_if": "{{ section.settings.show_panel }}"
+    },
+    {
+      "type": "text",
+      "id": "picks_title",
+      "label": "t:emasole.settings.picks_title",
+      "default": "Today's top picks",
+      "visible_if": "{{ section.settings.show_panel }}"
+    },
+    {
+      "type": "collection",
+      "id": "picks_collection",
+      "label": "t:emasole.settings.collection"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "slide",
+      "name": "t:emasole.names.slide",
+      "settings": [
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "t:emasole.settings.image"
+        },
+        {
+          "type": "select",
+          "id": "art",
+          "label": "t:emasole.settings.brand_art",
+          "info": "t:emasole.info.brand_art",
+          "options": [
+            { "value": "tickets", "label": "t:emasole.options.art_tickets" },
+            { "value": "bag", "label": "t:emasole.options.art_bag" },
+            { "value": "bolt", "label": "t:emasole.options.art_bolt" },
+            { "value": "box", "label": "t:emasole.options.art_box" },
+            { "value": "gift", "label": "t:emasole.options.art_gift" },
+            { "value": "badge", "label": "t:emasole.options.art_badge" }
+          ],
+          "default": "tickets"
+        },
+        {
+          "type": "select",
+          "id": "layout",
+          "label": "t:emasole.settings.image_layout",
+          "options": [
+            { "value": "split", "label": "t:emasole.options.split" },
+            { "value": "cover", "label": "t:emasole.options.cover" }
+          ],
+          "default": "split"
+        },
+        {
+          "type": "color",
+          "id": "background",
+          "label": "t:emasole.settings.background",
+          "default": "#FFC53D"
+        },
+        {
+          "type": "select",
+          "id": "text_tone",
+          "label": "t:emasole.settings.text_tone",
+          "options": [
+            { "value": "dark", "label": "t:emasole.options.dark_text" },
+            { "value": "light", "label": "t:emasole.options.light_text" }
+          ],
+          "default": "dark"
+        },
+        {
+          "type": "text",
+          "id": "eyebrow",
+          "label": "t:emasole.settings.eyebrow",
+          "default": "Super deals"
+        },
+        {
+          "type": "text",
+          "id": "heading",
+          "label": "t:emasole.settings.heading",
+          "default": "Up to 70% off everyday essentials"
+        },
+        {
+          "type": "text",
+          "id": "text",
+          "label": "t:emasole.settings.text",
+          "default": "New markdowns every morning. Free shipping on orders over $29."
+        },
+        {
+          "type": "text",
+          "id": "button_label",
+          "label": "t:emasole.settings.button_label",
+          "default": "Shop deals"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "t:emasole.settings.link"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:emasole.names.hero",
+      "category": "t:emasole.names.category",
+      "blocks": [
+        {
+          "type": "slide",
+          "settings": {
+            "background": "#FFC53D",
+            "text_tone": "dark",
+            "art": "tickets",
+            "eyebrow": "Super deals",
+            "heading": "Up to 70% off everyday essentials",
+            "button_label": "Shop deals"
+          }
+        },
+        {
+          "type": "slide",
+          "settings": {
+            "background": "#CC3500",
+            "text_tone": "light",
+            "art": "bag",
+            "eyebrow": "New arrivals",
+            "heading": "Fresh finds, landing daily",
+            "text": "Thousands of new products across every category.",
+            "button_label": "Explore new"
+          }
+        },
+        {
+          "type": "slide",
+          "settings": {
+            "background": "#17171C",
+            "text_tone": "light",
+            "art": "bolt",
+            "eyebrow": "Tech week",
+            "heading": "Smart gadgets from $9.99",
+            "text": "Earbuds, chargers, smart home and more.",
+            "button_label": "Shop tech"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

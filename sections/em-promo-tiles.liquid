@@ -1,0 +1,292 @@
+<div class="em-section em-promos">
+  <div class="em-container">
+    <ul class="em-promos__list" role="list" style="--em-promo-cols: {{ section.blocks.size | at_least: 1 | at_most: 4 }};">
+      {%- for block in section.blocks -%}
+        <li
+          class="em-promo em-promo--{{ block.settings.text_tone }}"
+          style="--em-promo-bg: {{ block.settings.background }}; --em-art-ground: {{ block.settings.background }};"
+          {{ block.shopify_attributes }}
+        >
+          <div class="em-promo__copy">
+            {%- if block.settings.eyebrow != blank -%}
+              <p class="em-promo__eyebrow">{{ block.settings.eyebrow | escape }}</p>
+            {%- endif -%}
+            <h3 class="em-promo__heading">{{ block.settings.heading | escape }}</h3>
+            {%- if block.settings.text != blank -%}
+              <p class="em-promo__text">{{ block.settings.text | escape }}</p>
+            {%- endif -%}
+            {%- if block.settings.link != blank -%}
+              <a class="em-promo__link" href="{{ block.settings.link }}">
+                {{- block.settings.link_label | default: block.settings.heading | escape -}}
+                {%- render 'em-icon', icon: 'arrow-right' -%}
+              </a>
+            {%- endif -%}
+          </div>
+          <div class="em-promo__media">
+            {%- if block.settings.image != blank -%}
+              {{
+                block.settings.image
+                | image_url: width: 600
+                | image_tag: loading: 'lazy', widths: '240, 360, 480, 600', sizes: '(min-width: 990px) 200px, 40vw', alt: ''
+              }}
+            {%- else -%}
+              {%- liquid
+                if block.settings.text_tone == 'light'
+                  assign art_tone = 'light'
+                else
+                  assign art_tone = 'dark'
+                endif
+              -%}
+              {%- render 'em-brand-art', art: block.settings.art, tone: art_tone, class: 'em-promo__art' -%}
+            {%- endif -%}
+          </div>
+        </li>
+      {%- endfor -%}
+    </ul>
+  </div>
+</div>
+
+{% stylesheet %}
+  .em-promos__list {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 82%;
+    gap: var(--em-space-3);
+    margin: 0;
+    padding: 0;
+    overflow-x: auto;
+    list-style: none;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+
+  .em-promos__list::-webkit-scrollbar {
+    display: none;
+  }
+
+  @media screen and (min-width: 750px) {
+    .em-promos__list {
+      grid-auto-flow: row;
+      grid-template-columns: repeat(var(--em-promo-cols), minmax(0, 1fr));
+      gap: var(--em-space-4);
+      overflow: visible;
+    }
+  }
+
+  .em-promo {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 40%;
+    align-items: stretch;
+    min-height: 168px;
+    overflow: hidden;
+    border-radius: var(--em-radius-lg);
+    background: var(--em-promo-bg);
+    color: var(--em-ink-900);
+    scroll-snap-align: start;
+  }
+
+  .em-promo--light {
+    color: #ffffff;
+  }
+
+  .em-promo__copy {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 6px;
+    padding: var(--em-space-4) var(--em-space-2) var(--em-space-4) var(--em-space-5);
+  }
+
+  .em-promo__eyebrow {
+    margin: 0;
+    font-size: var(--em-text-xs);
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .em-promo__heading {
+    margin: 0;
+    font-family: var(--em-font-display);
+    font-size: var(--em-text-xl);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+  }
+
+  .em-promo__text {
+    margin: 0;
+    font-size: var(--em-text-sm);
+    line-height: 1.4;
+  }
+
+  .em-promo__link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--em-space-1);
+    margin-block-start: var(--em-space-1);
+    color: inherit;
+    font-size: var(--em-text-sm);
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .em-promo__link::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+  }
+
+  .em-promo__link .em-icon {
+    width: 16px;
+    height: 16px;
+    transition: translate var(--em-duration) var(--em-ease);
+  }
+
+  .em-promo:hover .em-promo__link .em-icon {
+    translate: 3px 0;
+  }
+
+  .em-promo:has(.em-promo__link:focus-visible) {
+    outline: 2px solid var(--em-color-focus);
+    outline-offset: 2px;
+  }
+
+  .em-promo__link:focus-visible {
+    outline: none;
+  }
+
+  .em-promo__media img,
+  .em-promo__media svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .em-promo__media {
+    display: grid;
+    place-items: center;
+  }
+
+  .em-promo__media .em-promo__art {
+    width: 100%;
+    height: 100%;
+    padding: var(--em-space-3) var(--em-space-3) var(--em-space-3) 0;
+    object-fit: contain;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .em-promo__link .em-icon {
+      transition: none;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:emasole.names.promo_tiles",
+  "tag": "section",
+  "class": "em-promos-section",
+  "disabled_on": {
+    "groups": ["header", "footer"]
+  },
+  "max_blocks": 4,
+  "blocks": [
+    {
+      "type": "tile",
+      "name": "t:emasole.names.tile",
+      "settings": [
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "t:emasole.settings.image"
+        },
+        {
+          "type": "select",
+          "id": "art",
+          "label": "t:emasole.settings.brand_art",
+          "info": "t:emasole.info.brand_art",
+          "options": [
+            { "value": "gift", "label": "t:emasole.options.art_gift" },
+            { "value": "box", "label": "t:emasole.options.art_box" },
+            { "value": "badge", "label": "t:emasole.options.art_badge" },
+            { "value": "tickets", "label": "t:emasole.options.art_tickets" },
+            { "value": "bag", "label": "t:emasole.options.art_bag" },
+            { "value": "bolt", "label": "t:emasole.options.art_bolt" }
+          ],
+          "default": "gift"
+        },
+        {
+          "type": "color",
+          "id": "background",
+          "label": "t:emasole.settings.background",
+          "default": "#FFF1EA"
+        },
+        {
+          "type": "select",
+          "id": "text_tone",
+          "label": "t:emasole.settings.text_tone",
+          "options": [
+            { "value": "dark", "label": "t:emasole.options.dark_text" },
+            { "value": "light", "label": "t:emasole.options.light_text" }
+          ],
+          "default": "dark"
+        },
+        {
+          "type": "text",
+          "id": "eyebrow",
+          "label": "t:emasole.settings.eyebrow",
+          "default": "Bundle & save"
+        },
+        {
+          "type": "text",
+          "id": "heading",
+          "label": "t:emasole.settings.heading",
+          "default": "Buy 2, get 10% off"
+        },
+        {
+          "type": "text",
+          "id": "text",
+          "label": "t:emasole.settings.text",
+          "default": "Mix and match across home and kitchen."
+        },
+        {
+          "type": "text",
+          "id": "link_label",
+          "label": "t:emasole.settings.link_label",
+          "default": "Shop now"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "t:emasole.settings.link"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:emasole.names.promo_tiles",
+      "category": "t:emasole.names.category",
+      "blocks": [
+        {
+          "type": "tile",
+          "settings": { "art": "gift", "background": "#FFF1EA", "text_tone": "dark", "eyebrow": "Bundle & save", "heading": "Buy 2, get 10% off", "text": "Mix and match across home and kitchen." }
+        },
+        {
+          "type": "tile",
+          "settings": { "art": "box", "background": "#E6F5EC", "text_tone": "dark", "eyebrow": "Local warehouse", "heading": "Fast delivery in 3–5 days", "text": "Thousands of items ship from nearby." }
+        },
+        {
+          "type": "tile",
+          "settings": { "art": "badge", "background": "#17171C", "text_tone": "light", "eyebrow": "Ema Picks", "heading": "Quality-checked by our team", "text": "Top-rated products, verified sellers." }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

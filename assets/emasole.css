@@ -1,0 +1,491 @@
+/*
+ * Emasole design system — global tokens and shared primitives.
+ *
+ * Every `em-*` section, block and snippet is built from these tokens. Component-specific
+ * rules live next to their markup in `{% stylesheet %}` tags; only what is shared by
+ * several components belongs here.
+ */
+
+:root {
+  /* Brand — Ember (action, price, promotion) */
+  --em-ember-50: #fff1ea;
+  --em-ember-100: #ffdccb;
+  --em-ember-500: #ff6a2b;
+  --em-ember-600: #cc3500;
+  --em-ember-700: #a82b00;
+
+  /* Brand — Sun (flash deals, highlights; always carries ink text) */
+  --em-sun-100: #fff4d1;
+  --em-sun-400: #ffc53d;
+
+  /* Trust — Mint (free shipping, guarantees, in stock) */
+  --em-mint-50: #e6f5ec;
+  --em-mint-700: #0a7a4a;
+
+  /* Neutrals — Ink */
+  --em-ink-900: #17171c;
+  --em-ink-600: #55555f;
+  --em-ink-400: #85858f;
+  --em-ink-200: #dedee3;
+  --em-ink-100: #ededf1;
+  --em-surface: #f5f5f7;
+  --em-card: #ffffff;
+
+  /* Semantic roles */
+  --em-color-text: var(--em-ink-900);
+  --em-color-text-muted: var(--em-ink-600);
+  --em-color-border: var(--em-ink-200);
+  --em-color-border-strong: var(--em-ink-400);
+  --em-color-action: var(--em-ember-600);
+  --em-color-action-hover: var(--em-ember-700);
+  --em-color-on-action: #ffffff;
+  --em-color-price: var(--em-ember-600);
+  --em-color-focus: var(--em-ember-600);
+
+  /* Type */
+  --em-font-display: var(--font-heading--family, 'Poppins', system-ui, sans-serif);
+  --em-font-body: var(--font-body--family, 'Inter', system-ui, sans-serif);
+  --em-text-xs: 0.75rem;
+  --em-text-sm: 0.8125rem;
+  --em-text-md: 0.9375rem;
+  --em-text-lg: 1.125rem;
+  --em-text-xl: 1.375rem;
+  --em-text-2xl: clamp(1.5rem, 1.2rem + 1.2vw, 2rem);
+  --em-text-display: clamp(1.875rem, 1.3rem + 2.4vw, 3.25rem);
+
+  /* Space (4px grid) */
+  --em-space-1: 4px;
+  --em-space-2: 8px;
+  --em-space-3: 12px;
+  --em-space-4: 16px;
+  --em-space-5: 24px;
+  --em-space-6: 32px;
+  --em-space-7: 48px;
+
+  /* Radius */
+  --em-radius-xs: 4px;
+  --em-radius-sm: 8px;
+  --em-radius-md: 12px;
+  --em-radius-lg: 16px;
+  --em-radius-pill: 999px;
+
+  /* Elevation */
+  --em-shadow-1: 0 1px 2px rgb(23 23 28 / 0.06);
+  --em-shadow-2: 0 6px 20px rgb(23 23 28 / 0.1);
+  --em-shadow-3: 0 16px 40px rgb(23 23 28 / 0.16);
+
+  /* Motion */
+  --em-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --em-duration: 180ms;
+
+  /* Layout */
+  --em-container: 1320px;
+  --em-gutter: 12px;
+  --em-section-gap: 12px;
+}
+
+@media screen and (min-width: 750px) {
+  :root {
+    --em-gutter: 24px;
+    --em-section-gap: 16px;
+  }
+}
+
+/* Custom elements are inline by default */
+em-header,
+em-rail,
+em-tabs,
+em-feed,
+em-carousel {
+  display: block;
+}
+
+/* Homepage canvas: marketplace grey with white panels */
+main[data-template='index'] {
+  background: var(--em-surface);
+  padding-block-end: var(--em-space-6);
+}
+
+.em-container {
+  width: 100%;
+  max-width: calc(var(--em-container) + var(--em-gutter) * 2);
+  margin-inline: auto;
+  padding-inline: var(--em-gutter);
+}
+
+.em-section {
+  padding-block-start: var(--em-section-gap);
+  color: var(--em-color-text);
+  font-family: var(--em-font-body);
+}
+
+.em-panel {
+  background: var(--em-card);
+  border-radius: var(--em-radius-lg);
+  padding: var(--em-space-4);
+  box-shadow: var(--em-shadow-1);
+}
+
+@media screen and (min-width: 750px) {
+  .em-panel {
+    padding: var(--em-space-5);
+  }
+}
+
+.em-visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+:where([class^='em-'], [class*=' em-']):focus-visible {
+  outline: 2px solid var(--em-color-focus);
+  outline-offset: 2px;
+}
+
+/* Icons */
+.em-icon {
+  width: 1.25em;
+  height: 1.25em;
+  flex: none;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* Section heading row */
+.em-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--em-space-3);
+  margin-block-end: var(--em-space-4);
+}
+
+.em-head__title {
+  display: flex;
+  align-items: center;
+  gap: var(--em-space-2);
+  margin: 0;
+  font-family: var(--em-font-display);
+  font-size: var(--em-text-xl);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--em-color-text);
+}
+
+.em-head__title .em-icon {
+  color: var(--em-ember-600);
+}
+
+.em-head__link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--em-space-1);
+  font-size: var(--em-text-sm);
+  font-weight: 600;
+  color: var(--em-color-text-muted);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.em-head__link:hover {
+  color: var(--em-color-action);
+}
+
+/* Buttons */
+.em-btn {
+  --em-btn-bg: var(--em-color-action);
+  --em-btn-fg: var(--em-color-on-action);
+  --em-btn-border: var(--em-btn-bg);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--em-space-2);
+  min-height: 44px;
+  padding: 0 var(--em-space-5);
+  border: 1.5px solid var(--em-btn-border);
+  border-radius: var(--em-radius-pill);
+  background: var(--em-btn-bg);
+  color: var(--em-btn-fg);
+  font-family: var(--em-font-body);
+  font-size: var(--em-text-md);
+  font-weight: 700;
+  line-height: 1;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color var(--em-duration) var(--em-ease), transform var(--em-duration) var(--em-ease),
+    color var(--em-duration) var(--em-ease);
+}
+
+.em-btn:hover {
+  --em-btn-bg: var(--em-color-action-hover);
+}
+
+.em-btn:active {
+  transform: scale(0.98);
+}
+
+.em-btn[disabled],
+.em-btn[aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.em-btn--secondary {
+  --em-btn-bg: var(--em-card);
+  --em-btn-fg: var(--em-ink-900);
+  --em-btn-border: var(--em-ink-900);
+}
+
+.em-btn--secondary:hover {
+  --em-btn-bg: var(--em-ink-100);
+}
+
+.em-btn--dark {
+  --em-btn-bg: var(--em-ink-900);
+  --em-btn-fg: #ffffff;
+}
+
+.em-btn--dark:hover {
+  --em-btn-bg: #33333b;
+}
+
+.em-btn--light {
+  --em-btn-bg: #ffffff;
+  --em-btn-fg: var(--em-ink-900);
+}
+
+.em-btn--light:hover {
+  --em-btn-bg: var(--em-ink-100);
+}
+
+.em-btn--sm {
+  min-height: 36px;
+  padding: 0 var(--em-space-4);
+  font-size: var(--em-text-sm);
+}
+
+.em-btn--block {
+  width: 100%;
+}
+
+/* Icon button (round) */
+.em-icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--em-color-border);
+  border-radius: var(--em-radius-pill);
+  background: var(--em-card);
+  color: var(--em-ink-900);
+  cursor: pointer;
+  box-shadow: var(--em-shadow-1);
+  transition: background-color var(--em-duration) var(--em-ease), opacity var(--em-duration) var(--em-ease);
+}
+
+.em-icon-btn:hover {
+  background: var(--em-ink-100);
+}
+
+.em-icon-btn[disabled] {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Badges */
+.em-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 6px;
+  border-radius: var(--em-radius-xs);
+  font-family: var(--em-font-body);
+  font-size: var(--em-text-xs);
+  font-weight: 700;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
+.em-badge--deal {
+  background: var(--em-ember-600);
+  color: #ffffff;
+}
+
+.em-badge--hot {
+  background: var(--em-sun-400);
+  color: var(--em-ink-900);
+}
+
+.em-badge--trust {
+  background: var(--em-mint-50);
+  color: var(--em-mint-700);
+}
+
+.em-badge--soft {
+  background: var(--em-ember-50);
+  color: var(--em-ember-700);
+}
+
+.em-badge--dark {
+  background: var(--em-ink-900);
+  color: #ffffff;
+}
+
+.em-badge--pick {
+  background: var(--em-ink-900);
+  color: var(--em-sun-400);
+}
+
+/* Price */
+.em-price {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px var(--em-space-2);
+  font-family: var(--em-font-display);
+}
+
+.em-price__current {
+  font-size: var(--em-text-md);
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--em-ink-900);
+}
+
+@media screen and (min-width: 750px) {
+  .em-price__current {
+    font-size: var(--em-text-lg);
+  }
+}
+
+.em-price--sale .em-price__current {
+  color: var(--em-color-price);
+}
+
+.em-price__compare {
+  font-family: var(--em-font-body);
+  font-size: var(--em-text-xs);
+  color: var(--em-color-text-muted);
+  text-decoration: line-through;
+}
+
+/* Chips */
+.em-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--em-space-1);
+  min-height: 32px;
+  padding: 0 var(--em-space-3);
+  border: 1px solid var(--em-color-border);
+  border-radius: var(--em-radius-pill);
+  background: var(--em-card);
+  color: var(--em-ink-900);
+  font-size: var(--em-text-sm);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color var(--em-duration) var(--em-ease), background-color var(--em-duration) var(--em-ease);
+}
+
+.em-chip:hover {
+  border-color: var(--em-ink-900);
+}
+
+.em-chip[aria-selected='true'],
+.em-chip--active {
+  border-color: var(--em-ink-900);
+  background: var(--em-ink-900);
+  color: #ffffff;
+}
+
+/* Horizontal rail — shared by product and category scrollers */
+.em-rail {
+  position: relative;
+}
+
+.em-rail__track {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: var(--em-rail-item, 44%);
+  gap: var(--em-rail-gap, var(--em-space-3));
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.em-rail__track::-webkit-scrollbar {
+  display: none;
+}
+
+.em-rail__track > * {
+  scroll-snap-align: start;
+  min-width: 0;
+}
+
+.em-rail__arrow {
+  position: absolute;
+  top: var(--em-rail-arrow-top, 40%);
+  z-index: 2;
+  display: none;
+  translate: 0 -50%;
+}
+
+.em-rail__arrow--prev {
+  inset-inline-start: -8px;
+}
+
+.em-rail__arrow--next {
+  inset-inline-end: -8px;
+}
+
+@media screen and (min-width: 990px) {
+  .em-rail__arrow {
+    display: inline-grid;
+  }
+}
+
+/* Product grid */
+.em-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--em-cols-mobile, 2), minmax(0, 1fr));
+  gap: var(--em-space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media screen and (min-width: 750px) {
+  .em-grid {
+    grid-template-columns: repeat(var(--em-cols-tablet, 3), minmax(0, 1fr));
+  }
+}
+
+@media screen and (min-width: 990px) {
+  .em-grid {
+    grid-template-columns: repeat(var(--em-cols, 5), minmax(0, 1fr));
+    gap: var(--em-space-4);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .em-btn,
+  .em-chip,
+  .em-icon-btn {
+    transition: none;
+  }
+}

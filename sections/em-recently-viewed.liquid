@@ -1,0 +1,181 @@
+{%- liquid
+  # Rendered on the homepage it is an empty shell; the script fetches this same section
+  # file through the search page (q = id:1 OR id:2 …) and swaps the results in.
+  assign has_results = false
+  if search.performed and search.results_count > 0
+    if search.terms contains 'id:'
+      assign has_results = true
+    endif
+  endif
+-%}
+
+<em-recently-viewed
+  class="em-section em-recent"
+  data-section="em-recently-viewed"
+  {% unless has_results or request.design_mode %}
+    hidden
+  {% endunless %}
+>
+  <div class="em-container">
+    <div class="em-panel">
+      <div class="em-head">
+        <h2 class="em-head__title">
+          {%- render 'em-icon', icon: 'clock' -%}
+          {{ section.settings.title | escape }}
+        </h2>
+        <button type="button" class="em-head__link em-recent__clear" data-em-recent-clear>
+          {{- 'emasole.recent.clear' | t -}}
+        </button>
+      </div>
+
+      <em-rail class="em-rail em-recent__rail">
+        <ul class="em-rail__track" role="list" data-em-recent-list>
+          {%- if has_results -%}
+            {%- for item in search.results -%}
+              {%- if item.object_type == 'product' -%}
+                <li data-product-id="{{ item.id }}">
+                  {%- render 'em-product-card', product: item, sizes: '(min-width: 990px) 210px, 42vw' -%}
+                </li>
+              {%- endif -%}
+            {%- endfor -%}
+          {%- elsif request.design_mode -%}
+            {%- for i in (1..4) -%}
+              <li>{%- render 'em-product-card', index: i -%}</li>
+            {%- endfor -%}
+          {%- endif -%}
+        </ul>
+        {%- render 'em-rail-arrows', label: section.settings.title -%}
+      </em-rail>
+    </div>
+  </div>
+</em-recently-viewed>
+
+{% stylesheet %}
+  em-recently-viewed {
+    display: block;
+  }
+
+  em-recently-viewed[hidden] {
+    display: none;
+  }
+
+  .em-recent__clear {
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .em-recent__rail {
+    --em-rail-item: 42%;
+  }
+
+  @media screen and (min-width: 750px) {
+    .em-recent__rail {
+      --em-rail-item: calc((100% - var(--em-space-3) * 3) / 4);
+    }
+  }
+
+  @media screen and (min-width: 990px) {
+    .em-recent__rail {
+      --em-rail-item: calc((100% - var(--em-space-3) * 5) / 6);
+    }
+  }
+
+  .em-recent__rail .em-card {
+    border: 1px solid var(--em-ink-100);
+  }
+{% endstylesheet %}
+
+{% javascript %}
+  /**
+   * Shows the products this shopper viewed most recently. Product pages record views in
+   * localStorage ('viewedProducts', written by the theme); nothing leaves the browser except
+   * the product ids sent to the store's own search.
+   */
+  if (!customElements.get('em-recently-viewed')) {
+    class EmRecentlyViewed extends HTMLElement {
+      static STORAGE_KEY = 'viewedProducts';
+
+      connectedCallback() {
+        this.querySelector('[data-em-recent-clear]')?.addEventListener('click', this.clear);
+        if (window.Shopify?.designMode) return;
+        this.load();
+      }
+
+      get ids() {
+        try {
+          const ids = JSON.parse(localStorage.getItem(EmRecentlyViewed.STORAGE_KEY) || '[]');
+          return Array.isArray(ids) ? ids.map(String).filter((id) => /^\d+$/.test(id)) : [];
+        } catch (error) {
+          return [];
+        }
+      }
+
+      async load() {
+        const ids = this.ids;
+        if (!ids.length) return;
+
+        const url = new URL(window.Theme?.routes?.search_url || '/search', window.location.origin);
+        url.searchParams.set('q', ids.map((id) => `id:${id}`).join(' OR '));
+        url.searchParams.set('type', 'product');
+        url.searchParams.set('section_id', this.dataset.section);
+
+        try {
+          const response = await fetch(url.toString());
+          if (!response.ok) return;
+          const html = new DOMParser().parseFromString(await response.text(), 'text/html');
+          const items = [...html.querySelectorAll('[data-em-recent-list] > li[data-product-id]')];
+          if (!items.length) return;
+
+          // Keep the order the shopper viewed them in.
+          items.sort((a, b) => ids.indexOf(a.dataset.productId) - ids.indexOf(b.dataset.productId));
+          this.querySelector('[data-em-recent-list]')?.replaceChildren(...items);
+          this.hidden = false;
+        } catch (error) {
+          // Recently viewed is a nicety; stay hidden on failure.
+        }
+      }
+
+      clear = () => {
+        try {
+          localStorage.removeItem(EmRecentlyViewed.STORAGE_KEY);
+        } catch (error) {}
+        this.hidden = true;
+      };
+    }
+
+    customElements.define('em-recently-viewed', EmRecentlyViewed);
+  }
+{% endjavascript %}
+
+{% schema %}
+{
+  "name": "t:emasole.names.recently_viewed",
+  "tag": "section",
+  "class": "em-recent-section",
+  "disabled_on": {
+    "groups": ["header", "footer"]
+  },
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "t:emasole.settings.heading",
+      "default": "Recently viewed"
+    },
+    {
+      "type": "paragraph",
+      "content": "t:emasole.info.recently_viewed"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:emasole.names.recently_viewed",
+      "category": "t:emasole.names.category"
+    }
+  ]
+}
+{% endschema %}

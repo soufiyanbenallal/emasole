@@ -1,0 +1,139 @@
+{% doc %}
+  Renders Emasole brand artwork: flat geometric compositions built from the brand's
+  shapes (the smiling bag, coupon tickets, the bolt). Used wherever a merchant has not
+  uploaded an image, so banners and tiles look branded out of the box.
+
+  Colours come from three roles so the art works on any ground:
+  `--em-art-1` main shape, `--em-art-2` accent, `--em-art-3` details and knockouts.
+  Pass `tone: 'light'` on dark grounds (white and Sun) and `tone: 'dark'` on light
+  grounds (Ink and Ember). `--em-art-ground` should be set to the ground colour.
+
+  @param {string} art - Composition: bag, tickets, bolt, box, gift, badge
+  @param {string} [tone] - 'dark' (default) for light grounds, 'light' for dark grounds
+  @param {string} [class] - Extra classes on the svg
+
+  @example
+  {% render 'em-brand-art', art: 'tickets', tone: 'dark' %}
+{% enddoc %}
+<svg
+  class="em-art em-art--{{ tone | default: 'dark' }}{% if class %} {{ class }}{% endif %}"
+  viewBox="0 0 400 320"
+  preserveAspectRatio="xMidYMid meet"
+  aria-hidden="true"
+  focusable="false"
+>
+  {%- case art -%}
+    {%- when 'tickets' -%}
+      <g transform="rotate(-12 200 160)">
+        <path class="em-art__2" d="M86 78h228a12 12 0 0 1 12 12v26a18 18 0 0 0 0 36v26a12 12 0 0 1-12 12H86a12 12 0 0 1-12-12v-26a18 18 0 0 0 0-36V90a12 12 0 0 1 12-12Z"/>
+      </g>
+      <path class="em-art__1" d="M96 128h228a12 12 0 0 1 12 12v30a20 20 0 0 0 0 40v30a12 12 0 0 1-12 12H96a12 12 0 0 1-12-12v-30a20 20 0 0 0 0-40v-30a12 12 0 0 1 12-12Z"/>
+      <path class="em-art__line" d="M250 138v124"/>
+      <circle class="em-art__3" cx="160" cy="170" r="16"/>
+      <circle class="em-art__3" cx="200" cy="222" r="16"/>
+      <path class="em-art__stroke" d="M212 158 150 234"/>
+      <rect class="em-art__3" x="272" y="176" width="40" height="12" rx="6"/>
+      <rect class="em-art__3" x="272" y="198" width="26" height="12" rx="6"/>
+      <circle class="em-art__2" cx="336" cy="62" r="22"/>
+    {%- when 'bolt' -%}
+      <circle class="em-art__1" cx="186" cy="168" r="112"/>
+      <path class="em-art__3" d="M200 76 128 184h52l-14 72 76-112h-54Z"/>
+      <g transform="rotate(18 318 96)">
+        <path class="em-art__2" d="M284 66h52a10 10 0 0 1 10 10v44a10 10 0 0 1-10 10h-52l-20-32Z"/>
+        <circle class="em-art__1" cx="286" cy="98" r="7"/>
+      </g>
+      <circle class="em-art__2" cx="74" cy="72" r="16"/>
+      <rect class="em-art__2" x="300" y="248" width="70" height="20" rx="10"/>
+    {%- when 'box' -%}
+      <path class="em-art__1" d="M200 60 314 118v126L200 302 86 244V118Z"/>
+      <path class="em-art__3" d="M200 60 314 118 200 176 86 118Z" opacity="0.28"/>
+      <path class="em-art__stroke" d="M86 118l114 58 114-58M200 176v126"/>
+      <path class="em-art__2" d="m142 89 114 58v34l-22 11v-34L120 100Z"/>
+      <rect class="em-art__2" x="316" y="54" width="54" height="22" rx="11"/>
+      <circle class="em-art__2" cx="58" cy="252" r="18"/>
+    {%- when 'gift' -%}
+      <rect class="em-art__1" x="96" y="140" width="208" height="150" rx="14"/>
+      <rect class="em-art__2" x="80" y="104" width="240" height="52" rx="12"/>
+      <rect class="em-art__3" x="184" y="104" width="32" height="186"/>
+      <path class="em-art__stroke em-art__stroke--accent" d="M200 104c-18-44-66-50-66-20s44 20 66 20Zm0 0c18-44 66-50 66-20s-44 20-66 20Z"/>
+      <circle class="em-art__2" cx="336" cy="70" r="20"/>
+      <rect class="em-art__2" x="40" y="60" width="60" height="20" rx="10"/>
+    {%- when 'badge' -%}
+      <path class="em-art__1" d="m200 36 30 22 37-2 12 35 30 22-12 35 12 35-30 22-12 35-37-2-30 22-30-22-37 2-12-35-30-22 12-35-12-35 30-22 12-35 37 2Z"/>
+      <path class="em-art__stroke em-art__stroke--thick" d="m156 166 30 30 58-60"/>
+      <path class="em-art__2" d="m150 250-26 58 34-12 18 30 22-56ZM250 250l26 58-34-12-18 30-22-56Z"/>
+      <circle class="em-art__2" cx="340" cy="70" r="18"/>
+    {%- else -%}
+      <path class="em-art__1" d="M122 118c2-12 12-20 24-20h108c12 0 22 8 24 20l20 150c2 18-12 34-30 34H132c-18 0-32-16-30-34Z"/>
+      <path class="em-art__stroke em-art__stroke--handle" d="M160 110V96a40 40 0 0 1 80 0v14"/>
+      <path class="em-art__stroke em-art__stroke--smile" d="M164 170a40 40 0 0 0 72 0"/>
+      <circle class="em-art__2" cx="300" cy="78" r="24"/>
+      <g transform="rotate(14 318 214)">
+        <path class="em-art__2" d="M274 186h78a8 8 0 0 1 8 8v10a10 10 0 0 0 0 20v10a8 8 0 0 1-8 8h-78a8 8 0 0 1-8-8v-10a10 10 0 0 0 0-20v-10a8 8 0 0 1 8-8Z"/>
+      </g>
+      <rect class="em-art__2" x="52" y="232" width="56" height="20" rx="10"/>
+  {%- endcase -%}
+</svg>
+
+{% stylesheet %}
+  .em-art {
+    --em-art-1: var(--em-ink-900);
+    --em-art-2: var(--em-ember-600);
+    --em-art-3: var(--em-art-ground, #ffffff);
+
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .em-art--light {
+    --em-art-1: #ffffff;
+    --em-art-2: var(--em-sun-400);
+    --em-art-3: var(--em-art-ground, var(--em-ink-900));
+  }
+
+  .em-art__1 {
+    fill: var(--em-art-1);
+  }
+
+  .em-art__2 {
+    fill: var(--em-art-2);
+  }
+
+  .em-art__3 {
+    fill: var(--em-art-3);
+  }
+
+  .em-art__line {
+    fill: none;
+    stroke: var(--em-art-3);
+    stroke-width: 4;
+    stroke-dasharray: 8 8;
+  }
+
+  .em-art__stroke {
+    fill: none;
+    stroke: var(--em-art-3);
+    stroke-width: 12;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .em-art__stroke--thick {
+    stroke-width: 18;
+  }
+
+  .em-art__stroke--accent {
+    stroke: var(--em-art-2);
+  }
+
+  .em-art__stroke--handle {
+    stroke: var(--em-art-1);
+    stroke-width: 14;
+  }
+
+  .em-art__stroke--smile {
+    stroke: var(--em-art-2);
+    stroke-width: 14;
+  }
+{% endstylesheet %}

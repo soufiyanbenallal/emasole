@@ -1,0 +1,220 @@
+{%- liquid
+  assign tabs = section.blocks | where: 'type', 'tab'
+  assign limit = section.settings.products_per_tab
+-%}
+
+<div class="em-section em-tabs">
+  <div class="em-container">
+    <em-tabs class="em-panel em-tabs__panel">
+      <div class="em-head em-tabs__head">
+        <h2 class="em-head__title">{{ section.settings.title | escape }}</h2>
+      </div>
+
+      <div class="em-tabs__list" role="tablist" aria-label="{{ section.settings.title | escape }}">
+        {%- for block in tabs -%}
+          <button
+            type="button"
+            class="em-chip"
+            role="tab"
+            id="EmTab-{{ block.id }}"
+            aria-controls="EmTabPanel-{{ block.id }}"
+            aria-selected="{% if forloop.first %}true{% else %}false{% endif %}"
+            {% unless forloop.first %}
+              tabindex="-1"
+            {% endunless %}
+            {{ block.shopify_attributes }}
+          >
+            {%- if block.settings.label != blank -%}
+              {{ block.settings.label | escape }}
+            {%- elsif block.settings.collection != blank -%}
+              {{ block.settings.collection.title | escape }}
+            {%- else -%}
+              {{ 'emasole.categories.placeholder' | t }}
+            {%- endif -%}
+          </button>
+        {%- endfor -%}
+      </div>
+
+      {%- for block in tabs -%}
+        {%- assign collection_item = block.settings.collection -%}
+        <div
+          class="em-tabs__content"
+          role="tabpanel"
+          id="EmTabPanel-{{ block.id }}"
+          aria-labelledby="EmTab-{{ block.id }}"
+          tabindex="0"
+          {% unless forloop.first %}
+            hidden
+          {% endunless %}
+        >
+          <ul class="em-grid" role="list" style="--em-cols: {{ section.settings.columns }};">
+            {%- if collection_item != blank and collection_item.products_count > 0 -%}
+              {%- for product in collection_item.products limit: limit -%}
+                <li>
+                  {%- render 'em-product-card',
+                    product: product,
+                    sizes: '(min-width: 990px) 240px, (min-width: 750px) 30vw, 46vw',
+                    show_rating: section.settings.show_rating
+                  -%}
+                </li>
+              {%- endfor -%}
+            {%- else -%}
+              {%- for i in (1..limit) -%}
+                <li>{%- render 'em-product-card', index: i -%}</li>
+              {%- endfor -%}
+            {%- endif -%}
+          </ul>
+          {%- if collection_item != blank -%}
+            <div class="em-tabs__more">
+              <a class="em-btn em-btn--secondary" href="{{ collection_item.url }}">
+                {{- 'emasole.tabs.see_all' | t: title: collection_item.title | escape -}}
+              </a>
+            </div>
+          {%- endif -%}
+        </div>
+      {%- endfor -%}
+    </em-tabs>
+  </div>
+</div>
+
+{% stylesheet %}
+  .em-tabs__head {
+    margin-block-end: var(--em-space-3);
+  }
+
+  .em-tabs__list {
+    display: flex;
+    gap: var(--em-space-2);
+    margin-block-end: var(--em-space-4);
+    padding-block-end: 2px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .em-tabs__list::-webkit-scrollbar {
+    display: none;
+  }
+
+  .em-tabs__content:focus-visible {
+    outline: 2px solid var(--em-color-focus);
+    outline-offset: 4px;
+    border-radius: var(--em-radius-sm);
+  }
+
+  .em-tabs__more {
+    display: flex;
+    justify-content: center;
+    margin-block-start: var(--em-space-5);
+  }
+{% endstylesheet %}
+
+{% javascript %}
+  if (!customElements.get('em-tabs')) {
+    class EmTabs extends HTMLElement {
+      connectedCallback() {
+        this.tabs = [...this.querySelectorAll('[role="tab"]')];
+        this.tabs.forEach((tab) => tab.addEventListener('click', () => this.select(tab)));
+        this.querySelector('[role="tablist"]')?.addEventListener('keydown', this.onKeydown);
+      }
+
+      select(tab, focus = false) {
+        this.tabs.forEach((item) => {
+          const selected = item === tab;
+          item.setAttribute('aria-selected', String(selected));
+          item.tabIndex = selected ? 0 : -1;
+          const panel = this.querySelector(`#${item.getAttribute('aria-controls')}`);
+          if (panel) panel.hidden = !selected;
+        });
+        tab.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        if (focus) tab.focus();
+      }
+
+      onKeydown = (event) => {
+        const index = this.tabs.indexOf(document.activeElement);
+        if (index < 0) return;
+        const keys = { ArrowRight: 1, ArrowLeft: -1, Home: -index, End: this.tabs.length - 1 - index };
+        if (!(event.key in keys)) return;
+        event.preventDefault();
+        const next = (index + keys[event.key] + this.tabs.length) % this.tabs.length;
+        this.select(this.tabs[next], true);
+      };
+    }
+
+    customElements.define('em-tabs', EmTabs);
+  }
+{% endjavascript %}
+
+{% schema %}
+{
+  "name": "t:emasole.names.category_tabs",
+  "tag": "section",
+  "class": "em-tabs-section",
+  "disabled_on": {
+    "groups": ["header", "footer"]
+  },
+  "max_blocks": 8,
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "t:emasole.settings.heading",
+      "default": "Trending in categories"
+    },
+    {
+      "type": "range",
+      "id": "products_per_tab",
+      "label": "t:emasole.settings.max_products",
+      "min": 4,
+      "max": 20,
+      "step": 1,
+      "default": 10
+    },
+    {
+      "type": "range",
+      "id": "columns",
+      "label": "t:emasole.settings.columns_desktop",
+      "min": 4,
+      "max": 6,
+      "step": 1,
+      "default": 5
+    },
+    {
+      "type": "checkbox",
+      "id": "show_rating",
+      "label": "t:emasole.settings.show_rating",
+      "default": true
+    }
+  ],
+  "blocks": [
+    {
+      "type": "tab",
+      "name": "t:emasole.names.tab",
+      "settings": [
+        {
+          "type": "collection",
+          "id": "collection",
+          "label": "t:emasole.settings.collection"
+        },
+        {
+          "type": "text",
+          "id": "label",
+          "label": "t:emasole.settings.tab_label",
+          "info": "t:emasole.info.tab_label"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:emasole.names.category_tabs",
+      "category": "t:emasole.names.category",
+      "blocks": [
+        { "type": "tab", "settings": { "label": "Electronics" } },
+        { "type": "tab", "settings": { "label": "Fashion" } },
+        { "type": "tab", "settings": { "label": "Home & kitchen" } },
+        { "type": "tab", "settings": { "label": "Beauty" } }
+      ]
+    }
+  ]
+}
+{% endschema %}

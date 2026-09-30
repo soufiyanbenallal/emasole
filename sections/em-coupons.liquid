@@ -1,0 +1,302 @@
+<div class="em-section em-coupons">
+  <div class="em-container">
+    <div class="em-coupons__panel em-panel">
+      <div class="em-head">
+        <h2 class="em-head__title">
+          {%- render 'em-icon', icon: 'gift' -%}
+          {{ section.settings.title | escape }}
+        </h2>
+        {%- if section.settings.subtitle != blank -%}
+          <p class="em-coupons__subtitle">{{ section.settings.subtitle | escape }}</p>
+        {%- endif -%}
+      </div>
+
+      <ul class="em-coupons__list" role="list">
+        {%- for block in section.blocks -%}
+          {%- assign code = block.settings.code | strip -%}
+          <li class="em-coupon" {{ block.shopify_attributes }}>
+            <div class="em-coupon__value">
+              <span class="em-coupon__amount">{{ block.settings.amount | escape }}</span>
+              <span class="em-coupon__condition">{{ block.settings.condition | escape }}</span>
+            </div>
+            <div class="em-coupon__side">
+              {%- if code != blank -%}
+                <em-copy-code class="em-coupon__code" data-code="{{ code | escape }}">
+                  <span class="em-coupon__code-text">{{ code | escape }}</span>
+                  <button
+                    type="button"
+                    class="em-coupon__copy"
+                    aria-label="{{ 'emasole.coupons.copy' | t: code: code | escape }}"
+                  >
+                    {%- render 'em-icon', icon: 'copy' -%}
+                  </button>
+                  <span class="em-visually-hidden" role="status" data-em-status></span>
+                </em-copy-code>
+                <a
+                  class="em-btn em-btn--sm em-coupon__claim"
+                  href="/discount/{{ code | url_encode }}?redirect={{ block.settings.redirect | default: routes.all_products_collection_url | url_encode }}"
+                >
+                  {{- 'emasole.coupons.claim' | t -}}
+                </a>
+              {%- else -%}
+                <a class="em-btn em-btn--sm em-coupon__claim" href="{{ block.settings.redirect | default: routes.all_products_collection_url }}">
+                  {{- 'emasole.coupons.shop_now' | t -}}
+                </a>
+              {%- endif -%}
+              {%- if block.settings.expiry != blank -%}
+                <span class="em-coupon__expiry">{{ block.settings.expiry | escape }}</span>
+              {%- endif -%}
+            </div>
+          </li>
+        {%- endfor -%}
+      </ul>
+    </div>
+  </div>
+</div>
+
+{% stylesheet %}
+  .em-coupons__panel {
+    background: var(--em-ember-600);
+    color: #ffffff;
+  }
+
+  .em-coupons__panel .em-head__title,
+  .em-coupons__panel .em-head__title .em-icon {
+    color: #ffffff;
+  }
+
+  .em-coupons__subtitle {
+    display: none;
+    margin: 0;
+    font-size: var(--em-text-sm);
+    font-weight: 600;
+    text-align: end;
+  }
+
+  @media screen and (min-width: 750px) {
+    .em-coupons__subtitle {
+      display: block;
+    }
+  }
+
+  .em-coupons__list {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(260px, 1fr);
+    gap: var(--em-space-3);
+    margin: 0;
+    padding: 0;
+    overflow-x: auto;
+    list-style: none;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+
+  .em-coupons__list::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* A ticket: two halves joined by a perforated edge with punched notches */
+  .em-coupon {
+    --em-notch: 9px;
+    --em-cut: calc(100% - 124px);
+
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 124px;
+    min-height: 104px;
+    border-radius: var(--em-radius-md);
+    background: var(--em-card);
+    color: var(--em-ink-900);
+    scroll-snap-align: start;
+    mask:
+      radial-gradient(circle at var(--em-cut) 0, transparent var(--em-notch), #000 calc(var(--em-notch) + 0.5px)) top / 100% 51% no-repeat,
+      radial-gradient(circle at var(--em-cut) 100%, transparent var(--em-notch), #000 calc(var(--em-notch) + 0.5px)) bottom / 100% 51% no-repeat;
+  }
+
+  .em-coupon__value {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: var(--em-space-1);
+    padding: var(--em-space-3) var(--em-space-4);
+    border-inline-end: 2px dashed var(--em-ember-100);
+  }
+
+  .em-coupon__amount {
+    color: var(--em-ember-600);
+    font-family: var(--em-font-display);
+    font-size: var(--em-text-2xl);
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+
+  .em-coupon__condition {
+    color: var(--em-color-text-muted);
+    font-size: var(--em-text-xs);
+    font-weight: 600;
+  }
+
+  .em-coupon__side {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: var(--em-space-3);
+  }
+
+  .em-coupon__code {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding-inline-start: var(--em-space-2);
+    border: 1px dashed var(--em-ink-400);
+    border-radius: var(--em-radius-xs);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: var(--em-text-xs);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+  }
+
+  .em-coupon__copy {
+    display: inline-grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--em-ink-600);
+    cursor: pointer;
+  }
+
+  .em-coupon__copy .em-icon {
+    width: 14px;
+    height: 14px;
+  }
+
+  em-copy-code[data-copied] {
+    border-color: var(--em-mint-700);
+    color: var(--em-mint-700);
+  }
+
+  em-copy-code[data-copied] .em-coupon__copy {
+    color: var(--em-mint-700);
+  }
+
+  .em-coupon__claim {
+    min-width: 88px;
+  }
+
+  .em-coupon__expiry {
+    color: var(--em-color-text-muted);
+    font-size: 0.6875rem;
+  }
+{% endstylesheet %}
+
+{% javascript %}
+  if (!customElements.get('em-copy-code')) {
+    class EmCopyCode extends HTMLElement {
+      connectedCallback() {
+        this.querySelector('button')?.addEventListener('click', this.copy);
+      }
+
+      copy = async () => {
+        const status = this.querySelector('[data-em-status]');
+        try {
+          await navigator.clipboard.writeText(this.dataset.code || '');
+          this.setAttribute('data-copied', '');
+          if (status) status.textContent = window.Theme?.translations?.copied || 'Copied';
+          window.setTimeout(() => {
+            this.removeAttribute('data-copied');
+            if (status) status.textContent = '';
+          }, 2000);
+        } catch (error) {
+          const range = document.createRange();
+          range.selectNodeContents(this.querySelector('.em-coupon__code-text'));
+          window.getSelection()?.removeAllRanges();
+          window.getSelection()?.addRange(range);
+        }
+      };
+    }
+
+    customElements.define('em-copy-code', EmCopyCode);
+  }
+{% endjavascript %}
+
+{% schema %}
+{
+  "name": "t:emasole.names.coupons",
+  "tag": "section",
+  "class": "em-coupons-section",
+  "disabled_on": {
+    "groups": ["header", "footer"]
+  },
+  "max_blocks": 6,
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "t:emasole.settings.heading",
+      "default": "Coupons for you"
+    },
+    {
+      "type": "text",
+      "id": "subtitle",
+      "label": "t:emasole.settings.subheading",
+      "default": "Claim now — applied automatically at checkout"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "coupon",
+      "name": "t:emasole.names.coupon",
+      "settings": [
+        {
+          "type": "text",
+          "id": "amount",
+          "label": "t:emasole.settings.coupon_amount",
+          "default": "$3 OFF"
+        },
+        {
+          "type": "text",
+          "id": "condition",
+          "label": "t:emasole.settings.coupon_condition",
+          "default": "Orders over $29"
+        },
+        {
+          "type": "text",
+          "id": "code",
+          "label": "t:emasole.settings.discount_code",
+          "info": "t:emasole.info.discount_code"
+        },
+        {
+          "type": "text",
+          "id": "expiry",
+          "label": "t:emasole.settings.expiry",
+          "default": "Valid this week"
+        },
+        {
+          "type": "url",
+          "id": "redirect",
+          "label": "t:emasole.settings.after_claim_link"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:emasole.names.coupons",
+      "category": "t:emasole.names.category",
+      "blocks": [
+        { "type": "coupon", "settings": { "amount": "$3 OFF", "condition": "Orders over $29" } },
+        { "type": "coupon", "settings": { "amount": "$8 OFF", "condition": "Orders over $59" } },
+        { "type": "coupon", "settings": { "amount": "15% OFF", "condition": "Orders over $99" } },
+        { "type": "coupon", "settings": { "amount": "Free gift", "condition": "Orders over $120" } }
+      ]
+    }
+  ]
+}
+{% endschema %}

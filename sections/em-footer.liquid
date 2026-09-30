@@ -1,0 +1,461 @@
+<div class="em-footer">
+  {%- if section.settings.show_newsletter -%}
+    <div class="em-footer__signup">
+      <div class="em-container em-footer__signup-inner">
+        <div class="em-footer__signup-copy">
+          <p class="em-footer__signup-title">
+            {%- render 'em-icon', icon: 'mail' -%}
+            {{ section.settings.newsletter_title | escape }}
+          </p>
+          <p class="em-footer__signup-text">{{ section.settings.newsletter_text | escape }}</p>
+        </div>
+
+        {%- form 'customer', id: 'EmFooterSignup', class: 'em-footer__form' -%}
+          <input type="hidden" name="contact[tags]" value="newsletter">
+          <label class="em-visually-hidden" for="EmFooterEmail-{{ section.id }}">
+            {{- 'blocks.email_signup.label' | t -}}
+          </label>
+          <input
+            id="EmFooterEmail-{{ section.id }}"
+            class="em-footer__input"
+            type="email"
+            name="contact[email]"
+            autocomplete="email"
+            autocapitalize="off"
+            placeholder="{{ 'blocks.email_signup.placeholder' | t }}"
+            required
+            {% if form.errors %}
+              aria-invalid="true"
+              aria-describedby="EmFooterSignupMessage"
+            {% endif %}
+          >
+          <button type="submit" class="em-btn">{{ 'emasole.footer.subscribe' | t }}</button>
+          {%- if form.posted_successfully? -%}
+            <p class="em-footer__form-message em-footer__form-message--success" id="EmFooterSignupMessage" role="status">
+              {%- render 'em-icon', icon: 'check' -%}
+              {{ 'emasole.footer.subscribed' | t }}
+            </p>
+          {%- elsif form.errors -%}
+            <p class="em-footer__form-message" id="EmFooterSignupMessage" role="alert">
+              {{ form.errors.translated_fields.email | capitalize }}
+              {{ form.errors.messages.email }}
+            </p>
+          {%- endif -%}
+        {%- endform -%}
+      </div>
+    </div>
+  {%- endif -%}
+
+  <div class="em-container em-footer__main">
+    <div class="em-footer__brand">
+      <a class="em-footer__logo" href="{{ routes.root_url }}">
+        {%- render 'em-logo-mark', size: 36 -%}
+        <span>{{ shop.name | escape }}</span>
+      </a>
+      {%- if section.settings.about != blank -%}
+        <div class="em-footer__about">{{ section.settings.about }}</div>
+      {%- endif -%}
+
+      <ul class="em-footer__trust" role="list">
+        <li>{%- render 'em-icon', icon: 'shield' -%}{{ 'emasole.footer.buyer_protection' | t }}</li>
+        <li>{%- render 'em-icon', icon: 'lock' -%}{{ 'emasole.footer.secure_checkout' | t }}</li>
+        <li>{%- render 'em-icon', icon: 'return' -%}{{ 'emasole.footer.easy_returns' | t }}</li>
+      </ul>
+    </div>
+
+    <div class="em-footer__menus">
+      {%- for block in section.blocks -%}
+        {%- assign menu = block.settings.menu -%}
+        <details class="em-footer__menu" open {{ block.shopify_attributes }}>
+          <summary>
+            <span>{{ block.settings.heading | default: menu.title | escape }}</span>
+            {%- render 'em-icon', icon: 'chevron-down' -%}
+          </summary>
+          <ul role="list">
+            {%- for link in menu.links -%}
+              <li><a href="{{ link.url }}">{{ link.title | escape }}</a></li>
+            {%- else -%}
+              <li><span class="em-footer__empty">{{ 'emasole.footer.choose_menu' | t }}</span></li>
+            {%- endfor -%}
+          </ul>
+        </details>
+      {%- endfor -%}
+    </div>
+  </div>
+
+  <div class="em-footer__bottom">
+    <div class="em-container em-footer__bottom-inner">
+      <p class="em-footer__copyright">
+        &copy; {{ 'now' | date: '%Y' }}
+        {{ shop.name | link_to: routes.root_url }}
+        · {{ 'emasole.footer.rights' | t }}
+      </p>
+
+      {%- if shop.policies.size > 0 -%}
+        <ul class="em-footer__policies" role="list">
+          {%- for policy in shop.policies -%}
+            <li><a href="{{ policy.url }}">{{ policy.title | escape }}</a></li>
+          {%- endfor -%}
+        </ul>
+      {%- endif -%}
+
+      {%- if section.settings.show_payment_icons and shop.enabled_payment_types.size > 0 -%}
+        <ul class="em-footer__payments" role="list" aria-label="{{ 'emasole.footer.payment_methods' | t }}">
+          {%- for type in shop.enabled_payment_types -%}
+            <li>{{ type | payment_type_svg_tag: class: 'em-footer__payment' }}</li>
+          {%- endfor -%}
+        </ul>
+      {%- endif -%}
+    </div>
+  </div>
+</div>
+
+{% stylesheet %}
+  .em-footer {
+    background: var(--em-ink-900);
+    color: #ffffff;
+    font-family: var(--em-font-body);
+  }
+
+  .em-footer a {
+    color: inherit;
+  }
+
+  .em-footer__signup {
+    background: var(--em-ember-600);
+  }
+
+  .em-footer__signup-inner {
+    display: grid;
+    gap: var(--em-space-4);
+    padding-block: var(--em-space-5);
+  }
+
+  @media screen and (min-width: 990px) {
+    .em-footer__signup-inner {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 520px);
+      align-items: center;
+      gap: var(--em-space-7);
+    }
+  }
+
+  .em-footer__signup-title {
+    display: flex;
+    align-items: center;
+    gap: var(--em-space-2);
+    margin: 0;
+    font-family: var(--em-font-display);
+    font-size: var(--em-text-xl);
+    font-weight: 800;
+  }
+
+  .em-footer__signup-text {
+    margin: var(--em-space-1) 0 0;
+    font-size: var(--em-text-sm);
+  }
+
+  .em-footer__form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--em-space-2);
+    margin: 0;
+  }
+
+  .em-footer__input {
+    flex: 1 1 220px;
+    min-height: 48px;
+    padding: 0 var(--em-space-5);
+    border: 0;
+    border-radius: var(--em-radius-pill);
+    background: #ffffff;
+    color: var(--em-ink-900);
+    font: inherit;
+  }
+
+  .em-footer__input:focus-visible {
+    outline: 3px solid var(--em-sun-400);
+    outline-offset: 2px;
+  }
+
+  .em-footer__form .em-btn {
+    --em-btn-bg: var(--em-ink-900);
+    --em-btn-fg: #ffffff;
+
+    min-height: 48px;
+  }
+
+  .em-footer__form .em-btn:hover {
+    --em-btn-bg: #33333b;
+  }
+
+  .em-footer__form-message {
+    display: flex;
+    flex-basis: 100%;
+    align-items: center;
+    gap: var(--em-space-2);
+    margin: 0;
+    font-size: var(--em-text-sm);
+    font-weight: 600;
+  }
+
+  .em-footer__main {
+    display: grid;
+    gap: var(--em-space-6);
+    padding-block: var(--em-space-7) var(--em-space-6);
+  }
+
+  @media screen and (min-width: 990px) {
+    .em-footer__main {
+      grid-template-columns: 320px minmax(0, 1fr);
+      gap: var(--em-space-7);
+    }
+  }
+
+  .em-footer__logo {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--em-space-2);
+    font-family: var(--em-font-display);
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    text-decoration: none;
+    text-transform: lowercase;
+  }
+
+  .em-footer__about {
+    margin-block-start: var(--em-space-3);
+    color: #c9c9d1;
+    font-size: var(--em-text-sm);
+    line-height: 1.55;
+  }
+
+  .em-footer__about p {
+    margin: 0;
+  }
+
+  .em-footer__trust {
+    display: grid;
+    gap: var(--em-space-2);
+    margin: var(--em-space-4) 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: var(--em-text-sm);
+    font-weight: 600;
+  }
+
+  .em-footer__trust li {
+    display: flex;
+    align-items: center;
+    gap: var(--em-space-2);
+  }
+
+  .em-footer__trust .em-icon {
+    color: var(--em-sun-400);
+  }
+
+  .em-footer__menus {
+    display: grid;
+    gap: 0 var(--em-space-5);
+  }
+
+  @media screen and (min-width: 750px) {
+    .em-footer__menus {
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: var(--em-space-5);
+    }
+  }
+
+  .em-footer__menu summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 48px;
+    border-block-end: 1px solid rgb(255 255 255 / 0.12);
+    font-family: var(--em-font-display);
+    font-size: var(--em-text-md);
+    font-weight: 700;
+    list-style: none;
+    cursor: pointer;
+  }
+
+  .em-footer__menu summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .em-footer__menu[open] summary .em-icon {
+    rotate: 180deg;
+  }
+
+  @media screen and (min-width: 750px) {
+    .em-footer__menu summary {
+      min-height: 0;
+      margin-block-end: var(--em-space-3);
+      border: 0;
+      pointer-events: none;
+    }
+
+    .em-footer__menu summary .em-icon {
+      display: none;
+    }
+  }
+
+  .em-footer__menu ul {
+    display: grid;
+    gap: var(--em-space-2);
+    margin: 0;
+    padding: var(--em-space-3) 0;
+    list-style: none;
+  }
+
+  @media screen and (min-width: 750px) {
+    .em-footer__menu ul {
+      padding: 0;
+    }
+  }
+
+  .em-footer__menu a,
+  .em-footer__empty {
+    color: #c9c9d1;
+    font-size: var(--em-text-sm);
+    text-decoration: none;
+  }
+
+  .em-footer__menu a:hover {
+    color: #ffffff;
+    text-decoration: underline;
+  }
+
+  .em-footer__bottom {
+    border-block-start: 1px solid rgb(255 255 255 / 0.12);
+  }
+
+  .em-footer__bottom-inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--em-space-3) var(--em-space-5);
+    padding-block: var(--em-space-5);
+    font-size: var(--em-text-xs);
+    color: #c9c9d1;
+  }
+
+  .em-footer__copyright {
+    margin: 0;
+  }
+
+  .em-footer__copyright a {
+    text-decoration: none;
+  }
+
+  .em-footer__policies,
+  .em-footer__payments {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--em-space-2) var(--em-space-4);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .em-footer__policies a {
+    text-decoration: none;
+  }
+
+  .em-footer__policies a:hover {
+    color: #ffffff;
+    text-decoration: underline;
+  }
+
+  .em-footer__payments {
+    gap: var(--em-space-2);
+  }
+
+  .em-footer__payment {
+    display: block;
+    width: 38px;
+    height: 24px;
+  }
+{% endstylesheet %}
+
+{% javascript %}
+  // Footer menus are open accordions on mobile; start them closed there so the footer stays short.
+  (() => {
+    if (!window.matchMedia('(max-width: 749px)').matches) return;
+    document.querySelectorAll('.em-footer__menu[open]').forEach((menu) => menu.removeAttribute('open'));
+  })();
+{% endjavascript %}
+
+{% schema %}
+{
+  "name": "t:emasole.names.footer",
+  "class": "em-footer-section",
+  "enabled_on": {
+    "groups": ["footer"]
+  },
+  "max_blocks": 4,
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "show_newsletter",
+      "label": "t:emasole.settings.show_newsletter",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "newsletter_title",
+      "label": "t:emasole.settings.heading",
+      "default": "Get $5 off your first order",
+      "visible_if": "{{ section.settings.show_newsletter }}"
+    },
+    {
+      "type": "text",
+      "id": "newsletter_text",
+      "label": "t:emasole.settings.text",
+      "default": "Join Emasole emails for daily deals, drops and members-only coupons.",
+      "visible_if": "{{ section.settings.show_newsletter }}"
+    },
+    {
+      "type": "richtext",
+      "id": "about",
+      "label": "t:emasole.settings.about",
+      "default": "<p>Everything you love, for less. Millions of products across every category, delivered fast with free returns.</p>"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_payment_icons",
+      "label": "t:emasole.settings.show_payment_icons",
+      "default": true
+    }
+  ],
+  "blocks": [
+    {
+      "type": "menu",
+      "name": "t:emasole.names.menu",
+      "settings": [
+        {
+          "type": "text",
+          "id": "heading",
+          "label": "t:emasole.settings.heading"
+        },
+        {
+          "type": "link_list",
+          "id": "menu",
+          "label": "t:emasole.settings.menu",
+          "default": "footer"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:emasole.names.footer",
+      "blocks": [
+        { "type": "menu", "settings": { "heading": "Company info", "menu": "footer" } },
+        { "type": "menu", "settings": { "heading": "Shop", "menu": "main-menu" } }
+      ]
+    }
+  ]
+}
+{% endschema %}
