@@ -1,0 +1,92 @@
+{% doc %}
+  Renders the Emasole breadcrumb trail: Home, an optional parent page, then the current page.
+
+  @param {string} title - Title of the current page
+  @param {string} [parent_title] - Title of the parent page, such as a collection
+  @param {string} [parent_url] - URL of the parent page
+
+  @example
+  {% render 'em-breadcrumbs', title: product.title, parent_title: collection.title, parent_url: collection.url %}
+{% enddoc %}
+<nav class="em-crumbs" aria-label="{{ 'emasole.general.breadcrumbs' | t }}">
+  <ol class="em-crumbs__list" role="list">
+    <li class="em-crumbs__item">
+      <a class="em-crumbs__link" href="{{ routes.root_url }}">
+        {%- render 'em-icon', icon: 'home' -%}
+        <span>{{ 'emasole.general.home' | t }}</span>
+      </a>
+    </li>
+    {%- if parent_title != blank and parent_url != blank -%}
+      <li class="em-crumbs__item">
+        {%- render 'em-icon', icon: 'chevron-right', class: 'em-crumbs__sep' -%}
+        <a class="em-crumbs__link" href="{{ parent_url }}">{{ parent_title | escape }}</a>
+      </li>
+    {%- endif -%}
+    <li class="em-crumbs__item">
+      {%- render 'em-icon', icon: 'chevron-right', class: 'em-crumbs__sep' -%}
+      <span class="em-crumbs__current" aria-current="page">{{ title | escape }}</span>
+    </li>
+  </ol>
+</nav>
+
+{% stylesheet %}
+  .em-crumbs {
+    padding-block: var(--em-space-3) 0;
+    font-family: var(--em-font-body);
+    font-size: var(--em-text-xs);
+  }
+
+  .em-crumbs__list {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: var(--em-space-1);
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    list-style: none;
+  }
+
+  .em-crumbs__item {
+    display: flex;
+    align-items: center;
+    gap: var(--em-space-1);
+    min-width: 0;
+    flex: none;
+  }
+
+  .em-crumbs__item:last-child {
+    flex: 1;
+  }
+
+  .em-crumbs__link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--em-space-1);
+    color: var(--em-color-text-muted);
+    text-decoration: none;
+  }
+
+  .em-crumbs__link:hover {
+    color: var(--em-color-action);
+  }
+
+  .em-crumbs__link .em-icon {
+    width: 14px;
+    height: 14px;
+  }
+
+  .em-crumbs__sep {
+    width: 12px;
+    height: 12px;
+    color: var(--em-ink-400);
+  }
+
+  .em-crumbs__current {
+    overflow: hidden;
+    color: var(--em-ink-900);
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+{% endstylesheet %}

@@ -1,0 +1,215 @@
+{% doc %}
+  Renders an Emasole collection tile: the collection image (or a mosaic of its first three
+  product images when it has none), the title, the product count and a "Shop now" link.
+
+  Pass no collection to render a placeholder tile for the theme editor.
+
+  @param {collection} [collection] - The collection to render; blank renders a placeholder
+  @param {number} [index] - Position in the list, used to vary placeholder art
+  @param {boolean} [eager] - Load the image eagerly
+
+  @example
+  {% render 'em-collection-tile', collection: collection %}
+{% enddoc %}
+{%- liquid
+  if eager
+    assign loading = 'eager'
+  else
+    assign loading = 'lazy'
+  endif
+  assign sizes = '(min-width: 990px) 320px, (min-width: 750px) 30vw, 46vw'
+-%}
+
+{%- if collection != blank -%}
+  <article class="em-tile">
+    <div class="em-tile__media">
+      {%- if collection.featured_image -%}
+        {{
+          collection.featured_image
+          | image_url: width: 800
+          | image_tag:
+            loading: loading,
+            widths: '300, 400, 600, 800',
+            sizes: sizes,
+            class: 'em-tile__img',
+            alt: ''
+        }}
+      {%- elsif collection.products.size > 0 -%}
+        <div class="em-tile__mosaic">
+          {%- for product in collection.products limit: 3 -%}
+            {%- if product.featured_media -%}
+              {{
+                product.featured_media
+                | image_url: width: 400
+                | image_tag: loading: 'lazy', widths: '200, 300, 400', sizes: sizes, class: 'em-tile__img', alt: ''
+              }}
+            {%- else -%}
+              {{ 'product-1' | placeholder_svg_tag: 'em-tile__img em-tile__placeholder' }}
+            {%- endif -%}
+          {%- endfor -%}
+        </div>
+      {%- else -%}
+        {{ 'collection-1' | placeholder_svg_tag: 'em-tile__img em-tile__placeholder' }}
+      {%- endif -%}
+    </div>
+    <div class="em-tile__body">
+      <h2 class="em-tile__title">
+        <a href="{{ collection.url }}">{{ collection.title | escape }}</a>
+      </h2>
+      <p class="em-tile__meta">{{ 'emasole.collection.product_count' | t: count: collection.all_products_count }}</p>
+      <span class="em-tile__cta" aria-hidden="true">
+        {{- 'emasole.coupons.shop_now' | t -}}
+        {%- render 'em-icon', icon: 'arrow-right' -%}
+      </span>
+    </div>
+  </article>
+{%- else -%}
+  {%- liquid
+    assign art = index | default: 1 | modulo: 6 | plus: 1
+    assign placeholder_name = 'collection-' | append: art
+  -%}
+  <article class="em-tile">
+    <div class="em-tile__media">
+      {{ placeholder_name | placeholder_svg_tag: 'em-tile__img em-tile__placeholder' }}
+    </div>
+    <div class="em-tile__body">
+      <h2 class="em-tile__title">{{ 'emasole.categories.placeholder' | t }}</h2>
+    </div>
+  </article>
+{%- endif -%}
+
+{% stylesheet %}
+  .em-tile {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+    border-radius: var(--em-radius-lg);
+    background: var(--em-card);
+    box-shadow: var(--em-shadow-1);
+    color: var(--em-color-text);
+    transition: box-shadow var(--em-duration) var(--em-ease), transform var(--em-duration) var(--em-ease);
+  }
+
+  @media (hover: hover) {
+    .em-tile:hover {
+      box-shadow: var(--em-shadow-2);
+      transform: translateY(-2px);
+    }
+
+    .em-tile:hover .em-tile__cta {
+      color: var(--em-color-action);
+    }
+  }
+
+  .em-tile__media {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    background: var(--em-ink-100);
+  }
+
+  .em-tile__media > .em-tile__img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .em-tile__mosaic {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 2px;
+    height: 100%;
+  }
+
+  .em-tile__mosaic > :first-child {
+    grid-row: span 2;
+  }
+
+  .em-tile__mosaic .em-tile__img {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    object-fit: cover;
+  }
+
+  .em-tile__placeholder {
+    fill: var(--em-ink-400);
+    background: var(--em-ink-100);
+  }
+
+  .em-tile__body {
+    display: grid;
+    gap: var(--em-space-1);
+    padding: var(--em-space-3) var(--em-space-4) var(--em-space-4);
+  }
+
+  .em-tile__title {
+    margin: 0;
+    font-family: var(--em-font-display);
+    font-size: var(--em-text-md);
+    font-weight: 700;
+    line-height: 1.25;
+  }
+
+  @media screen and (min-width: 750px) {
+    .em-tile__title {
+      font-size: var(--em-text-lg);
+    }
+  }
+
+  .em-tile__title a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .em-tile__title a::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+  }
+
+  .em-tile:has(.em-tile__title a:focus-visible) {
+    outline: 2px solid var(--em-color-focus);
+    outline-offset: 2px;
+  }
+
+  .em-tile__title a:focus-visible {
+    outline: none;
+  }
+
+  .em-tile__meta {
+    margin: 0;
+    color: var(--em-color-text-muted);
+    font-size: var(--em-text-xs);
+  }
+
+  .em-tile__cta {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--em-space-1);
+    margin-block-start: var(--em-space-1);
+    font-size: var(--em-text-sm);
+    font-weight: 700;
+    transition: color var(--em-duration) var(--em-ease);
+  }
+
+  .em-tile__cta .em-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .em-tile {
+      transition: none;
+    }
+
+    .em-tile:hover {
+      transform: none;
+    }
+  }
+{% endstylesheet %}

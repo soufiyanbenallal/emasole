@@ -1,0 +1,169 @@
+{%- liquid
+  assign limit = section.settings.max_products
+  assign current_product = product | default: closest.product
+-%}
+
+<em-recommendations
+  class="em-section em-recs"
+  data-url="{{ routes.product_recommendations_url }}?section_id={{ section.id }}&product_id={{ current_product.id }}&limit={{ limit }}&intent={{ section.settings.intent }}"
+  {% unless recommendations.performed and recommendations.products_count > 0 %}
+    {% unless request.design_mode %}
+      hidden
+    {% endunless %}
+  {% endunless %}
+>
+  <div class="em-container">
+    <div class="em-panel">
+      <div class="em-head">
+        <h2 class="em-head__title">
+          {%- render 'em-icon', icon: 'heart' -%}
+          {{ section.settings.title | escape }}
+        </h2>
+      </div>
+
+      <em-rail class="em-rail em-recs__rail">
+        <ul class="em-rail__track" role="list">
+          {%- if recommendations.performed and recommendations.products_count > 0 -%}
+            {%- for item in recommendations.products -%}
+              <li>
+                {%- render 'em-product-card',
+                  product: item,
+                  sizes: '(min-width: 990px) 210px, 42vw',
+                  show_rating: section.settings.show_rating
+                -%}
+              </li>
+            {%- endfor -%}
+          {%- elsif request.design_mode -%}
+            {%- for i in (1..6) -%}
+              <li>{%- render 'em-product-card', index: i -%}</li>
+            {%- endfor -%}
+          {%- endif -%}
+        </ul>
+        {%- render 'em-rail-arrows', label: section.settings.title -%}
+      </em-rail>
+    </div>
+  </div>
+</em-recommendations>
+
+{% stylesheet %}
+  em-recommendations[hidden] {
+    display: none;
+  }
+
+  .em-recs__rail {
+    --em-rail-item: 42%;
+  }
+
+  @media screen and (min-width: 750px) {
+    .em-recs__rail {
+      --em-rail-item: calc((100% - var(--em-space-3) * 3) / 4);
+    }
+  }
+
+  @media screen and (min-width: 990px) {
+    .em-recs__rail {
+      --em-rail-item: calc((100% - var(--em-space-3) * 5) / 6);
+    }
+  }
+
+  .em-recs__rail .em-card {
+    border: 1px solid var(--em-ink-100);
+  }
+{% endstylesheet %}
+
+{% javascript %}
+  /**
+   * Product recommendations are computed per product, so the page renders an empty shell
+   * and this element fetches the filled section from Shopify's recommendations endpoint.
+   * The section stays hidden when there is nothing to recommend.
+   */
+  if (!customElements.get('em-recommendations')) {
+    class EmRecommendations extends HTMLElement {
+      connectedCallback() {
+        if (window.Shopify?.designMode || this.dataset.loaded) return;
+
+        if ('IntersectionObserver' in window) {
+          this.observer = new IntersectionObserver(
+            (entries) => {
+              if (!entries.some((entry) => entry.isIntersecting)) return;
+              this.observer.disconnect();
+              this.load();
+            },
+            { rootMargin: '0px 0px 600px 0px' }
+          );
+          // A hidden element never intersects, so watch its parent section instead.
+          this.observer.observe(this.parentElement || this);
+        } else {
+          this.load();
+        }
+      }
+
+      disconnectedCallback() {
+        this.observer?.disconnect();
+      }
+
+      async load() {
+        this.dataset.loaded = 'true';
+        try {
+          const response = await fetch(this.dataset.url);
+          if (!response.ok) return;
+          const html = new DOMParser().parseFromString(await response.text(), 'text/html');
+          const next = html.querySelector('em-recommendations');
+          if (!next || !next.querySelector('.em-card')) return;
+
+          this.innerHTML = next.innerHTML;
+          this.hidden = false;
+        } catch (error) {
+          // Recommendations are optional; leave the section hidden.
+        }
+      }
+    }
+
+    customElements.define('em-recommendations', EmRecommendations);
+  }
+{% endjavascript %}
+
+{% schema %}
+{
+  "name": "t:emasole.names.product_recommendations",
+  "tag": "section",
+  "class": "em-recs-section",
+  "enabled_on": {
+    "templates": ["product"]
+  },
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "t:emasole.settings.heading",
+      "default": "You may also like"
+    },
+    {
+      "type": "select",
+      "id": "intent",
+      "label": "t:emasole.settings.recommendation_type",
+      "options": [
+        { "value": "related", "label": "t:emasole.options.related" },
+        { "value": "complementary", "label": "t:emasole.options.complementary" }
+      ],
+      "default": "related",
+      "info": "t:emasole.info.recommendation_type"
+    },
+    {
+      "type": "range",
+      "id": "max_products",
+      "label": "t:emasole.settings.max_products",
+      "min": 4,
+      "max": 10,
+      "step": 1,
+      "default": 10
+    },
+    {
+      "type": "checkbox",
+      "id": "show_rating",
+      "label": "t:emasole.settings.show_rating",
+      "default": true
+    }
+  ]
+}
+{% endschema %}

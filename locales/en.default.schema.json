@@ -10,6 +10,13 @@
 {
   "emasole": {
     "names": {
+      "collapsible_row": "Collapsible row",
+      "collection_list_page": "Emasole collection list",
+      "collection_page": "Emasole collection",
+      "product_page": "Emasole product",
+      "product_recommendations": "Emasole recommendations",
+      "search_page": "Emasole search",
+      "trust_item": "Trust item",
       "benefit": "Benefit",
       "benefits": "Benefits strip",
       "categories": "Category circles",
@@ -35,6 +42,21 @@
       "recently_viewed": "Recently viewed"
     },
     "settings": {
+      "banner": "Banner",
+      "collections_per_page": "Collections per page",
+      "enable_filtering": "Enable filtering",
+      "enable_sorting": "Enable sorting",
+      "open_by_default": "Open by default",
+      "page": "Page",
+      "popular_products": "Popular products",
+      "recommendation_type": "Recommendation type",
+      "results": "Results",
+      "search_placeholder": "Search placeholder",
+      "show_collection_description": "Show collection description",
+      "show_collection_image": "Show collection image",
+      "show_dynamic_checkout": "Show dynamic checkout buttons",
+      "show_quantity": "Show quantity selector",
+      "show_vendor": "Show vendor",
       "about": "About text",
       "after_claim_link": "Page after claiming",
       "auto_load": "Load more products while scrolling",
@@ -95,6 +117,8 @@
       "brand_art": "Brand artwork"
     },
     "options": {
+      "complementary": "Complementary",
+      "related": "Related",
       "cover": "Cover",
       "daily_reset": "Every day at midnight",
       "dark_text": "Dark",
@@ -129,6 +153,13 @@
       "sun": "Sun"
     },
     "info": {
+      "catalog_collections": "Leave empty to list every collection that has products.",
+      "collapsible_page": "Replaces the text above when selected.",
+      "dynamic_checkout": "Lets shoppers skip the cart with a saved payment method, such as Shop Pay.",
+      "filtering": "Customize filters with the Shopify Search & Discovery app.",
+      "popular_collection": "Shown before a search and when a search has no results.",
+      "recommendation_type": "Complementary products are set up in the Shopify Search & Discovery app.",
+      "subcategory_chips": "To show subcategory links, create a menu whose handle matches the collection's handle.",
       "category_menu": "Powers the All categories mega menu and the mobile menu. Nested links become subcategories.",
       "comma_separated": "Separate entries with commas.",
       "deals_collection": "Products show their real compare-at discount. Leave empty to preview placeholders.",

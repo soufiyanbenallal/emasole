@@ -1,0 +1,156 @@
+{%- liquid
+  assign picked = section.settings.collections
+  assign per_page = section.settings.per_page
+-%}
+
+<div class="em-section em-catalog">
+  <div class="em-container">
+    {%- render 'em-breadcrumbs', title: section.settings.title -%}
+
+    <header class="em-panel em-catalog__hero">
+      <span class="em-catalog__icon" aria-hidden="true">{%- render 'em-icon', icon: 'grid' -%}</span>
+      <div>
+        <h1 class="em-catalog__title">{{ section.settings.title | escape }}</h1>
+        {%- if section.settings.subtitle != blank -%}
+          <p class="em-catalog__subtitle">{{ section.settings.subtitle | escape }}</p>
+        {%- endif -%}
+      </div>
+      <a class="em-btn em-btn--dark em-btn--sm em-catalog__all" href="{{ routes.all_products_collection_url }}">
+        {{- 'emasole.collection.browse_all' | t -}}
+        {%- render 'em-icon', icon: 'arrow-right' -%}
+      </a>
+    </header>
+
+    {%- if picked != blank -%}
+      <ul class="em-catalog__grid" role="list">
+        {%- for item in picked -%}
+          <li>{%- render 'em-collection-tile', collection: item, eager: forloop.first -%}</li>
+        {%- endfor -%}
+      </ul>
+    {%- elsif collections.size > 0 -%}
+      {%- paginate collections by per_page -%}
+        <ul class="em-catalog__grid" role="list">
+          {%- for item in collections -%}
+            {%- if item.all_products_count > 0 -%}
+              <li>{%- render 'em-collection-tile', collection: item, eager: forloop.first -%}</li>
+            {%- endif -%}
+          {%- endfor -%}
+        </ul>
+        {%- render 'em-pagination', paginate: paginate -%}
+      {%- endpaginate -%}
+    {%- else -%}
+      <ul class="em-catalog__grid" role="list">
+        {%- for i in (1..8) -%}
+          <li>{%- render 'em-collection-tile', index: i -%}</li>
+        {%- endfor -%}
+      </ul>
+    {%- endif -%}
+  </div>
+</div>
+
+{% stylesheet %}
+  .em-catalog__hero {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--em-space-3) var(--em-space-4);
+    margin-block-start: var(--em-space-3);
+  }
+
+  .em-catalog__hero > div {
+    flex: 1;
+    min-width: 200px;
+  }
+
+  .em-catalog__icon {
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    border-radius: var(--em-radius-md);
+    background: var(--em-ember-50);
+    color: var(--em-ember-600);
+  }
+
+  .em-catalog__icon .em-icon {
+    width: 26px;
+    height: 26px;
+  }
+
+  .em-catalog__title {
+    margin: 0;
+    font-family: var(--em-font-display);
+    font-size: var(--em-text-2xl);
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+  }
+
+  .em-catalog__subtitle {
+    margin: var(--em-space-1) 0 0;
+    color: var(--em-color-text-muted);
+    font-size: var(--em-text-sm);
+  }
+
+  .em-catalog__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--em-space-3);
+    margin: var(--em-space-3) 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  @media screen and (min-width: 750px) {
+    .em-catalog__grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media screen and (min-width: 990px) {
+    .em-catalog__grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: var(--em-space-4);
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:emasole.names.collection_list_page",
+  "tag": "section",
+  "class": "em-catalog-section",
+  "disabled_on": {
+    "groups": ["header", "footer"]
+  },
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "t:emasole.settings.heading",
+      "default": "Shop by category"
+    },
+    {
+      "type": "text",
+      "id": "subtitle",
+      "label": "t:emasole.settings.subheading",
+      "default": "Everything we sell, sorted into categories."
+    },
+    {
+      "type": "collection_list",
+      "id": "collections",
+      "label": "t:emasole.settings.collections",
+      "info": "t:emasole.info.catalog_collections"
+    },
+    {
+      "type": "range",
+      "id": "per_page",
+      "label": "t:emasole.settings.collections_per_page",
+      "min": 8,
+      "max": 48,
+      "step": 4,
+      "default": 24
+    }
+  ]
+}
+{% endschema %}

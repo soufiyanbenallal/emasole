@@ -1,0 +1,468 @@
+{%- liquid
+  assign form_id = 'EmFacets-' | append: section.id
+  assign terms = search.terms
+  assign encoded_terms = terms | url_encode
+  assign clear_url = routes.search_url | append: '?q=' | append: encoded_terms | append: '&type=product&options%5Bprefix%5D=last'
+  if search.sort_by != blank
+    assign clear_url = clear_url | append: '&sort_by=' | append: search.sort_by
+  endif
+
+  assign has_active_filters = false
+  for filter in search.filters
+    if filter.active_values.size > 0 or filter.min_value.value != null or filter.max_value.value != null
+      assign has_active_filters = true
+    endif
+  endfor
+
+  assign suggestions = section.settings.suggestions | split: ','
+  assign popular = section.settings.popular_collection
+
+  assign show_popular = false
+  if search.performed == false or search.results_count == 0
+    if popular != blank and popular.products_count > 0
+      assign show_popular = true
+    endif
+  endif
+-%}
+
+<div class="em-section em-search-page">
+  <div class="em-container">
+    {%- assign crumb_title = 'emasole.search.title' | t -%}
+    {%- render 'em-breadcrumbs', title: crumb_title -%}
+
+    <header class="em-panel em-search-page__hero">
+      <h1 class="em-search-page__title">
+        {%- if search.performed -%}
+          {{ 'emasole.search.results_for' | t: terms: terms }}
+        {%- else -%}
+          {{ 'emasole.search.title' | t }}
+        {%- endif -%}
+      </h1>
+
+      <form class="em-search-page__form" action="{{ routes.search_url }}" method="get" role="search">
+        <input type="hidden" name="type" value="product">
+        <input type="hidden" name="options[prefix]" value="last">
+        <label class="em-visually-hidden" for="EmSearchInput-{{ section.id }}">{{ 'emasole.header.search_label' | t }}</label>
+        <span class="em-search-page__field">
+          {%- render 'em-icon', icon: 'search', class: 'em-search-page__field-icon' -%}
+          <input
+            class="em-search-page__input"
+            id="EmSearchInput-{{ section.id }}"
+            type="search"
+            name="q"
+            value="{{ terms | escape }}"
+            placeholder="{{ section.settings.placeholder | escape }}"
+            autocomplete="off"
+            autocorrect="off"
+            spellcheck="false"
+          >
+        </span>
+        <button type="submit" class="em-btn em-search-page__submit">
+          {{- 'emasole.header.search_button' | t -}}
+        </button>
+      </form>
+
+      {%- if suggestions.size > 0 and section.settings.suggestions != blank -%}
+        <div class="em-search-page__suggest">
+          <span class="em-search-page__suggest-label">
+            {%- render 'em-icon', icon: 'flame' -%}
+            {{ 'emasole.header.trending' | t }}
+          </span>
+          <ul class="em-search-page__chips" role="list">
+            {%- for suggestion in suggestions -%}
+              {%- assign suggestion = suggestion | strip -%}
+              {%- if suggestion != blank -%}
+                <li>
+                  <a
+                    class="em-chip"
+                    href="{{ routes.search_url }}?q={{ suggestion | url_encode }}&type=product&options%5Bprefix%5D=last"
+                  >
+                    {{- suggestion | escape -}}
+                  </a>
+                </li>
+              {%- endif -%}
+            {%- endfor -%}
+          </ul>
+        </div>
+      {%- endif -%}
+    </header>
+
+    {%- if search.performed -%}
+      {%- paginate search.results by section.settings.products_per_page -%}
+        {%- liquid
+          assign count = search.results_count
+          assign message = 'emasole.search.results_count' | t: count: count, terms: terms
+        -%}
+        <em-facets class="em-results" data-section-id="{{ section.id }}">
+          <p class="em-visually-hidden" role="status" data-em-results-status></p>
+          <div class="em-results__layout" data-em-results data-message="{{ message | escape }}">
+            <aside class="em-results__aside">
+              {%- render 'em-facets',
+                results: search,
+                form_id: form_id,
+                clear_url: clear_url,
+                terms: terms,
+                show_filters: section.settings.enable_filtering
+              -%}
+            </aside>
+
+            <div class="em-results__main">
+              {%- if count > 0 or has_active_filters -%}
+                <div class="em-panel em-results__bar">
+                  {%- render 'em-facets-toolbar',
+                    results: search,
+                    form_id: form_id,
+                    clear_url: clear_url,
+                    count: count,
+                    show_filters: section.settings.enable_filtering,
+                    show_sort: section.settings.enable_sorting
+                  -%}
+                </div>
+              {%- endif -%}
+
+              {%- if count > 0 -%}
+                <ul
+                  class="em-grid em-results__grid"
+                  role="list"
+                  style="--em-cols: {{ section.settings.columns }};"
+                  data-em-results-grid
+                >
+                  {%- for item in search.results -%}
+                    <li>
+                      {%- if item.object_type == 'product' -%}
+                        {%- liquid
+                          assign eager = false
+                          if forloop.index <= 4 and paginate.current_page == 1
+                            assign eager = true
+                          endif
+                        -%}
+                        {%- render 'em-product-card',
+                          product: item,
+                          eager: eager,
+                          sizes: '(min-width: 1320px) 250px, (min-width: 990px) 20vw, (min-width: 750px) 30vw, 46vw',
+                          show_rating: section.settings.show_rating
+                        -%}
+                      {%- else -%}
+                        <article class="em-search-page__content">
+                          {%- if item.image -%}
+                            <div class="em-search-page__content-media">
+                              {{
+                                item.image
+                                | image_url: width: 600
+                                | image_tag: loading: 'lazy', sizes: '(min-width: 990px) 250px, 46vw', alt: item.image.alt
+                              }}
+                            </div>
+                          {%- endif -%}
+                          <div class="em-search-page__content-body">
+                            <span class="em-badge em-badge--soft">
+                              {%- if item.object_type == 'article' -%}
+                                {{- 'emasole.search.type_article' | t -}}
+                              {%- else -%}
+                                {{- 'emasole.search.type_page' | t -}}
+                              {%- endif -%}
+                            </span>
+                            <h3 class="em-search-page__content-title">
+                              <a href="{{ item.url }}">{{ item.title | escape }}</a>
+                            </h3>
+                            <p class="em-search-page__content-text">{{ item.content | strip_html | truncatewords: 18 }}</p>
+                          </div>
+                        </article>
+                      {%- endif -%}
+                    </li>
+                  {%- endfor -%}
+                </ul>
+
+                {%- render 'em-pagination', paginate: paginate -%}
+              {%- elsif has_active_filters -%}
+                <div class="em-panel em-empty">
+                  <span class="em-empty__icon">{%- render 'em-icon', icon: 'sliders' -%}</span>
+                  <h2 class="em-empty__title">{{ 'emasole.filters.no_matches' | t }}</h2>
+                  <p class="em-empty__text">{{ 'emasole.filters.no_matches_text' | t }}</p>
+                  <a class="em-btn" href="{{ clear_url }}" data-em-facets-link>{{ 'emasole.filters.clear_all' | t }}</a>
+                </div>
+              {%- else -%}
+                <div class="em-panel em-empty">
+                  <span class="em-empty__icon">{%- render 'em-icon', icon: 'search' -%}</span>
+                  <h2 class="em-empty__title">{{ 'emasole.search.no_results' | t: terms: terms }}</h2>
+                  <p class="em-empty__text">{{ 'emasole.search.no_results_text' | t }}</p>
+                </div>
+              {%- endif -%}
+            </div>
+          </div>
+        </em-facets>
+      {%- endpaginate -%}
+    {%- endif -%}
+
+    {%- if show_popular or request.design_mode -%}
+      <div class="em-panel em-search-page__popular">
+        <div class="em-head">
+          <h2 class="em-head__title">
+            {%- render 'em-icon', icon: 'flame' -%}
+            {{ section.settings.popular_title | escape }}
+          </h2>
+          {%- if popular != blank -%}
+            <a class="em-head__link" href="{{ popular.url }}">
+              {{- 'emasole.general.view_all' | t -}}
+              {%- render 'em-icon', icon: 'chevron-right' -%}
+            </a>
+          {%- endif -%}
+        </div>
+        <ul class="em-grid" role="list" style="--em-cols: 5;">
+          {%- if popular != blank and popular.products_count > 0 -%}
+            {%- for product in popular.products limit: 10 -%}
+              <li>
+                {%- render 'em-product-card',
+                  product: product,
+                  sizes: '(min-width: 990px) 240px, (min-width: 750px) 30vw, 46vw',
+                  show_rating: section.settings.show_rating
+                -%}
+              </li>
+            {%- endfor -%}
+          {%- else -%}
+            {%- for i in (1..5) -%}
+              <li>{%- render 'em-product-card', index: i -%}</li>
+            {%- endfor -%}
+          {%- endif -%}
+        </ul>
+      </div>
+    {%- endif -%}
+  </div>
+</div>
+
+{% stylesheet %}
+  .em-search-page__hero {
+    display: grid;
+    gap: var(--em-space-4);
+    margin-block-start: var(--em-space-3);
+  }
+
+  .em-search-page__title {
+    margin: 0;
+    font-family: var(--em-font-display);
+    font-size: var(--em-text-2xl);
+    font-weight: 800;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    overflow-wrap: anywhere;
+  }
+
+  .em-search-page__form {
+    display: flex;
+    gap: var(--em-space-2);
+    max-width: 760px;
+    margin: 0;
+  }
+
+  .em-search-page__field {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .em-search-page__field-icon {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: var(--em-space-4);
+    margin-block: auto;
+    color: var(--em-ink-600);
+    pointer-events: none;
+  }
+
+  .em-search-page__input {
+    width: 100%;
+    height: 48px;
+    padding: 0 var(--em-space-4) 0 48px;
+    border: 2px solid var(--em-ink-900);
+    border-radius: var(--em-radius-pill);
+    background: var(--em-card);
+    color: var(--em-ink-900);
+    font-family: var(--em-font-body);
+    font-size: var(--em-text-md);
+  }
+
+  .em-search-page__input:focus-visible {
+    outline: none;
+    border-color: var(--em-ember-600);
+    box-shadow: 0 0 0 3px var(--em-ember-100);
+  }
+
+  .em-search-page__submit {
+    min-height: 48px;
+  }
+
+  .em-search-page__suggest {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--em-space-2) var(--em-space-3);
+  }
+
+  .em-search-page__suggest-label {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--em-space-1);
+    color: var(--em-color-text-muted);
+    font-size: var(--em-text-sm);
+    font-weight: 600;
+  }
+
+  .em-search-page__suggest-label .em-icon {
+    color: var(--em-ember-600);
+  }
+
+  .em-search-page__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--em-space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .em-search-page__content {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+    border-radius: var(--em-radius-md);
+    background: var(--em-card);
+    box-shadow: var(--em-shadow-1);
+  }
+
+  .em-search-page__content-media {
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    background: var(--em-ink-100);
+  }
+
+  .em-search-page__content-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .em-search-page__content-body {
+    display: grid;
+    align-content: start;
+    justify-items: start;
+    gap: var(--em-space-2);
+    padding: var(--em-space-3);
+  }
+
+  .em-search-page__content-title {
+    margin: 0;
+    font-size: var(--em-text-md);
+    font-weight: 700;
+    line-height: 1.3;
+  }
+
+  .em-search-page__content-title a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .em-search-page__content-title a::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+  }
+
+  .em-search-page__content-text {
+    margin: 0;
+    color: var(--em-color-text-muted);
+    font-size: var(--em-text-sm);
+    line-height: 1.45;
+  }
+
+  .em-search-page__popular {
+    margin-block-start: var(--em-section-gap);
+  }
+
+  .em-search-page__popular .em-card {
+    border: 1px solid var(--em-ink-100);
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:emasole.names.search_page",
+  "tag": "section",
+  "class": "em-search-section",
+  "disabled_on": {
+    "groups": ["header", "footer"]
+  },
+  "settings": [
+    {
+      "type": "text",
+      "id": "placeholder",
+      "label": "t:emasole.settings.search_placeholder",
+      "default": "Search for products, brands and more"
+    },
+    {
+      "type": "text",
+      "id": "suggestions",
+      "label": "t:emasole.settings.trending_searches",
+      "info": "t:emasole.info.comma_separated",
+      "default": "Wireless earbuds, Summer dresses, Phone cases, Smart watch, Kitchen gadgets"
+    },
+    {
+      "type": "header",
+      "content": "t:emasole.settings.results"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_filtering",
+      "label": "t:emasole.settings.enable_filtering",
+      "info": "t:emasole.info.filtering",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_sorting",
+      "label": "t:emasole.settings.enable_sorting",
+      "default": true
+    },
+    {
+      "type": "range",
+      "id": "products_per_page",
+      "label": "t:emasole.settings.products_per_page",
+      "min": 12,
+      "max": 48,
+      "step": 4,
+      "default": 24
+    },
+    {
+      "type": "range",
+      "id": "columns",
+      "label": "t:emasole.settings.columns_desktop",
+      "min": 3,
+      "max": 5,
+      "step": 1,
+      "default": 4
+    },
+    {
+      "type": "checkbox",
+      "id": "show_rating",
+      "label": "t:emasole.settings.show_rating",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "t:emasole.settings.popular_products"
+    },
+    {
+      "type": "text",
+      "id": "popular_title",
+      "label": "t:emasole.settings.heading",
+      "default": "Popular right now"
+    },
+    {
+      "type": "collection",
+      "id": "popular_collection",
+      "label": "t:emasole.settings.collection",
+      "info": "t:emasole.info.popular_collection"
+    }
+  ]
+}
+{% endschema %}
