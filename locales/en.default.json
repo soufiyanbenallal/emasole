@@ -340,6 +340,7 @@
     "quantity": "Quantity",
     "quantity_per_item": "/ea",
     "quick_order_list": "Quick order list",
+    "recent_searches": "Recent searches",
     "recently_viewed_products": "Recently viewed",
     "remove_all": "Remove all",
     "remove_all_items_confirmation": "Remove all {{ count }} items from your cart?",

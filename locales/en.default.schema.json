@@ -366,6 +366,8 @@
     "custom_image_override": "Leave blank to use the collection's own image.",
     "custom_link_override": "Leave blank to use the collection's own link. Set this for entries with no collection, like \"Recommended for you\".",
     "icon_fallback": "Only shown when no image is set above.",
+    "hero_promo_card_background_image": "Fills the entire card. When set, the accent image below is hidden.",
+    "hero_promo_card_accent_image": "A small accompanying image, shown beside the title. Only available without a background image.",
     "default_active_scroller_item": "If more than one item is marked default, the first one is used.",
     "all_products_grid_sort_info": "Shows every product in your store. To control the order, open the \"All\" collection in Admin > Products > Collections and change its sort setting.",
     "actions_display_style": "Icons are always used on mobile",
@@ -727,6 +729,10 @@
     // Font weight option lighter than regular
     "light": "Light",
     "lightning_bolt": "Lightning bolt",
+    // Text color option: dark text
+    "text_color_dark": "Dark",
+    // Text color option: light (white) text
+    "text_color_light": "Light",
     "link": "Link",
     "linkedin": "LinkedIn",
     "lipstick": "Lipstick",

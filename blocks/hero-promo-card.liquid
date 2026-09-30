@@ -1,7 +1,8 @@
 {% doc %}
-  Renders a single promo card: a colored or image background paired with a
-  positioned product/illustration image, title, and description. The whole
-  card is one clickable link. Used inside the hero-promo-grid block.
+  Renders a single promo card: a flat color or full background image, paired
+  with a title, description, and an optional accent image (only available
+  when there's no background image, since the two don't overlay well).
+  The whole card is one clickable link. Used inside the hero-promo-grid block.
 
   @example
   {% content_for 'block', type: 'hero-promo-card', id: 'promo-card' %}
@@ -19,11 +20,12 @@
     assign has_background_image = true
   endif
 
-  assign use_contrast_color = false
+  assign has_background_color = false
   if has_background_image == false and block_settings.background_color != blank
-    render 'contrast-override', background_color: block_settings.background_color, section_id: block.id
-    assign use_contrast_color = true
+    assign has_background_color = true
   endif
+
+  assign text_color_class = 'hero-promo-card--text-' | append: block_settings.text_color
 %}
 
 <div
@@ -31,10 +33,10 @@
     hero-promo-card
     hero-promo-card--image-{{ block_settings.image_position }}
     {% if has_background_image %}hero-promo-card--on-image{% endif %}
-    {% if use_contrast_color %}color-custom-{{ block.id }}{% endif %}
+    {{ text_color_class }}
   "
   style="
-    {% if use_contrast_color %}
+    {% if has_background_color %}
       background-color: {{ block_settings.background_color }};
     {% endif %}
   "
@@ -70,7 +72,7 @@
       {% endif %}
     </div>
 
-    {% if block_settings.image != blank %}
+    {% if has_background_image == false and block_settings.image != blank %}
       <div class="hero-promo-card__image-wrap">
         {{
           block_settings.image
@@ -87,13 +89,17 @@
     position: relative;
     display: flex;
     height: 100%;
-    min-height: 9rem;
+    min-height: var(--hero-promo-card-min-height, 9rem);
     overflow: hidden;
     border-radius: var(--style-border-radius-lg);
   }
 
-  .hero-promo-card--on-image {
-    color: var(--color-background);
+  .hero-promo-card--text-light {
+    color: var(--palette-lightest);
+  }
+
+  .hero-promo-card--text-dark {
+    color: var(--palette-darkest);
   }
 
   .hero-promo-card__link {
@@ -110,17 +116,24 @@
     object-fit: cover;
   }
 
+  /* Scrim direction mirrors the chosen text color, so it deepens contrast
+     instead of fighting it: dark scrim under light text, light scrim under
+     dark text — both strongest at the bottom, where the content sits. */
   .hero-promo-card__scrim {
     position: absolute;
     inset: 0;
     background: linear-gradient(to top, rgb(0 0 0 / 0.45), rgb(0 0 0 / 0.1));
   }
 
+  .hero-promo-card--text-dark .hero-promo-card__scrim {
+    background: linear-gradient(to top, rgb(255 255 255 / 0.55), rgb(255 255 255 / 0.15));
+  }
+
   .hero-promo-card__body {
     position: relative;
     z-index: var(--layer-flat);
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     justify-content: space-between;
     gap: var(--gap-sm);
     width: 100%;
@@ -140,7 +153,9 @@
 
   .hero-promo-card__title {
     margin: 0;
+    font-size: var(--hero-promo-card-title-size, inherit);
     font-weight: var(--font-weight-semibold);
+    transition: font-size var(--animation-speed) var(--animation-easing);
   }
 
   .hero-promo-card__description {
@@ -189,12 +204,49 @@
     },
     {
       "type": "header",
+      "content": "t:settings.text_color"
+    },
+    {
+      "type": "select",
+      "id": "text_color",
+      "label": "t:settings.text_color",
+      "options": [
+        { "value": "light", "label": "t:options.text_color_light" },
+        { "value": "dark", "label": "t:options.text_color_dark" }
+      ],
+      "default": "light"
+    },
+    {
+      "type": "header",
+      "content": "t:content.background_image"
+    },
+    {
+      "type": "image_picker",
+      "id": "background_image",
+      "label": "t:content.background_image",
+      "info": "t:info.hero_promo_card_background_image"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "t:settings.background_color",
+      "default": "#3F6E8C",
+      "visible_if": "{{ block.settings.background_image == blank }}"
+    },
+    {
+      "type": "header",
       "content": "t:settings.image"
+    },
+    {
+      "type": "paragraph",
+      "content": "t:info.hero_promo_card_accent_image",
+      "visible_if": "{{ block.settings.background_image == blank }}"
     },
     {
       "type": "image_picker",
       "id": "image",
-      "label": "t:settings.image"
+      "label": "t:settings.image",
+      "visible_if": "{{ block.settings.background_image == blank }}"
     },
     {
       "type": "select",
@@ -204,22 +256,8 @@
         { "value": "left", "label": "t:options.left" },
         { "value": "right", "label": "t:options.right" }
       ],
-      "default": "right"
-    },
-    {
-      "type": "header",
-      "content": "t:settings.background_color"
-    },
-    {
-      "type": "color",
-      "id": "background_color",
-      "label": "t:settings.background_color",
-      "default": "#3F6E8C"
-    },
-    {
-      "type": "image_picker",
-      "id": "background_image",
-      "label": "t:content.background_image"
+      "default": "right",
+      "visible_if": "{{ block.settings.background_image == blank }}"
     }
   ],
   "presets": [{ "name": "t:names.hero_promo_card" }]

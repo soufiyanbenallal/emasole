@@ -1,14 +1,23 @@
 {% doc %}
-  Renders a flexible 2-column grid of promo cards (hero-promo-card blocks),
-  intended as the right zone of the hero-showcase section. Any number of
-  cards can be added; they wrap automatically two per row.
+  Renders a grid of promo cards (hero-promo-card blocks) whose layout adapts
+  to how many cards are added, intended as the right zone of the
+  hero-showcase section:
+  - 1 card: fills the full width
+  - 2 cards: stacked in a single column, one per row
+  - 3 cards: two side by side, the third spans the full row underneath
+  - 4+ cards: wraps two per row
 
   @example
   {% content_for 'block', type: 'hero-promo-grid', id: 'promo-grid' %}
 {% enddoc %}
 
+{% liquid
+  assign card_count = block.blocks.size
+%}
+
 <div
   class="hero-promo-grid"
+  data-count="{{ card_count }}"
   style="--hero-promo-grid-gap: {{ block.settings.gap }}px;"
   {{ block.shopify_attributes }}
 >
@@ -18,9 +27,38 @@
 {% stylesheet %}
   .hero-promo-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 1fr;
     gap: var(--hero-promo-grid-gap, 8px);
     height: 100%;
+  }
+
+  @media screen and (min-width: 750px) {
+    .hero-promo-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    /* A single card always fills the row */
+    .hero-promo-grid[data-count='1'] {
+      grid-template-columns: 1fr;
+    }
+
+    /* Two cards stack in one column instead of sitting side by side */
+    .hero-promo-grid[data-count='2'] {
+      grid-template-columns: 1fr;
+      grid-template-rows: repeat(2, 1fr);
+    }
+
+    /* Three cards: two up top, the third spans the full row underneath */
+    .hero-promo-grid[data-count='3'] > :nth-child(3) {
+      grid-column: 1 / -1;
+    }
+  }
+
+  /* Cards that end up spanning the full row get more room and a bigger title */
+  .hero-promo-grid[data-count='1'] > .hero-promo-card,
+  .hero-promo-grid[data-count='3'] > :nth-child(3) {
+    --hero-promo-card-min-height: 16rem;
+    --hero-promo-card-title-size: var(--font-size--xl);
   }
 {% endstylesheet %}
 

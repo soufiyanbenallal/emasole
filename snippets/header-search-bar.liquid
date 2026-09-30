@@ -3,6 +3,10 @@
   input that expands into a floating predictive search panel below it,
   showing the same product and resource groups as the search modal.
 
+  On focus the input and its panel widen into a single unified surface, and
+  restore/persist the last typed query plus a short history of past searches
+  for the current browser session.
+
   Hidden below the desktop breakpoint, where the icon-triggered search modal
   (`search-modal.liquid`) is used instead.
 
@@ -13,15 +17,21 @@
 {% render 'pills-styles' %}
 {% render 'predictive-search-styles' %}
 
-<script
-  src="{{ 'search-bar.js' | asset_url }}"
-  type="module"
-></script>
-
+{% comment %}
+  Loaded before search-bar.js: on page load, search-bar-component's
+  connectedCallback synchronously replays a persisted query through
+  predictive-search-component, which must already be upgraded for that
+  dispatch to reach it (module scripts execute in document order).
+{% endcomment %}
 <script
   src="{{ 'predictive-search.js' | asset_url }}"
   type="module"
   fetchpriority="low"
+></script>
+
+<script
+  src="{{ 'search-bar.js' | asset_url }}"
+  type="module"
 ></script>
 
 <search-bar-component class="header-search-bar">
@@ -92,6 +102,14 @@
         hidden
       >
         <div
+          class="header-search-bar__history"
+          hidden
+        >
+          <p class="header-search-bar__history-title">{{ 'content.recent_searches' | t }}</p>
+          <div class="header-search-bar__history-list"></div>
+        </div>
+
+        <div
           class="predictive-search-form__content"
           ref="predictiveSearchResults"
           on:click="/handleModalClick"
@@ -118,12 +136,14 @@
 
 {% stylesheet %}
   .header-search-bar {
-    /* Matches the radius/width `.search-modal` uses for its own dropdown seam
-       (see predictive-search-styles.liquid); undefined here it would resolve
-       to nothing and the pill would square off the moment the panel opens. */
+    /* Matches the radius `.search-modal` uses for its own dropdown seam (see
+       predictive-search-styles.liquid); undefined here it would resolve to
+       nothing and the pill would square off the moment the panel opens. */
     --search-border-radius: var(--style-border-radius-popover);
-    --search-border-width: var(--style-border-width);
+    --search-border-width: 0;
+    --search-expand-padding: var(--padding-md);
 
+    position: relative;
     display: none;
   }
 
@@ -131,6 +151,10 @@
     .header-search-bar {
       display: flex;
       width: 100%;
+      /* Fixed to the resting pill's height (h-9) so the row doesn't collapse:
+         the surface below is always absolutely positioned (see next rule) and
+         so never contributes to this flex container's size. */
+      height: 2.25rem;
       margin-inline: auto;
     }
 
@@ -140,8 +164,47 @@
     }
   }
 
-  /* The outer header wrapper stays invisible; the inner one carries the pill look. */
+  /* The surface is always absolutely positioned and centered on the bar, at
+     rest matching its footprint exactly. Expanding only ever changes width,
+     padding, background and shadow — all continuously animatable — so the
+     input never has to jump between layout modes and the whole reveal can
+     transition smoothly instead of snapping into place. */
+  .header-search-bar .predictive-search-form {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    translate: -50% 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap-sm);
+    padding: 0;
+    border-radius: var(--search-border-radius);
+    background-color: transparent;
+    box-shadow: none;
+    transition: width var(--animation-speed-medium) var(--ease-out-quad),
+      padding var(--animation-speed-medium) var(--ease-out-quad),
+      background-color var(--animation-speed-medium) var(--animation-easing),
+      box-shadow var(--animation-speed-medium) var(--animation-easing);
+  }
+
+  .header-search-bar[expanded] .predictive-search-form {
+    /* At least 20% wider than the resting input, per design spec — the input
+       itself is untouched, only this surrounding surface grows around it. */
+    width: 125%;
+    padding: var(--search-expand-padding);
+    background-color: var(--color-background);
+    box-shadow: var(--shadow-popover);
+    z-index: var(--layer-heightened);
+  }
+
+  /* The outer header wrapper stays invisible; the inner one carries the pill look.
+     It's centered here so that once the surface widens, the fixed-width input
+     below sits in the middle of the extra space rather than stretching into it. */
   .header-search-bar .predictive-search-form__header {
+    display: flex;
+    justify-content: center;
+    width: 100%;
     position: static;
     border: 0;
     border-radius: 0;
@@ -150,11 +213,27 @@
   }
 
   .header-search-bar .predictive-search-form__header-inner {
-    transition: border-color var(--animation-speed) var(--animation-easing), box-shadow var(--animation-speed) var(--animation-easing);
+    /* h-9: a fixed, compact height regardless of the theme's padding scale */
+    height: 2.25rem;
+    /* Pinned to the bar's resting width (set on `.header__columns` in
+       header.liquid) so the input itself never resizes — only the padded
+       surface around it grows when expanded. */
+    width: var(--header-center, 100%);
+    max-width: 100%;
+    border: none;
+    background-color: var(--color-input-border);
+    transition: outline-color var(--animation-speed) var(--animation-easing);
   }
 
-  .header-search-bar[expanded] .predictive-search-form__header-inner {
-    box-shadow: var(--shadow-popover);
+  .header-search-bar .search-input {
+    height: 100%;
+    padding-block: 0;
+  }
+
+  /* No border: an outline/ring communicates focus instead */
+  .header-search-bar .predictive-search-form__header-inner:focus-within {
+    outline: 2px solid var(--color-foreground);
+    outline-offset: 2px;
   }
 
   /* Selectors below are scoped through `.header-search-bar` so their specificity
@@ -165,13 +244,15 @@
   }
 
   .header-search-bar .header-search-bar__panel {
+    position: static;
+    width: 100%;
+    box-shadow: none;
     transition-property: display, opacity, translate;
     transition-duration: var(--animation-speed-medium);
     transition-timing-function: var(--ease-out-quad);
     transition-behavior: allow-discrete;
     translate: 0 -8px;
     opacity: 0;
-    box-shadow: var(--shadow-popover);
   }
 
   .header-search-bar .header-search-bar__panel:not([hidden]) {
@@ -184,5 +265,31 @@
       translate: 0 -8px;
       opacity: 0;
     }
+  }
+
+  .header-search-bar__history {
+    /* Horizontal inset already comes from the surface's own padding when expanded */
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap-2xs);
+    padding-block-end: var(--padding-sm);
+  }
+
+  .header-search-bar__history[hidden] {
+    display: none;
+  }
+
+  .header-search-bar__history-title {
+    margin: 0;
+    font-size: var(--font-size--body-sm, 0.75rem);
+    font-weight: 500;
+    color: var(--color-foreground);
+    opacity: var(--opacity-muted-text, 0.68);
+  }
+
+  .header-search-bar__history-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--gap-2xs);
   }
 {% endstylesheet %}
