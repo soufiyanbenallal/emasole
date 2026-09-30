@@ -69,10 +69,24 @@
   --em-radius-lg: 16px;
   --em-radius-pill: 999px;
 
+  /* Surfaces and gradients */
+  --em-grad-ember: linear-gradient(135deg, #ff7a3d 0%, #e63a00 100%);
+  --em-grad-sun: linear-gradient(135deg, #ffd873 0%, #ffbd1f 100%);
+  --em-grad-ink: linear-gradient(160deg, #2a2a33 0%, #121217 100%);
+  --em-grad-mint: linear-gradient(135deg, #d9f3e4 0%, #b8e8cc 100%);
+  --em-mesh:
+    radial-gradient(55% 75% at 12% 18%, rgb(255 106 43 / 0.22) 0, transparent 62%),
+    radial-gradient(45% 65% at 88% 8%, rgb(255 197 61 / 0.35) 0, transparent 58%),
+    radial-gradient(60% 80% at 72% 105%, rgb(255 106 43 / 0.14) 0, transparent 62%),
+    linear-gradient(180deg, #fffaf5 0%, #fff3ea 100%);
+  --em-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --em-dots: radial-gradient(rgb(23 23 28 / 0.09) 1px, transparent 1.4px) 0 0 / 14px 14px;
+
   /* Elevation */
   --em-shadow-1: 0 1px 2px rgb(23 23 28 / 0.06);
   --em-shadow-2: 0 6px 20px rgb(23 23 28 / 0.1);
   --em-shadow-3: 0 16px 40px rgb(23 23 28 / 0.16);
+  --em-shadow-float: 0 1px 2px rgb(23 23 28 / 0.08), 0 12px 24px -6px rgb(23 23 28 / 0.18), 0 32px 48px -16px rgb(255 106 43 / 0.25);
 
   /* Motion */
   --em-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
@@ -91,6 +105,116 @@
   }
 }
 
+/* Branded surface: warm mesh gradient with a fine film grain and a dot lattice */
+.em-mesh {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: var(--em-mesh);
+}
+
+.em-mesh::before,
+.em-mesh::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.em-mesh::before {
+  background: var(--em-dots);
+  mask: linear-gradient(115deg, transparent 35%, #000 100%);
+}
+
+.em-mesh::after {
+  background: var(--em-grain);
+  opacity: 0.07;
+  mix-blend-mode: multiply;
+}
+
+.em-mesh--ink {
+  --em-mesh:
+    radial-gradient(50% 70% at 10% 0%, rgb(255 106 43 / 0.45) 0, transparent 60%),
+    radial-gradient(40% 60% at 95% 100%, rgb(255 197 61 / 0.3) 0, transparent 60%),
+    var(--em-grad-ink);
+  color: #ffffff;
+}
+
+.em-mesh--ink::before {
+  background: radial-gradient(rgb(255 255 255 / 0.1) 1px, transparent 1.4px) 0 0 / 14px 14px;
+}
+
+.em-mesh--ink::after {
+  mix-blend-mode: screen;
+  opacity: 0.05;
+}
+
+/* Frosted panel for content that sits on a mesh or photo */
+.em-glass {
+  border: 1px solid rgb(255 255 255 / 0.7);
+  background: rgb(255 255 255 / 0.72);
+  backdrop-filter: blur(14px) saturate(1.4);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  box-shadow: var(--em-shadow-2);
+}
+
+/* Product cut-outs that float over a mesh, used in page banners */
+.em-float {
+  position: absolute;
+  overflow: hidden;
+  border: 4px solid #ffffff;
+  border-radius: var(--em-radius-lg);
+  background: var(--em-card);
+  box-shadow: var(--em-shadow-float);
+  rotate: var(--em-tilt, 0deg);
+  transition: rotate 400ms var(--em-ease), translate 400ms var(--em-ease);
+}
+
+.em-float img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.em-float__tag {
+  position: absolute;
+  inset-inline: 6px;
+  inset-block-end: 6px;
+  padding: 3px 8px;
+  border-radius: var(--em-radius-pill);
+  background: rgb(23 23 28 / 0.82);
+  color: #ffffff;
+  font-family: var(--em-font-display);
+  font-size: var(--em-text-xs);
+  font-weight: 700;
+  text-align: center;
+  backdrop-filter: blur(6px);
+}
+
+/* Coupon-style notched edge for deal panels */
+.em-ticket {
+  --em-notch: 9px;
+
+  position: relative;
+  mask:
+    radial-gradient(circle var(--em-notch) at 0 50%, #0000 97%, #000) left / 51% 100% no-repeat,
+    radial-gradient(circle var(--em-notch) at 100% 50%, #0000 97%, #000) right / 51% 100% no-repeat;
+}
+
+/* Skeleton shimmer for content that is loading */
+.em-shimmer {
+  background: linear-gradient(100deg, var(--em-ink-100) 30%, #ffffff 50%, var(--em-ink-100) 70%) 0 0 / 300% 100%;
+  animation: em-shimmer 1.4s linear infinite;
+}
+
+@keyframes em-shimmer {
+  to {
+    background-position: -150% 0;
+  }
+}
+
 /* Custom elements are inline by default */
 em-header,
 em-rail,
@@ -100,6 +224,7 @@ em-carousel,
 em-facets,
 em-product,
 em-gallery,
+em-price-range,
 em-recommendations {
   display: block;
 }
@@ -506,6 +631,7 @@ main:is(
 /* Form controls */
 .em-input,
 .em-select {
+  box-sizing: border-box;
   min-height: 40px;
   padding: 0 var(--em-space-3);
   border: 1px solid var(--em-color-border);
@@ -614,6 +740,14 @@ main:is(
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .em-shimmer {
+    animation: none;
+  }
+
+  .em-float {
+    transition: none;
+  }
+
   .em-btn,
   .em-chip,
   .em-icon-btn {

@@ -20,7 +20,7 @@
             "text_tone": "dark",
             "eyebrow": "Super deals",
             "heading": "Up to 70% off everyday essentials",
-            "text": "New markdowns every morning. Free shipping on orders over $29.",
+            "text": "New markdowns every morning. Free shipping on qualifying orders.",
             "button_label": "Shop deals",
             "link": "shopify://collections/all",
             "art": "tickets"
@@ -47,7 +47,7 @@
             "background": "#17171C",
             "text_tone": "light",
             "eyebrow": "Tech week",
-            "heading": "Smart gadgets from $9.99",
+            "heading": "Smart gadgets at smart prices",
             "text": "Earbuds, chargers, smart home and more.",
             "button_label": "Shop tech",
             "link": "shopify://collections/all",
@@ -62,8 +62,8 @@
         "autoplay_seconds": 5,
         "show_panel": true,
         "panel_text": "Unlock member prices and free returns",
-        "coupon_amount": "$5 OFF",
-        "coupon_text": "Your first order over $25",
+        "coupon_amount": "WELCOME OFFER",
+        "coupon_text": "On your first order",
         "coupon_code": "",
         "picks_title": "Today's top picks",
         "picks_collection": "all"
@@ -77,7 +77,7 @@
           "settings": {
             "icon": "truck",
             "title": "Free shipping",
-            "text": "On orders over $29"
+            "text": "On qualifying orders"
           }
         },
         "b2": {
@@ -85,7 +85,7 @@
           "settings": {
             "icon": "return",
             "title": "Free returns",
-            "text": "Within 90 days of delivery"
+            "text": "Easy returns after delivery"
           }
         },
         "b3": {
@@ -93,7 +93,7 @@
           "settings": {
             "icon": "tag",
             "title": "Price adjustment",
-            "text": "Price drops within 30 days? We refund the difference"
+            "text": "Price dropped after you bought? Ask about a price adjustment"
           }
         },
         "b4": {
@@ -138,16 +138,16 @@
         "c1": {
           "type": "coupon",
           "settings": {
-            "amount": "$3 OFF",
-            "condition": "Orders over $29",
+            "amount": "10% OFF",
+            "condition": "Selected orders",
             "expiry": "Valid this week"
           }
         },
         "c2": {
           "type": "coupon",
           "settings": {
-            "amount": "$8 OFF",
-            "condition": "Orders over $59",
+            "amount": "15% OFF",
+            "condition": "Selected categories",
             "expiry": "Valid this week"
           }
         },
@@ -155,7 +155,7 @@
           "type": "coupon",
           "settings": {
             "amount": "15% OFF",
-            "condition": "Orders over $99",
+            "condition": "Selected brands",
             "expiry": "Valid this week"
           }
         },
@@ -163,7 +163,7 @@
           "type": "coupon",
           "settings": {
             "amount": "Free gift",
-            "condition": "Orders over $120",
+            "condition": "Limited time",
             "expiry": "While stocks last"
           }
         }
@@ -196,7 +196,7 @@
             "background": "#E6F5EC",
             "text_tone": "dark",
             "eyebrow": "Local warehouse",
-            "heading": "Fast delivery in 3–5 days",
+            "heading": "Fast, tracked delivery",
             "text": "Thousands of items ship from nearby.",
             "link_label": "Shop fast delivery",
             "link": "shopify://collections/all",

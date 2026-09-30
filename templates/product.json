@@ -12,21 +12,12 @@
     "main": {
       "type": "em-product",
       "blocks": {
-        "trust_shipping": {
+        "trust_protection": {
           "type": "trust",
           "settings": {
-            "icon": "truck",
-            "title": "Free shipping",
-            "text": "On orders over $29",
-            "link": ""
-          }
-        },
-        "trust_returns": {
-          "type": "trust",
-          "settings": {
-            "icon": "return",
-            "title": "Free returns",
-            "text": "Within 90 days of delivery",
+            "icon": "shield",
+            "title": "Buyer protection",
+            "text": "Get support if your order isn't as described",
             "link": ""
           }
         },
@@ -34,8 +25,8 @@
           "type": "trust",
           "settings": {
             "icon": "lock",
-            "title": "Secure payments",
-            "text": "Encrypted checkout, trusted providers",
+            "title": "Secure checkout",
+            "text": "Encrypted payments, trusted providers",
             "link": ""
           }
         },
@@ -44,21 +35,24 @@
           "settings": {
             "icon": "truck",
             "heading": "Shipping and returns",
-            "content": "<p>Free shipping on orders over $29. Not happy with your order? Return it for free within 90 days of delivery.</p>",
+            "content": "<p>Delivery options and costs are calculated at checkout for your location. See our shipping and returns policies for details.</p>",
             "open": false
           }
         }
       },
       "block_order": [
-        "trust_shipping",
-        "trust_returns",
+        "trust_protection",
         "trust_secure",
         "row_shipping"
       ],
       "settings": {
         "show_vendor": true,
+        "show_type": true,
         "show_quantity": true,
         "show_dynamic_checkout": true,
+        "show_pickup": true,
+        "show_payment_icons": true,
+        "show_policies": true,
         "low_stock": 10
       }
     },

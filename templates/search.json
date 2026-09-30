@@ -13,14 +13,13 @@
       "type": "em-search",
       "settings": {
         "placeholder": "Search for products, brands and more",
-        "suggestions": "Wireless earbuds, Summer dresses, Phone cases, Smart watch, Kitchen gadgets",
+        "suggestions": "",
         "enable_filtering": true,
         "enable_sorting": true,
         "products_per_page": 24,
         "columns": 4,
         "show_rating": true,
-        "popular_title": "Popular right now",
-        
+        "popular_title": "Popular right now"
       }
     }
   },

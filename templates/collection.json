@@ -12,6 +12,7 @@
     "main": {
       "type": "em-collection",
       "settings": {
+        "banner_style": "mesh",
         "show_image": true,
         "show_description": true,
         "enable_filtering": true,

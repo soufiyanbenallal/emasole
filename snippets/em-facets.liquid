@@ -1,36 +1,36 @@
 {% doc %}
-  Renders the Emasole filter panel for a collection or product search, and defines the
-  `<em-facets>` element that applies filters and sorting in place.
+  Renders the Emasole filter panel for a collection or product search.
 
   On desktop the panel is a sticky sidebar that applies each change immediately. Below
-  990px it becomes a drawer, opened by the toolbar's Filters button, that applies on
-  "Show results". Every control lives in one GET form, so filtering, sorting and
-  paging all work without JavaScript.
+  990px it becomes a drawer, opened by the toolbar's Filters button, whose footer button
+  always shows how many products the current filters match. Every control lives in one GET
+  form, so filtering, sorting and paging all work without JavaScript.
+
+  Supports list, swatch, image, boolean and price range filters exactly as Shopify reports
+  them (set up in the Shopify Search & Discovery app). The price range works in the
+  shopper's currency: bounds and values come from the filter object in minor units, and
+  `assets/em-facets.js` formats them for the active market.
 
   Wrap the section's results in `<em-facets data-section-id="{{ section.id }}">` with a
   `[data-em-results]` child; the element swaps that child with the server's re-render and
   announces the child's `data-message` in a `[data-em-results-status]` live region placed
-  outside it.
-  Pair it with the `em-facets-toolbar` snippet, whose sort control joins this form.
+  outside it. Load `em-facets.js` as a module in the section.
 
   @param {object} results - The collection or search object being filtered
   @param {string} form_id - Unique id for the filter form; the toolbar's sort control uses it
   @param {string} clear_url - URL that removes every filter but keeps sorting and search terms
+  @param {number} count - Number of products the current filters match
   @param {boolean} [show_filters] - Render the filters (default true); off leaves only the form
   @param {string} [terms] - Search terms, kept as hidden fields on the search page
 
   @example
-  {% render 'em-facets', results: collection, form_id: form_id, clear_url: collection.url %}
+  {% render 'em-facets', results: collection, form_id: form_id, clear_url: clear_url, count: collection.products_count %}
 {% enddoc %}
 {%- liquid
-  if show_filters == false
+  if show_filters == false or results.filters.size == 0
     assign filters_enabled = false
   else
     assign filters_enabled = true
-  endif
-
-  if results.filters.size == 0
-    assign filters_enabled = false
   endif
 
   if terms != blank
@@ -38,6 +38,19 @@
   else
     assign form_action = results.url
   endif
+
+  assign active_total = 0
+  for filter in results.filters
+    if filter.type == 'price_range'
+      if filter.min_value.value != null or filter.max_value.value != null
+        assign active_total = active_total | plus: 1
+      endif
+    else
+      assign active_total = active_total | plus: filter.active_values.size
+    endif
+  endfor
+
+  assign currency_symbol = localization.country.currency.symbol
 -%}
 
 <div
@@ -53,7 +66,13 @@
     <h2 class="em-facets__title" id="{{ form_id }}-title">
       {%- render 'em-icon', icon: 'sliders' -%}
       {{ 'emasole.filters.title' | t }}
+      {%- if active_total > 0 -%}
+        <span class="em-facets__badge">{{ active_total }}</span>
+      {%- endif -%}
     </h2>
+    {%- if active_total > 0 -%}
+      <a class="em-facets__reset" href="{{ clear_url }}" data-em-facets-link>{{ 'emasole.filters.clear_all' | t }}</a>
+    {%- endif -%}
     <button
       type="button"
       class="em-icon-btn em-facets__close"
@@ -83,11 +102,39 @@
           {%- liquid
             assign facet_id = form_id | append: '-' | append: forloop.index
             assign active_count = filter.active_values.size
+            assign is_price = false
             if filter.type == 'price_range'
+              assign is_price = true
               assign active_count = 0
               if filter.min_value.value != null or filter.max_value.value != null
                 assign active_count = 1
               endif
+            endif
+
+            assign is_swatch = false
+            assign swatch_index = filter.values | find_index: 'swatch'
+            if swatch_index != null
+              assign is_swatch = true
+            endif
+            if filter.presentation == 'swatch'
+              assign is_swatch = true
+            endif
+
+            assign is_image = false
+            if filter.presentation == 'image'
+              assign is_image = true
+            endif
+
+            assign is_switch = false
+            if filter.type == 'boolean' or filter.param_name == 'filter.v.availability'
+              assign is_switch = true
+            endif
+
+            assign visible_limit = 7
+            assign is_long = false
+            assign extra_count = filter.values.size | minus: visible_limit
+            if extra_count > 0 and is_swatch == false and is_image == false and is_switch == false
+              assign is_long = true
             endif
           -%}
           <details
@@ -99,57 +146,96 @@
           >
             <summary class="em-facet__summary">
               <span class="em-facet__label">{{ filter.label | escape }}</span>
-              {%- if active_count > 0 and filter.type != 'price_range' -%}
+              {%- if active_count > 0 and is_price == false -%}
                 <span class="em-facet__count">{{ active_count }}</span>
               {%- endif -%}
               {%- render 'em-icon', icon: 'chevron-down', class: 'em-facet__chevron' -%}
             </summary>
 
-            {%- case filter.type -%}
-              {%- when 'price_range' -%}
-                <div class="em-facet__price">
-                  <label class="em-facet__price-field" for="{{ facet_id }}-min">
-                    <span class="em-visually-hidden">{{ 'emasole.filters.price_min' | t }}</span>
-                    <span class="em-facet__currency" aria-hidden="true">{{ cart.currency.symbol }}</span>
-                    <input
-                      class="em-input em-facet__price-input"
-                      id="{{ facet_id }}-min"
-                      name="{{ filter.min_value.param_name }}"
-                      type="text"
-                      inputmode="decimal"
-                      autocomplete="off"
-                      placeholder="0"
-                      {% if filter.min_value.value != null %}
-                        value="{{ filter.min_value.value | money_without_currency }}"
-                      {% endif %}
-                      data-em-price
-                    >
-                  </label>
-                  <span class="em-facet__price-sep" aria-hidden="true">–</span>
-                  <label class="em-facet__price-field" for="{{ facet_id }}-max">
-                    <span class="em-visually-hidden">{{ 'emasole.filters.price_max' | t }}</span>
-                    <span class="em-facet__currency" aria-hidden="true">{{ cart.currency.symbol }}</span>
-                    <input
-                      class="em-input em-facet__price-input"
-                      id="{{ facet_id }}-max"
-                      name="{{ filter.max_value.param_name }}"
-                      type="text"
-                      inputmode="decimal"
-                      autocomplete="off"
-                      placeholder="{{ filter.range_max | money_without_currency }}"
-                      {% if filter.max_value.value != null %}
-                        value="{{ filter.max_value.value | money_without_currency }}"
-                      {% endif %}
-                      data-em-price
-                    >
-                  </label>
-                </div>
-                <p class="em-facet__hint">
-                  {{ 'emasole.filters.price_highest' | t: price: filter.range_max | money }}
-                </p>
+            <div class="em-facet__body">
+              {%- if is_price -%}
+                {%- assign range_max = filter.range_max | default: 0 -%}
+                <em-price-range
+                  class="em-range"
+                  data-pending
+                  data-min="0"
+                  data-max="{{ range_max }}"
+                  {% if filter.min_value.value != null %}
+                    data-from="{{ filter.min_value.value }}"
+                  {% endif %}
+                  {% if filter.max_value.value != null %}
+                    data-to="{{ filter.max_value.value }}"
+                  {% endif %}
+                >
+                  <p class="em-range__label" aria-live="polite" data-em-range-label>
+                    {%- liquid
+                      assign label_from = filter.min_value.value | default: 0
+                      assign label_to = filter.max_value.value | default: range_max
+                    -%}
+                    {{ label_from | money_without_trailing_zeros }} – {{ label_to | money_without_trailing_zeros }}
+                  </p>
+
+                  <div class="em-range__slider" aria-hidden="true">
+                    <span class="em-range__track"><span class="em-range__fill"></span></span>
+                    <input class="em-range__thumb" type="range" tabindex="-1" data-em-range="from" value="{{ label_from }}" max="{{ range_max }}">
+                    <input class="em-range__thumb" type="range" tabindex="-1" data-em-range="to" value="{{ label_to }}" max="{{ range_max }}">
+                  </div>
+
+                  <div class="em-range__fields">
+                    <label class="em-range__field" for="{{ facet_id }}-min">
+                      <span class="em-visually-hidden">{{ 'emasole.filters.price_min' | t }}</span>
+                      <span class="em-range__currency" aria-hidden="true">{{ currency_symbol }}</span>
+                      <input
+                        class="em-input em-range__input"
+                        id="{{ facet_id }}-min"
+                        name="{{ filter.min_value.param_name }}"
+                        type="text"
+                        inputmode="decimal"
+                        autocomplete="off"
+                        placeholder="0"
+                        {% if filter.min_value.value != null %}
+                          value="{{ filter.min_value.value | money_without_currency }}"
+                        {% endif %}
+                        data-em-range-field="from"
+                      >
+                    </label>
+                    <span class="em-range__dash" aria-hidden="true">–</span>
+                    <label class="em-range__field" for="{{ facet_id }}-max">
+                      <span class="em-visually-hidden">{{ 'emasole.filters.price_max' | t }}</span>
+                      <span class="em-range__currency" aria-hidden="true">{{ currency_symbol }}</span>
+                      <input
+                        class="em-input em-range__input"
+                        id="{{ facet_id }}-max"
+                        name="{{ filter.max_value.param_name }}"
+                        type="text"
+                        inputmode="decimal"
+                        autocomplete="off"
+                        placeholder="{{ range_max | money_without_currency }}"
+                        {% if filter.max_value.value != null %}
+                          value="{{ filter.max_value.value | money_without_currency }}"
+                        {% endif %}
+                        data-em-range-field="to"
+                      >
+                    </label>
+                  </div>
+                </em-price-range>
               {%- else -%}
+                {%- if is_long -%}
+                  <label class="em-facet__search">
+                    <span class="em-visually-hidden">{{ 'emasole.filters.search_values' | t: name: filter.label }}</span>
+                    {%- render 'em-icon', icon: 'search' -%}
+                    <input
+                      class="em-input em-facet__search-input"
+                      type="search"
+                      placeholder="{{ 'emasole.filters.search_values' | t: name: filter.label | escape }}"
+                      autocomplete="off"
+                      data-em-facet-search
+                    >
+                  </label>
+                {%- endif -%}
+
                 <ul
-                  class="em-facet__list{% if filter.presentation == 'swatch' %} em-facet__list--swatch{% endif %}"
+                  class="em-facet__list{% if is_swatch %} em-facet__list--swatch{% endif %}{% if is_image %} em-facet__list--image{% endif %}{% if is_switch %} em-facet__list--switch{% endif %}{% if is_long %} em-facet__list--long{% endif %}"
                   role="list"
                 >
                   {%- for value in filter.values -%}
@@ -160,10 +246,13 @@
                         assign is_empty = true
                       endif
                     -%}
-                    <li>
+                    <li{% if is_long and forloop.index > visible_limit %} data-em-extra{% endif %}>
                       <label
-                        class="em-check{% if is_empty %} em-check--empty{% endif %}"
+                        class="em-check{% if is_empty %} em-check--empty{% endif %}{% if is_switch %} em-check--switch{% endif %}"
                         for="{{ value_id }}"
+                        {% if is_swatch or is_image %}
+                          title="{{ value.label | escape }}"
+                        {% endif %}
                       >
                         <input
                           class="em-check__input"
@@ -178,41 +267,66 @@
                             disabled
                           {% endif %}
                         >
-                        {%- if filter.presentation == 'swatch' and value.swatch != blank -%}
-                          {%- liquid
-                            if value.swatch.image
-                              assign swatch_style = value.swatch.image | image_url: width: 60 | prepend: 'url(' | append: ')'
-                            else
-                              assign swatch_style = value.swatch.color
-                            endif
-                          -%}
-                          <span class="em-check__swatch" style="--em-swatch: {{ swatch_style }};" aria-hidden="true"></span>
+                        {%- liquid
+                          assign swatch_style = blank
+                          if value.swatch.image
+                            assign swatch_url = value.swatch.image | image_url: width: 80
+                            assign swatch_style = 'url(' | append: swatch_url | append: ')'
+                          elsif value.swatch.color
+                            assign swatch_style = 'rgb(' | append: value.swatch.color.rgb | append: ')'
+                          endif
+                        -%}
+                        {%- if is_swatch and swatch_style != blank -%}
+                          <span class="em-check__swatch" style="--em-swatch: {{ swatch_style }};" aria-hidden="true">
+                            {%- render 'em-icon', icon: 'check' -%}
+                          </span>
+                        {%- elsif is_image and value.image -%}
+                          <span class="em-check__image" aria-hidden="true">
+                            {{ value.image | image_url: width: 160 | image_tag: loading: 'lazy', alt: '' }}
+                          </span>
+                        {%- elsif is_switch -%}
+                          <span class="em-check__switch" aria-hidden="true"></span>
                         {%- else -%}
                           <span class="em-check__box" aria-hidden="true">
                             {%- render 'em-icon', icon: 'check' -%}
                           </span>
                         {%- endif -%}
-                        <span class="em-check__label">{{ value.label | escape }}</span>
-                        <span class="em-check__count">
-                          <span aria-hidden="true">{{ value.count }}</span>
-                          <span class="em-visually-hidden">{{ 'emasole.filters.product_count' | t: count: value.count }}</span>
+                        <span class="em-check__label{% if is_swatch or is_image %} em-check__label--below{% endif %}">
+                          {{- value.label | escape -}}
                         </span>
+                        {%- unless is_swatch or is_image -%}
+                          <span class="em-check__count">
+                            <span aria-hidden="true">{{ value.count }}</span>
+                            <span class="em-visually-hidden">{{ 'emasole.filters.product_count' | t: count: value.count }}</span>
+                          </span>
+                        {%- endunless -%}
                       </label>
                     </li>
                   {%- endfor -%}
                 </ul>
-            {%- endcase -%}
+
+                {%- if is_long -%}
+                  <button
+                    type="button"
+                    class="em-facet__more"
+                    data-em-facet-more
+                    aria-expanded="false"
+                  >
+                    <span class="em-facet__more-open">{{ 'emasole.filters.show_more' | t: count: extra_count }}</span>
+                    <span class="em-facet__more-close">{{ 'emasole.filters.show_less' | t }}</span>
+                    {%- render 'em-icon', icon: 'chevron-down' -%}
+                  </button>
+                {%- endif -%}
+              {%- endif -%}
+            </div>
           </details>
         {%- endfor -%}
       </div>
     {%- endif -%}
 
     <div class="em-facets__foot">
-      <a class="em-btn em-btn--secondary em-btn--sm em-facets__clear" href="{{ clear_url }}" data-em-facets-link>
-        {{- 'emasole.filters.clear_all' | t -}}
-      </a>
-      <button type="submit" class="em-btn em-btn--sm em-facets__submit">
-        {{- 'emasole.filters.show_results' | t -}}
+      <button type="submit" class="em-btn em-facets__submit">
+        {{- 'emasole.filters.show_results_count' | t: count: count -}}
       </button>
     </div>
   </form>
@@ -232,20 +346,49 @@
   .em-facets__head {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: var(--em-space-3);
     padding-block-end: var(--em-space-3);
-    border-block-end: 1px solid var(--em-color-border);
   }
 
   .em-facets__title {
     display: flex;
+    flex: 1;
     align-items: center;
     gap: var(--em-space-2);
     margin: 0;
     font-family: var(--em-font-display);
     font-size: var(--em-text-lg);
+    font-weight: 800;
+    letter-spacing: -0.01em;
+  }
+
+  .em-facets__title .em-icon {
+    color: var(--em-ember-600);
+  }
+
+  .em-facets__badge {
+    display: inline-grid;
+    place-items: center;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 6px;
+    border-radius: var(--em-radius-pill);
+    background: var(--em-grad-ember);
+    color: #ffffff;
+    font-family: var(--em-font-body);
+    font-size: var(--em-text-xs);
     font-weight: 700;
+  }
+
+  .em-facets__reset {
+    color: var(--em-color-text-muted);
+    font-size: var(--em-text-xs);
+    font-weight: 600;
+    text-underline-offset: 3px;
+  }
+
+  .em-facets__reset:hover {
+    color: var(--em-color-action);
   }
 
   .em-facets__form {
@@ -255,7 +398,7 @@
   }
 
   .em-facet {
-    border-block-end: 1px solid var(--em-ink-100);
+    border-block-start: 1px solid var(--em-ink-100);
   }
 
   .em-facet__summary {
@@ -284,8 +427,8 @@
     height: 20px;
     padding: 0 6px;
     border-radius: var(--em-radius-pill);
-    background: var(--em-ember-600);
-    color: #ffffff;
+    background: var(--em-ember-50);
+    color: var(--em-ember-700);
     font-size: var(--em-text-xs);
   }
 
@@ -300,27 +443,115 @@
     rotate: 180deg;
   }
 
+  .em-facet__body {
+    padding-block-end: var(--em-space-4);
+  }
+
   .em-facet__list {
     display: grid;
     gap: 2px;
-    max-height: 264px;
     margin: 0;
-    padding: 0 0 var(--em-space-3);
-    overflow-y: auto;
+    padding: 0;
     list-style: none;
+  }
+
+  .em-facet__list--long {
+    max-height: 288px;
+    overflow-y: auto;
     scrollbar-width: thin;
   }
 
+  /* Long lists show their first values, with the rest one tap away. Without JavaScript the
+     list is simply scrollable. */
+  em-facets:defined .em-facet:not([data-expanded], [data-searching]) [data-em-extra] {
+    display: none;
+  }
+
+  em-facets:defined .em-facet__list--long {
+    max-height: none;
+  }
+
+  .em-facet[data-empty] .em-facet__list::after {
+    content: '—';
+    padding: var(--em-space-2);
+    color: var(--em-ink-400);
+  }
+
+  .em-facet__search {
+    position: relative;
+    display: block;
+    margin-block-end: var(--em-space-2);
+  }
+
+  .em-facet__search .em-icon {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: var(--em-space-3);
+    width: 16px;
+    height: 16px;
+    margin-block: auto;
+    color: var(--em-ink-400);
+    pointer-events: none;
+  }
+
+  .em-facet__search-input {
+    width: 100%;
+    min-height: 36px;
+    padding-inline-start: 34px;
+    border-radius: var(--em-radius-pill);
+    background-color: var(--em-surface);
+  }
+
+  .em-facet__more {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--em-space-1);
+    margin-block-start: var(--em-space-2);
+    padding: var(--em-space-1) 0;
+    border: 0;
+    background: none;
+    color: var(--em-color-action);
+    font-size: var(--em-text-sm);
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .em-facet__more .em-icon {
+    width: 14px;
+    height: 14px;
+    transition: rotate var(--em-duration) var(--em-ease);
+  }
+
+  .em-facet__more-close,
+  .em-facet[data-expanded] .em-facet__more-open {
+    display: none;
+  }
+
+  .em-facet[data-expanded] .em-facet__more-close {
+    display: inline;
+  }
+
+  .em-facet[data-expanded] .em-facet__more .em-icon {
+    rotate: 180deg;
+  }
+
+  em-facets:not(:defined) .em-facet__more {
+    display: none;
+  }
+
+  /* Checkbox rows */
   .em-check {
     position: relative;
     display: flex;
     align-items: center;
-    gap: var(--em-space-2);
-    min-height: 32px;
-    padding: 2px var(--em-space-1);
-    border-radius: var(--em-radius-xs);
+    gap: var(--em-space-3);
+    min-height: 34px;
+    padding: 2px var(--em-space-2);
+    margin-inline: calc(var(--em-space-2) * -1);
+    border-radius: var(--em-radius-sm);
     font-size: var(--em-text-sm);
     cursor: pointer;
+    transition: background-color var(--em-duration) var(--em-ease);
   }
 
   .em-check:hover {
@@ -332,6 +563,10 @@
     cursor: not-allowed;
   }
 
+  .em-check--empty:hover {
+    background: none;
+  }
+
   .em-check__input {
     position: absolute;
     opacity: 0;
@@ -341,13 +576,14 @@
   .em-check__box {
     display: inline-grid;
     place-items: center;
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
     flex: none;
     border: 1.5px solid var(--em-ink-400);
-    border-radius: var(--em-radius-xs);
+    border-radius: 6px;
     background: var(--em-card);
     color: transparent;
+    transition: background-color var(--em-duration) var(--em-ease), border-color var(--em-duration) var(--em-ease);
   }
 
   .em-check__box .em-icon {
@@ -358,26 +594,11 @@
 
   .em-check__input:checked + .em-check__box {
     border-color: var(--em-ember-600);
-    background: var(--em-ember-600);
+    background: var(--em-grad-ember);
     color: #ffffff;
   }
 
-  .em-check__swatch {
-    width: 20px;
-    height: 20px;
-    flex: none;
-    border-radius: var(--em-radius-pill);
-    background: var(--em-swatch);
-    background-size: cover;
-    box-shadow: inset 0 0 0 1px rgb(23 23 28 / 0.15);
-  }
-
-  .em-check__input:checked + .em-check__swatch {
-    outline: 2px solid var(--em-ember-600);
-    outline-offset: 2px;
-  }
-
-  .em-check__input:focus-visible + :is(.em-check__box, .em-check__swatch) {
+  .em-check__input:focus-visible + :is(.em-check__box, .em-check__swatch, .em-check__image, .em-check__switch) {
     outline: 2px solid var(--em-color-focus);
     outline-offset: 2px;
   }
@@ -385,6 +606,7 @@
   .em-check__label {
     flex: 1;
     min-width: 0;
+    overflow-wrap: anywhere;
   }
 
   .em-check__input:checked ~ .em-check__label {
@@ -392,23 +614,255 @@
   }
 
   .em-check__count {
+    min-width: 2ch;
+    padding: 1px 7px;
+    border-radius: var(--em-radius-pill);
+    background: var(--em-surface);
     color: var(--em-color-text-muted);
     font-size: var(--em-text-xs);
+    font-variant-numeric: tabular-nums;
+    text-align: center;
   }
 
-  .em-facet__price {
+  /* Switch rows (availability, boolean filters) */
+  .em-facet__list--switch {
+    gap: var(--em-space-1);
+  }
+
+  .em-check--switch {
+    min-height: 40px;
+  }
+
+  .em-check__switch {
+    position: relative;
+    order: 2;
+    width: 40px;
+    height: 24px;
+    flex: none;
+    border-radius: var(--em-radius-pill);
+    background: var(--em-ink-200);
+    transition: background-color var(--em-duration) var(--em-ease);
+  }
+
+  .em-check__switch::after {
+    content: '';
+    position: absolute;
+    inset-block-start: 3px;
+    inset-inline-start: 3px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgb(23 23 28 / 0.3);
+    transition: translate var(--em-duration) var(--em-ease);
+  }
+
+  .em-check__input:checked + .em-check__switch {
+    background: var(--em-mint-700);
+  }
+
+  .em-check__input:checked + .em-check__switch::after {
+    translate: 16px 0;
+  }
+
+  .em-check--switch .em-check__count {
+    order: 1;
+  }
+
+  /* Swatch grid */
+  .em-facet__list--swatch {
+    grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
+    gap: var(--em-space-2) var(--em-space-1);
+  }
+
+  .em-facet__list--swatch .em-check {
+    flex-direction: column;
+    gap: 4px;
+    padding: 4px 0;
+    margin-inline: 0;
+    text-align: center;
+  }
+
+  .em-check__swatch {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--em-swatch);
+    background-size: cover;
+    background-position: center;
+    box-shadow: inset 0 0 0 1px rgb(23 23 28 / 0.18);
+    color: transparent;
+    transition: box-shadow var(--em-duration) var(--em-ease), scale var(--em-duration) var(--em-ease);
+  }
+
+  .em-check:hover .em-check__swatch {
+    scale: 1.08;
+  }
+
+  .em-check__swatch .em-icon {
+    width: 16px;
+    height: 16px;
+    stroke-width: 3;
+    filter: drop-shadow(0 0 2px rgb(23 23 28 / 0.6));
+  }
+
+  .em-check__input:checked + .em-check__swatch {
+    box-shadow: inset 0 0 0 1px rgb(23 23 28 / 0.18), 0 0 0 2px var(--em-card), 0 0 0 4px var(--em-ember-600);
+    color: #ffffff;
+  }
+
+  .em-check__label--below {
+    flex: none;
+    max-width: 100%;
+    font-size: 11px;
+    line-height: 1.2;
+    color: var(--em-color-text-muted);
+  }
+
+  /* Image tiles */
+  .em-facet__list--image {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--em-space-2);
+  }
+
+  .em-facet__list--image .em-check {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+    padding: 0;
+    margin-inline: 0;
+    text-align: center;
+  }
+
+  .em-check__image {
+    display: block;
+    aspect-ratio: 1;
+    overflow: hidden;
+    border: 2px solid transparent;
+    border-radius: var(--em-radius-sm);
+    background: var(--em-ink-100);
+  }
+
+  .em-check__image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .em-check__input:checked + .em-check__image {
+    border-color: var(--em-ember-600);
+  }
+
+  /* Price range */
+  .em-range {
+    display: grid;
+    gap: var(--em-space-3);
+    padding-block-start: var(--em-space-1);
+  }
+
+  .em-range__label {
+    margin: 0;
+    font-family: var(--em-font-display);
+    font-size: var(--em-text-md);
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* The slider is an enhancement; without JavaScript only the typed fields show */
+  .em-range__slider {
+    display: none;
+  }
+
+  em-price-range:not([data-pending]) .em-range__slider {
+    position: relative;
+    display: block;
+    height: 28px;
+    margin-inline: 10px;
+  }
+
+  .em-range__track {
+    position: absolute;
+    inset-block-start: 12px;
+    inset-inline: -10px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--em-ink-200);
+  }
+
+  .em-range__fill {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: var(--em-from, 0%);
+    inset-inline-end: calc(100% - var(--em-to, 100%));
+    border-radius: 2px;
+    background: var(--em-grad-ember);
+  }
+
+  .em-range__thumb {
+    position: absolute;
+    inset: 0 -10px;
+    width: calc(100% + 20px);
+    height: 28px;
+    margin: 0;
+    background: none;
+    pointer-events: none;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+  .em-range__thumb::-webkit-slider-runnable-track {
+    background: none;
+  }
+
+  .em-range__thumb::-moz-range-track {
+    background: none;
+  }
+
+  .em-range__thumb::-webkit-slider-thumb {
+    width: 22px;
+    height: 22px;
+    margin-block-start: 3px;
+    border: 3px solid var(--em-ember-600);
+    border-radius: 50%;
+    background: #ffffff;
+    box-shadow: 0 2px 6px rgb(23 23 28 / 0.25);
+    pointer-events: auto;
+    cursor: grab;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+  .em-range__thumb::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border: 3px solid var(--em-ember-600);
+    border-radius: 50%;
+    background: #ffffff;
+    box-shadow: 0 2px 6px rgb(23 23 28 / 0.25);
+    pointer-events: auto;
+    cursor: grab;
+  }
+
+  .em-range__thumb:active::-webkit-slider-thumb {
+    cursor: grabbing;
+    scale: 1.1;
+  }
+
+  .em-range__fields {
     display: flex;
     align-items: center;
     gap: var(--em-space-2);
   }
 
-  .em-facet__price-field {
+  .em-range__field {
     position: relative;
     flex: 1;
     min-width: 0;
   }
 
-  .em-facet__currency {
+  .em-range__currency {
     position: absolute;
     inset-block: 0;
     inset-inline-start: var(--em-space-3);
@@ -416,110 +870,25 @@
     place-items: center;
     color: var(--em-color-text-muted);
     font-size: var(--em-text-sm);
+    pointer-events: none;
   }
 
-  .em-facet__price-input {
+  .em-range__input {
     width: 100%;
-    padding-inline-start: 28px;
+    padding-inline-start: 30px;
+    font-variant-numeric: tabular-nums;
   }
 
-  .em-facet__price-sep {
-    color: var(--em-color-text-muted);
-  }
-
-  .em-facet__hint {
-    margin: var(--em-space-2) 0 var(--em-space-3);
-    color: var(--em-color-text-muted);
-    font-size: var(--em-text-xs);
+  .em-range__dash {
+    color: var(--em-ink-400);
   }
 
   .em-facets__foot {
-    display: flex;
-    gap: var(--em-space-2);
-    padding-block-start: var(--em-space-4);
-  }
-
-  .em-facets__foot .em-btn {
-    flex: 1;
+    display: none;
   }
 
   .em-facets__backdrop {
     display: none;
-  }
-
-  /* Drawer below 990px */
-  @media screen and (max-width: 989px) {
-    .em-facets {
-      position: fixed;
-      inset-block: 0;
-      inset-inline-start: 0;
-      z-index: 1001;
-      display: flex;
-      flex-direction: column;
-      width: min(380px, 88vw);
-      padding: var(--em-space-4);
-      background: var(--em-card);
-      box-shadow: var(--em-shadow-3);
-      transform: translateX(-105%);
-      visibility: hidden;
-      transition: transform 240ms var(--em-ease), visibility 0s linear 240ms;
-    }
-
-    em-facets[data-drawer-open] .em-facets {
-      transform: none;
-      visibility: visible;
-      transition: transform 240ms var(--em-ease);
-    }
-
-    .em-facets__form {
-      flex: 1;
-      min-height: 0;
-    }
-
-    .em-facets__groups {
-      flex: 1;
-      overflow-y: auto;
-      overscroll-behavior: contain;
-    }
-
-    .em-facets__foot {
-      padding-block-start: var(--em-space-3);
-      border-block-start: 1px solid var(--em-color-border);
-    }
-
-    em-facets[data-drawer-open] .em-facets__backdrop {
-      position: fixed;
-      inset: 0;
-      z-index: 1000;
-      display: block;
-      background: rgb(23 23 28 / 0.45);
-    }
-  }
-
-  /* Sidebar from 990px: changes apply immediately, so the head and submit button go */
-  @media screen and (min-width: 990px) {
-    .em-facets {
-      position: sticky;
-      top: var(--em-space-4);
-    }
-
-    .em-facets__head {
-      padding-block-start: 0;
-    }
-
-    .em-facets__close {
-      display: none;
-    }
-
-    em-facets:defined .em-facets__submit {
-      display: none;
-    }
-  }
-
-  em-facets[data-loading] [data-em-results-grid] {
-    opacity: 0.45;
-    pointer-events: none;
-    transition: opacity var(--em-duration) var(--em-ease);
   }
 
   /* Results layout around the panel, shared by the collection and search pages */
@@ -534,6 +903,7 @@
   }
 
   .em-results__main {
+    position: relative;
     display: grid;
     align-content: start;
     gap: var(--em-space-3);
@@ -544,9 +914,105 @@
     padding: var(--em-space-3) var(--em-space-4);
   }
 
+  .em-results__grid .em-card {
+    box-shadow: var(--em-shadow-1);
+  }
+
+  /* A thin progress line while new results load */
+  em-facets[data-loading] .em-results__main::before {
+    content: '';
+    position: absolute;
+    inset-block-start: -6px;
+    inset-inline: 0;
+    z-index: 3;
+    height: 3px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, transparent, var(--em-ember-600), transparent) 0 0 / 40% 100% no-repeat;
+    animation: em-facets-load 900ms var(--em-ease) infinite;
+  }
+
+  @keyframes em-facets-load {
+    from {
+      background-position: -40% 0;
+    }
+
+    to {
+      background-position: 140% 0;
+    }
+  }
+
+  em-facets[data-loading] [data-em-results-grid] {
+    opacity: 0.45;
+    pointer-events: none;
+    transition: opacity var(--em-duration) var(--em-ease);
+  }
+
+  /* Drawer below 990px */
+  @media screen and (max-width: 989px) {
+    .em-results__aside {
+      display: contents;
+    }
+
+    .em-facets {
+      position: fixed;
+      inset-block: 0;
+      inset-inline-start: 0;
+      z-index: 1001;
+      display: flex;
+      flex-direction: column;
+      width: min(400px, 90vw);
+      padding: var(--em-space-4) var(--em-space-4) 0;
+      border-start-end-radius: var(--em-radius-lg);
+      border-end-end-radius: var(--em-radius-lg);
+      background: var(--em-card);
+      box-shadow: var(--em-shadow-3);
+      transform: translateX(-105%);
+      visibility: hidden;
+      transition: transform 280ms var(--em-ease), visibility 0s linear 280ms;
+    }
+
+    em-facets[data-drawer-open] .em-facets {
+      transform: none;
+      visibility: visible;
+      transition: transform 280ms var(--em-ease);
+    }
+
+    .em-facets__form {
+      flex: 1;
+      min-height: 0;
+    }
+
+    .em-facets__groups {
+      flex: 1;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+    }
+
+    .em-facets__foot {
+      display: block;
+      padding: var(--em-space-3) 0 calc(var(--em-space-3) + env(safe-area-inset-bottom));
+      border-block-start: 1px solid var(--em-color-border);
+      background: var(--em-card);
+    }
+
+    .em-facets__submit {
+      width: 100%;
+    }
+
+    em-facets[data-drawer-open] .em-facets__backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      display: block;
+      background: rgb(23 23 28 / 0.5);
+      backdrop-filter: blur(2px);
+    }
+  }
+
+  /* Sidebar from 990px: changes apply immediately */
   @media screen and (min-width: 990px) {
     .em-results__layout {
-      grid-template-columns: 248px minmax(0, 1fr);
+      grid-template-columns: 264px minmax(0, 1fr);
       align-items: start;
       gap: var(--em-space-4);
     }
@@ -554,10 +1020,14 @@
     .em-results__aside {
       position: sticky;
       top: var(--em-space-4);
-      padding: var(--em-space-4);
+      max-height: calc(100vh - var(--em-space-5));
+      padding: var(--em-space-4) var(--em-space-4) var(--em-space-2);
+      overflow-y: auto;
+      overscroll-behavior: contain;
       border-radius: var(--em-radius-lg);
       background: var(--em-card);
       box-shadow: var(--em-shadow-1);
+      scrollbar-width: thin;
     }
 
     .em-results__aside:has(.em-facets[hidden]) {
@@ -568,196 +1038,21 @@
       grid-template-columns: minmax(0, 1fr);
     }
 
-    .em-results__aside .em-facets {
-      position: static;
+    .em-facets__close {
+      display: none;
     }
-  }
-
-  /* Below 990px the panel is a fixed drawer, so its wrapper takes no space */
-  @media screen and (max-width: 989px) {
-    .em-results__aside {
-      display: contents;
-    }
-  }
-
-  .em-results__grid .em-card {
-    box-shadow: var(--em-shadow-1);
   }
 
   @media (prefers-reduced-motion: reduce) {
     .em-facets,
-    .em-facet__chevron {
+    .em-facet__chevron,
+    .em-check__switch,
+    .em-check__switch::after {
       transition: none !important;
+    }
+
+    em-facets[data-loading] .em-results__main::before {
+      animation: none;
     }
   }
 {% endstylesheet %}
-
-{% javascript %}
-  /**
-   * Applies filters, sorting and chip links in place through the Section Rendering API,
-   * keeping the URL in sync so results can be shared and the back button works.
-   */
-  if (!customElements.get('em-facets')) {
-    class EmFacets extends HTMLElement {
-      static DRAWER_QUERY = '(max-width: 989px)';
-
-      connectedCallback() {
-        this.drawerQuery = window.matchMedia(EmFacets.DRAWER_QUERY);
-        this.addEventListener('change', this.onChange);
-        this.addEventListener('submit', this.onSubmit);
-        this.addEventListener('click', this.onClick);
-        this.addEventListener('keydown', this.onKeydown);
-        window.addEventListener('popstate', this.onPopState);
-      }
-
-      disconnectedCallback() {
-        window.removeEventListener('popstate', this.onPopState);
-        this.unlockScroll();
-      }
-
-      get form() {
-        return this.querySelector('[data-em-facets-form]');
-      }
-
-      get inDrawer() {
-        return this.drawerQuery.matches;
-      }
-
-      onChange = (event) => {
-        const form = this.form;
-        if (!form || event.target.form !== form) return;
-
-        // In the drawer, shoppers pick several options and then press "Show results".
-        // Sorting lives in the toolbar, outside the drawer, so it always applies at once.
-        if (this.inDrawer && event.target.name !== 'sort_by') return;
-
-        window.clearTimeout(this.timer);
-        const delay = event.target.hasAttribute('data-em-price') ? 500 : 0;
-        this.timer = window.setTimeout(() => this.render(this.urlFromForm()), delay);
-      };
-
-      onSubmit = (event) => {
-        if (event.target !== this.form) return;
-        event.preventDefault();
-        this.close();
-        this.render(this.urlFromForm());
-      };
-
-      onClick = (event) => {
-        const target = event.target.closest('[data-em-facets-open], [data-em-facets-close], [data-em-facets-link]');
-        if (!target || !this.contains(target)) return;
-
-        if (target.hasAttribute('data-em-facets-open')) {
-          this.open(target);
-        } else if (target.hasAttribute('data-em-facets-close')) {
-          this.close();
-        } else {
-          event.preventDefault();
-          this.close();
-          this.render(target.href);
-        }
-      };
-
-      onKeydown = (event) => {
-        if (event.key === 'Escape' && this.hasAttribute('data-drawer-open')) {
-          event.stopPropagation();
-          this.close();
-        }
-      };
-
-      onPopState = () => {
-        this.render(window.location.href, false);
-      };
-
-      open(opener) {
-        const panel = this.querySelector('[data-em-facets-panel]');
-        if (!panel) return;
-
-        this.opener = opener;
-        this.setAttribute('data-drawer-open', '');
-        panel.setAttribute('role', 'dialog');
-        panel.setAttribute('aria-modal', 'true');
-        opener.setAttribute('aria-expanded', 'true');
-        document.documentElement.style.overflow = 'hidden';
-        this.scrollLocked = true;
-        panel.querySelector('[data-em-facets-close]')?.focus();
-      }
-
-      close() {
-        if (!this.hasAttribute('data-drawer-open')) return;
-
-        const panel = this.querySelector('[data-em-facets-panel]');
-        this.removeAttribute('data-drawer-open');
-        panel?.removeAttribute('role');
-        panel?.removeAttribute('aria-modal');
-        this.unlockScroll();
-
-        const opener = this.querySelector('[data-em-facets-open]');
-        opener?.setAttribute('aria-expanded', 'false');
-        opener?.focus();
-      }
-
-      unlockScroll() {
-        if (!this.scrollLocked) return;
-        document.documentElement.style.overflow = '';
-        this.scrollLocked = false;
-      }
-
-      urlFromForm() {
-        const form = this.form;
-        const url = new URL(form.getAttribute('action'), window.location.origin);
-        for (const [key, value] of new FormData(form)) {
-          if (String(value).trim() !== '') url.searchParams.append(key, value);
-        }
-        return url.toString();
-      }
-
-      async render(href, pushState = true) {
-        const url = new URL(href, window.location.origin);
-        const request = new URL(url);
-        request.searchParams.set('section_id', this.dataset.sectionId);
-
-        this.controller?.abort();
-        this.controller = new AbortController();
-        this.setAttribute('data-loading', '');
-
-        const focusedId = document.activeElement && this.contains(document.activeElement) ? document.activeElement.id : null;
-        const openFacets = new Map(
-          [...this.querySelectorAll('[data-em-facet]')].map((details) => [details.dataset.emFacet, details.open])
-        );
-
-        try {
-          const response = await fetch(request.toString(), { signal: this.controller.signal });
-          if (!response.ok) throw new Error(response.statusText);
-
-          const html = new DOMParser().parseFromString(await response.text(), 'text/html');
-          const next = html.querySelector('[data-em-results]');
-          const current = this.querySelector('[data-em-results]');
-          if (!next || !current) throw new Error('Missing results');
-
-          next.querySelectorAll('[data-em-facet]').forEach((details) => {
-            if (openFacets.has(details.dataset.emFacet)) details.open = openFacets.get(details.dataset.emFacet);
-          });
-          current.replaceWith(next);
-
-          if (pushState) window.history.pushState({ emFacets: true }, '', url.toString());
-          if (focusedId) document.getElementById(focusedId)?.focus({ preventScroll: true });
-
-          // The live region sits outside the swapped results so screen readers hear the update.
-          const status = this.querySelector('[data-em-results-status]');
-          if (status) status.textContent = next.dataset.message || '';
-
-          const top = this.getBoundingClientRect().top;
-          if (top < 0) this.scrollIntoView({ block: 'start' });
-        } catch (error) {
-          if (error.name === 'AbortError') return;
-          window.location.href = url.toString();
-        } finally {
-          this.removeAttribute('data-loading');
-        }
-      }
-    }
-
-    customElements.define('em-facets', EmFacets);
-  }
-{% endjavascript %}

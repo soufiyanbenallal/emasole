@@ -14,6 +14,21 @@
       "page": "Page {{ page }}"
     },
     "filters": {
+      "columns": {
+        "one": "{{ count }} column",
+        "other": "{{ count }} columns"
+      },
+      "grid_size": "Grid size",
+      "search_values": "Search {{ name }}",
+      "show_less": "Show less",
+      "show_more": {
+        "one": "Show {{ count }} more",
+        "other": "Show {{ count }} more"
+      },
+      "show_results_count": {
+        "one": "Show {{ count }} result",
+        "other": "Show {{ count }} results"
+      },
       "active": "Active filters",
       "clear_all": "Clear all",
       "close": "Close",
@@ -36,6 +51,8 @@
       "title": "Filters"
     },
     "collection": {
+      "eyebrow": "Collection",
+      "up_to": "Up to {{ price }}",
       "all_products": "All products",
       "browse_all": "Browse all products",
       "empty": "This category is empty for now",
@@ -47,6 +64,7 @@
       "subcategories": "Subcategories"
     },
     "search": {
+      "popular_categories": "Popular categories",
       "no_results": "No results for “{{ terms }}”",
       "no_results_text": "Check the spelling, try a more general word, or browse the popular products below.",
       "results_count": {
@@ -59,6 +77,35 @@
       "type_page": "Page"
     },
     "product": {
+      "in_cart_html": "<span data-em-in-cart-count>{{ count }}</span> in your cart",
+      "copied": "Link copied",
+      "market_note": "Shipping to {{ country }} · Prices in {{ currency }}",
+      "one_time": "One-time purchase",
+      "pickup_available": "Pickup available at {{ location }}",
+      "pickup_more": {
+        "one": "Also at {{ count }} other location",
+        "other": "Also at {{ count }} other locations"
+      },
+      "plan_save": "Save {{ amount }}",
+      "price_break_each": "{{ price }} each",
+      "price_break_from": "Buy {{ count }}+",
+      "price_breaks": "Buy more, pay less",
+      "purchase_options": "Purchase options",
+      "quantity_rules_min": "Minimum {{ min }}",
+      "quantity_rules_step": "Minimum {{ min }}, in multiples of {{ step }}",
+      "refund_policy": "Returns and refunds policy",
+      "secure_checkout": "Secure checkout with",
+      "share": "Share this product",
+      "shipping_policy": "Shipping policy",
+      "size_guide": "Size guide",
+      "spec_barcode": "Barcode",
+      "spec_brand": "Brand",
+      "spec_collection": "Collection",
+      "spec_sku": "SKU",
+      "spec_type": "Type",
+      "spec_weight": "Weight",
+      "specifications": "Specifications",
+      "total": "Total",
       "add_to_cart": "Add to cart",
       "added": "Added to cart",
       "adding": "Adding to cart",
@@ -117,7 +164,7 @@
     "footer": {
       "buyer_protection": "Buyer protection on every order",
       "choose_menu": "Choose a menu in the theme editor",
-      "easy_returns": "Free returns within 90 days",
+      "easy_returns": "Easy returns",
       "payment_methods": "Payment methods",
       "rights": "All rights reserved",
       "secure_checkout": "Secure, encrypted checkout",

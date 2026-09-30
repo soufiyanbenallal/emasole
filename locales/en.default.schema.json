@@ -42,6 +42,11 @@
       "recently_viewed": "Recently viewed"
     },
     "settings": {
+      "banner_style": "Banner style",
+      "show_pickup": "Show store pickup",
+      "show_policies": "Show policy links",
+      "show_product_type": "Show product type",
+      "size_guide": "Size guide page",
       "banner": "Banner",
       "collections_per_page": "Collections per page",
       "enable_filtering": "Enable filtering",
@@ -117,6 +122,8 @@
       "brand_art": "Brand artwork"
     },
     "options": {
+      "banner_ink": "Ink",
+      "banner_mesh": "Warm mesh",
       "complementary": "Complementary",
       "related": "Related",
       "cover": "Cover",
@@ -153,6 +160,12 @@
       "sun": "Sun"
     },
     "info": {
+      "search_suggestions": "Separate entries with commas. Leave empty to suggest your store's own collections instead.",
+      "no_fixed_prices": "Avoid typing prices here: they would not follow the shopper's currency or market.",
+      "payment_icons": "Shows the payment methods enabled in your Shopify payment settings.",
+      "pickup": "Shows the nearest location that has the selected variant in stock for pickup.",
+      "policies": "Links to the shipping and refund policies set in Shopify admin.",
+      "size_guide": "Adds a size guide link next to any option whose name contains \"size\".",
       "catalog_collections": "Leave empty to list every collection that has products.",
       "collapsible_page": "Replaces the text above when selected.",
       "dynamic_checkout": "Lets shoppers skip the cart with a saved payment method, such as Shop Pay.",

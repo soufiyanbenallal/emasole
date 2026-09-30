@@ -1,0 +1,87 @@
+{% doc %}
+  Renders one product option as a radio group: text buttons, or round colour and image swatches
+  when the option has swatches set up in Shopify. Unavailable combinations stay selectable but are
+  marked, so shoppers can see them and pick another value.
+
+  @param {object} option - An entry of `product.options_with_values`
+  @param {number} option_index - Position of the option, used to build unique ids
+  @param {string} section_id - The id of the section rendering the option
+  @param {page} [size_guide] - Page linked next to options whose name contains "size"
+
+  @example
+  {% render 'em-product-option', option: option, option_index: forloop.index, section_id: section.id %}
+{% enddoc %}
+{%- liquid
+  assign has_swatches = false
+  assign swatch_probe = option.values | find_index: 'swatch'
+  if swatch_probe != null
+    assign has_swatches = true
+  endif
+  assign option_name_key = option.name | downcase
+  assign is_size_option = false
+  if option_name_key contains 'size'
+    assign is_size_option = true
+  endif
+-%}
+<fieldset class="em-option" data-em-option>
+  <legend class="em-option__legend">
+    <span>
+      {{ option.name | escape }}:
+      <span class="em-option__selected">{{ option.selected_value | escape }}</span>
+    </span>
+    {%- if is_size_option and size_guide != blank -%}
+      <a class="em-option__guide" href="{{ size_guide.url }}">
+        {%- render 'em-icon', icon: 'sliders' -%}
+        {{ 'emasole.product.size_guide' | t }}
+      </a>
+    {%- endif -%}
+  </legend>
+  <div class="em-option__values">
+    {%- for value in option.values -%}
+      {%- liquid
+        assign value_id = section_id | append: '-' | append: option_index | append: '-' | append: forloop.index
+        assign swatch_style = blank
+        if value.swatch.image
+          assign swatch_url = value.swatch.image | image_url: width: 96
+          assign swatch_style = 'url(' | append: swatch_url | append: ')'
+        elsif value.swatch.color
+          assign swatch_style = 'rgb(' | append: value.swatch.color.rgb | append: ')'
+        endif
+      -%}
+      <input
+        class="em-option__input"
+        type="radio"
+        id="EmOption-{{ value_id }}"
+        name="EmOption-{{ section_id }}-{{ option_index }}"
+        value="{{ value | escape }}"
+        data-option-value-id="{{ value.id }}"
+        {% if value.selected %}
+          checked
+        {% endif %}
+      >
+      {%- if has_swatches and swatch_style != blank -%}
+        <label
+          class="em-option__swatch{% unless value.available %} em-option__value--unavailable{% endunless %}"
+          for="EmOption-{{ value_id }}"
+          style="--em-swatch: {{ swatch_style }};"
+          title="{{ value | escape }}"
+        >
+          <span class="em-visually-hidden">
+            {{- value | escape -}}
+            {%- unless value.available %}, {{ 'emasole.card.sold_out' | t }}{% endunless -%}
+          </span>
+        </label>
+      {%- else -%}
+        <label
+          class="em-option__value{% unless value.available %} em-option__value--unavailable{% endunless %}"
+          for="EmOption-{{ value_id }}"
+        >
+          {{- value | escape -}}
+          {%- unless value.available -%}
+            <span class="em-visually-hidden">, {{ 'emasole.card.sold_out' | t }}</span>
+          {%- endunless -%}
+        </label>
+      {%- endif -%}
+    {%- endfor -%}
+  </div>
+</fieldset>
