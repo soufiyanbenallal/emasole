@@ -284,14 +284,139 @@ main:is(
   outline-offset: 2px;
 }
 
-/* Icons */
+/* Icons — Branded soft and partially colored duotone system per SKILL.md */
 .em-icon {
+  --em-icon-stroke: currentColor;
+  --em-icon-soft: currentColor;
+  --em-icon-soft-op: 0.16;
+  --em-icon-accent: var(--em-ember-500);
+  --em-icon-accent-op: 1;
+  --em-icon-accent-soft: var(--em-ember-100);
   width: 1.25em;
   height: 1.25em;
   flex: none;
   display: inline-block;
   vertical-align: middle;
+  fill: currentColor;
+  stroke: none;
+  overflow: visible;
+  transition: transform var(--em-duration) var(--em-ease), color var(--em-duration) var(--em-ease);
 }
+
+/* SKILL.md Duotone Layers: .a (Accent volume) & .p (Primary identity) */
+.em-icon .a {
+  fill: currentColor;
+  opacity: 0.35;
+  transition: fill var(--em-duration) var(--em-ease), opacity var(--em-duration) var(--em-ease);
+}
+
+.em-icon .p {
+  fill: currentColor;
+  opacity: 1;
+}
+
+/* Backward-compatible legacy classes */
+.em-icon__soft {
+  fill: var(--em-icon-soft, currentColor);
+  fill-opacity: var(--em-icon-soft-op, 0.16);
+  transition: fill var(--em-duration) var(--em-ease), fill-opacity var(--em-duration) var(--em-ease);
+}
+
+.em-icon__accent {
+  fill: var(--em-icon-accent, var(--em-ember-500));
+  fill-opacity: var(--em-icon-accent-op, 1);
+  transition: fill var(--em-duration) var(--em-ease), fill-opacity var(--em-duration) var(--em-ease), stroke var(--em-duration) var(--em-ease);
+}
+
+.em-icon__accent-stroke {
+  stroke: var(--em-icon-accent, var(--em-ember-500));
+  transition: stroke var(--em-duration) var(--em-ease);
+}
+
+/* Tone modifiers */
+.em-icon--trust {
+  --em-icon-accent: var(--em-mint-700);
+  --em-icon-soft: var(--em-mint-50);
+  --em-icon-soft-op: 0.9;
+  --em-icon-accent-soft: var(--em-mint-50);
+}
+.em-icon--trust .a {
+  fill: var(--em-mint-700);
+  opacity: 0.42;
+}
+
+.em-icon--deal,
+.em-icon--ember {
+  --em-icon-accent: var(--em-ember-500);
+  --em-icon-soft: var(--em-ember-100);
+  --em-icon-soft-op: 0.65;
+  --em-icon-accent-soft: var(--em-ember-100);
+}
+.em-icon--deal .a,
+.em-icon--ember .a {
+  fill: var(--em-ember-500);
+  opacity: 0.45;
+}
+
+.em-icon--sun {
+  --em-icon-accent: var(--em-sun-400);
+  --em-icon-soft: var(--em-sun-100);
+  --em-icon-soft-op: 0.85;
+  --em-icon-accent-soft: var(--em-sun-100);
+}
+.em-icon--sun .a {
+  fill: var(--em-sun-400);
+  opacity: 0.55;
+}
+
+.em-icon--brand {
+  --em-icon-accent: var(--em-ember-500);
+  --em-icon-soft: currentColor;
+  --em-icon-soft-op: 0.14;
+  --em-icon-accent-soft: var(--em-ember-100);
+}
+.em-icon--brand .a {
+  fill: var(--em-ember-500);
+  opacity: 0.45;
+}
+
+.em-icon--nav {
+  --em-icon-accent: var(--em-ember-500);
+  --em-icon-soft: currentColor;
+  --em-icon-soft-op: 0.12;
+}
+
+.em-icon--mono {
+  --em-icon-accent: currentColor;
+  --em-icon-soft: currentColor;
+  --em-icon-soft-op: 0.18;
+}
+
+/* Automatic luminous contrast on dark, filled, or saturated surfaces */
+.em-btn .em-icon,
+.em-btn--primary .em-icon,
+.em-btn--dark .em-icon,
+.em-badge--deal .em-icon,
+.em-badge--dark .em-icon,
+.em-badge--pick .em-icon,
+.em-coupons__panel .em-icon,
+.em-mesh--ink .em-icon {
+  --em-icon-soft: #ffffff;
+  --em-icon-soft-op: 0.22;
+  --em-icon-accent-soft: rgba(255, 255, 255, 0.28);
+}
+
+.em-btn--primary .em-icon__accent,
+.em-badge--deal .em-icon__accent,
+.em-coupons__panel .em-icon__accent {
+  --em-icon-accent: #ffffff;
+}
+
+/* Scale helpers */
+.em-icon--sm { width: 1em; height: 1em; }
+.em-icon--md { width: 1.25em; height: 1.25em; }
+.em-icon--lg { width: 1.5em; height: 1.5em; }
+.em-icon--xl { width: 2em; height: 2em; }
 
 /* Section heading row */
 .em-head {
@@ -425,11 +550,17 @@ main:is(
   color: var(--em-ink-900);
   cursor: pointer;
   box-shadow: var(--em-shadow-1);
-  transition: background-color var(--em-duration) var(--em-ease), opacity var(--em-duration) var(--em-ease);
+  transition: background-color var(--em-duration) var(--em-ease), transform var(--em-duration) var(--em-ease), box-shadow var(--em-duration) var(--em-ease), opacity var(--em-duration) var(--em-ease);
 }
 
 .em-icon-btn:hover {
-  background: var(--em-ink-100);
+  background: var(--em-surface);
+  transform: translateY(-1px) scale(1.04);
+  box-shadow: var(--em-shadow-2);
+}
+
+.em-icon-btn:active {
+  transform: scale(0.96);
 }
 
 .em-icon-btn[disabled] {

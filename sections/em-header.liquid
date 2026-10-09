@@ -18,17 +18,20 @@
     <div class="em-header__topbar">
       <div class="em-container em-header__topbar-inner">
         <p class="em-header__promo">
-          {%- render 'em-icon', icon: 'truck' -%}
+          {%- render 'em-icon', icon: 'truck', tone: 'mono' -%}
           {%- if section.settings.promo_link != blank -%}
-            <a href="{{ section.settings.promo_link }}">{{ section.settings.promo_text }}</a>
+            <a href="{{ section.settings.promo_link }}">{{ section.settings.promo_text | escape }}</a>
           {%- else -%}
-            <span>{{ section.settings.promo_text }}</span>
+            <span>{{ section.settings.promo_text | escape }}</span>
           {%- endif -%}
         </p>
+
         {%- if utility_menu.links.size > 0 -%}
           <ul class="em-header__utility" role="list">
             {%- for link in utility_menu.links -%}
-              <li><a href="{{ link.url }}">{{ link.title | escape }}</a></li>
+              <li>
+                <a href="{{ link.url }}">{{ link.title | escape }}</a>
+              </li>
             {%- endfor -%}
           </ul>
         {%- endif -%}
@@ -38,93 +41,108 @@
 
   <div class="em-header__bar">
     <div class="em-container em-header__main">
-      <button
-        type="button"
-        class="em-header__burger"
-        popovertarget="EmDrawer-{{ section.id }}"
-        aria-label="{{ 'emasole.header.open_menu' | t }}"
-      >
-        {%- render 'em-icon', icon: 'menu' -%}
-      </button>
+      <div class="em-header__col-left">
+        <button
+          type="button"
+          class="em-header__burger"
+          popovertarget="EmDrawer-{{ section.id }}"
+          aria-label="{{ 'emasole.header.open_menu' | t }}"
+        >
+          {%- render 'em-icon', icon: 'menu', tone: 'mono' -%}
+        </button>
 
-      <a class="em-logo" href="{{ routes.root_url }}">
-        {%- if settings.logo != blank -%}
-          {%- liquid
-            assign logo_height = section.settings.logo_height
-            assign logo_width = settings.logo.aspect_ratio | times: logo_height | round
-            assign logo_width_2x = logo_width | times: 2
+        <a class="em-logo" href="{{ routes.root_url }}">
+          {%- if settings.logo != blank -%}
+            {%- liquid
+              assign logo_height = section.settings.logo_height
+              assign logo_width = settings.logo.aspect_ratio | times: logo_height | round
+              assign logo_width_2x = logo_width | times: 2
+            -%}
+            {{
+              settings.logo
+              | image_url: width: logo_width_2x
+              | image_tag:
+                class: 'em-logo__image',
+                width: logo_width,
+                height: logo_height,
+                alt: shop.name,
+                loading: 'eager',
+                fetchpriority: 'high'
+            }}
+          {%- else -%}
+            {%- render 'em-logo-mark', size: 32 -%}
+            <span class="em-logo__word">{{ shop.name | escape }}</span>
+          {%- endif -%}
+        </a>
+      </div>
+
+      <div class="em-header__col-center">
+        <search class="em-search" role="search">
+          <form action="{{ routes.search_url }}" method="get" class="em-search__form">
+            <input type="hidden" name="type" value="product">
+            <input type="hidden" name="options[prefix]" value="last">
+            <label class="em-visually-hidden" for="EmSearch-{{ section.id }}">
+              {{- 'emasole.header.search_label' | t -}}
+            </label>
+
+            <span class="em-search__icon" aria-hidden="true">
+              {%- render 'em-icon', icon: 'search', tone: 'mono' -%}
+            </span>
+
+            <input
+              id="EmSearch-{{ section.id }}"
+              class="em-search__input"
+              type="search"
+              name="q"
+              value="{{ search.terms | escape }}"
+              placeholder="{{ first_placeholder | escape }}"
+              autocomplete="off"
+              enterkeyhint="search"
+              data-em-search-input
+            >
+
+            <button type="submit" class="em-search__submit" aria-label="{{ 'emasole.header.search_button' | t }}">
+              {%- render 'em-icon', icon: 'search', tone: 'mono' -%}
+              <span class="em-search__submit-text">{{ 'emasole.header.search_button' | t }}</span>
+            </button>
+          </form>
+
+          {%- if trending.size > 0 -%}
+            <div class="em-search__panel">
+              <p class="em-search__panel-title">
+                {{ 'emasole.header.trending' | t }}
+              </p>
+              <ul class="em-search__chips" role="list">
+                {%- for term in trending -%}
+                  {%- assign term_clean = term | strip -%}
+                  {%- if term_clean != blank -%}
+                    <li>
+                      <a class="em-chip" href="{{ routes.search_url }}?type=product&q={{ term_clean | url_encode }}">
+                        {{- term_clean | escape -}}
+                      </a>
+                    </li>
+                  {%- endif -%}
+                {%- endfor -%}
+              </ul>
+            </div>
+          {%- endif -%}
+        </search>
+      </div>
+
+      <div class="em-header__col-right">
+        <div class="em-header__actions">
+          {%- if section.settings.help_link != blank -%}
+            <a class="em-header__help" href="{{ section.settings.help_link }}">
+              {%- render 'em-icon', icon: 'headset', tone: 'mono' -%}
+              <span>{{ 'emasole.header.help' | t }}</span>
+            </a>
+          {%- endif -%}
+
+          {%- render 'header-actions',
+            display_style: 'icon',
+            customer_account_menu: section.settings.customer_account_menu
           -%}
-          {{
-            settings.logo
-            | image_url: width: logo_width_2x
-            | image_tag:
-              class: 'em-logo__image',
-              width: logo_width,
-              height: logo_height,
-              alt: shop.name,
-              loading: 'eager',
-              fetchpriority: 'high'
-          }}
-        {%- else -%}
-          {%- render 'em-logo-mark', size: 36 -%}
-          <span class="em-logo__word">{{ shop.name | escape }}</span>
-        {%- endif -%}
-      </a>
-
-      <search class="em-search" role="search">
-        <form action="{{ routes.search_url }}" method="get" class="em-search__form">
-          <input type="hidden" name="type" value="product">
-          <input type="hidden" name="options[prefix]" value="last">
-          <label class="em-visually-hidden" for="EmSearch-{{ section.id }}">
-            {{- 'emasole.header.search_label' | t -}}
-          </label>
-          <input
-            id="EmSearch-{{ section.id }}"
-            class="em-search__input"
-            type="search"
-            name="q"
-            value="{{ search.terms | escape }}"
-            placeholder="{{ first_placeholder | escape }}"
-            autocomplete="off"
-            enterkeyhint="search"
-            data-em-search-input
-          >
-          <button type="submit" class="em-search__submit">
-            {%- render 'em-icon', icon: 'search' -%}
-            <span class="em-search__submit-text">{{ 'emasole.header.search_button' | t }}</span>
-          </button>
-        </form>
-
-        {%- if trending.size > 0 -%}
-          <div class="em-search__panel">
-            <p class="em-search__panel-title">
-              {%- render 'em-icon', icon: 'flame' -%}
-              {{ 'emasole.header.trending' | t }}
-            </p>
-            <ul class="em-search__chips" role="list">
-              {%- for term in trending -%}
-                {%- assign term_clean = term | strip -%}
-                {%- if term_clean != blank -%}
-                  <li>
-                    <a class="em-chip" href="{{ routes.search_url }}?type=product&q={{ term_clean | url_encode }}">
-                      {{- term_clean | escape -}}
-                    </a>
-                  </li>
-                {%- endif -%}
-              {%- endfor -%}
-            </ul>
-          </div>
-        {%- endif -%}
-      </search>
-
-      <div class="em-header__actions">
-        {%- if section.settings.help_link != blank -%}
-          <a class="em-header__help" href="{{ section.settings.help_link }}">
-            {%- render 'em-icon', icon: 'headset' -%}
-            <span>{{ 'emasole.header.help' | t }}</span>
-          </a>
-        {%- endif -%}
-        {%- render 'header-actions', display_style: 'icon', customer_account_menu: section.settings.customer_account_menu -%}
+        </div>
       </div>
     </div>
   </div>
@@ -132,76 +150,94 @@
   {%- if category_menu.links.size > 0 or nav_menu.links.size > 0 -%}
     <nav class="em-header__nav" aria-label="{{ 'emasole.header.nav_label' | t }}">
       <div class="em-container em-header__nav-inner">
-        {%- if category_menu.links.size > 0 -%}
-          <details class="em-mega" data-em-mega>
-            <summary class="em-mega__toggle">
-              {%- render 'em-icon', icon: 'grid' -%}
-              <span>{{ 'emasole.header.all_categories' | t }}</span>
-              {%- render 'em-icon', icon: 'chevron-down', class: 'em-mega__caret' -%}
-            </summary>
-            <div class="em-mega__panel">
-              <ul class="em-mega__list" role="list">
-                {%- for link in category_menu.links -%}
-                  <li class="em-mega__item">
-                    <a class="em-mega__link" href="{{ link.url }}">
-                      <span>{{ link.title | escape }}</span>
-                      {%- if link.links.size > 0 -%}
-                        {%- render 'em-icon', icon: 'chevron-right' -%}
-                      {%- endif -%}
-                    </a>
-                    {%- if link.links.size > 0 -%}
-                      <div class="em-mega__children">
-                        <p class="em-mega__children-title">
-                          <a href="{{ link.url }}">
-                            {{- 'emasole.header.shop_all' | t: title: link.title | escape -}}
+        <div class="em-header__nav-left">
+          {%- if category_menu.links.size > 0 -%}
+            <details class="em-mega" data-em-mega>
+              <summary class="em-mega__toggle">
+                {%- render 'em-icon', icon: 'grid', tone: 'mono' -%}
+                <span>{{ 'emasole.header.all_categories' | t }}</span>
+                {%- render 'em-icon', icon: 'chevron-down', tone: 'mono', class: 'em-mega__caret' -%}
+              </summary>
+
+              <div class="em-mega__panel">
+                <div class="em-mega__shell">
+                  <div class="em-mega__rail">
+                    <ul class="em-mega__rail-list" role="list">
+                      {%- for link in category_menu.links -%}
+                        <li class="em-mega__rail-item">
+                          <a class="em-mega__rail-link" href="{{ link.url }}">
+                            <span>{{ link.title | escape }}</span>
+                            {%- if link.links.size > 0 -%}
+                              {%- render 'em-icon', icon: 'chevron-right', tone: 'mono' -%}
+                            {%- endif -%}
                           </a>
-                        </p>
-                        <ul class="em-mega__groups" role="list">
-                          {%- for child in link.links -%}
-                            <li>
-                              <a class="em-mega__child" href="{{ child.url }}">{{ child.title | escape }}</a>
-                              {%- if child.links.size > 0 -%}
-                                <ul class="em-mega__grandchildren" role="list">
-                                  {%- for grandchild in child.links -%}
-                                    <li><a href="{{ grandchild.url }}">{{ grandchild.title | escape }}</a></li>
-                                  {%- endfor -%}
-                                </ul>
-                              {%- endif -%}
-                            </li>
-                          {%- endfor -%}
-                        </ul>
-                      </div>
-                    {%- endif -%}
-                  </li>
-                {%- endfor -%}
-              </ul>
-            </div>
-          </details>
-        {%- endif -%}
 
-        {%- if nav_menu.links.size > 0 -%}
-          <ul class="em-header__links" role="list">
-            {%- for link in nav_menu.links -%}
-              <li>
-                <a
-                  href="{{ link.url }}"
-                  {% if link.active %}
-                    aria-current="page"
-                  {% endif %}
-                >
-                  {{- link.title | escape -}}
-                </a>
-              </li>
-            {%- endfor -%}
-          </ul>
-        {%- endif -%}
+                          {%- if link.links.size > 0 -%}
+                            <div class="em-mega__stage">
+                              <p class="em-mega__stage-title">
+                                <a href="{{ link.url }}">
+                                  {{- 'emasole.header.shop_all' | t: title: link.title | escape -}}
+                                </a>
+                              </p>
+                              <div class="em-mega__groups">
+                                {%- for child in link.links -%}
+                                  <div class="em-mega__group">
+                                    <a class="em-mega__group-title" href="{{ child.url }}">{{ child.title | escape }}</a>
+                                    {%- if child.links.size > 0 -%}
+                                      <ul class="em-mega__sublist" role="list">
+                                        {%- for grandchild in child.links -%}
+                                          <li>
+                                            <a href="{{ grandchild.url }}">{{ grandchild.title | escape }}</a>
+                                          </li>
+                                        {%- endfor -%}
+                                      </ul>
+                                    {%- endif -%}
+                                  </div>
+                                {%- endfor -%}
+                              </div>
+                            </div>
+                          {%- endif -%}
+                        </li>
+                      {%- endfor -%}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </details>
+          {%- endif -%}
 
-        {%- if section.settings.highlight_label != blank -%}
-          <a class="em-header__highlight" href="{{ section.settings.highlight_link | default: routes.all_products_collection_url }}">
-            {%- render 'em-icon', icon: 'bolt' -%}
-            {{ section.settings.highlight_label | escape }}
-          </a>
-        {%- endif -%}
+          {%- if nav_menu.links.size > 0 -%}
+            <ul class="em-header__links" role="list">
+              {%- for link in nav_menu.links -%}
+                <li>
+                  <a
+                    class="em-header__nav-link"
+                    href="{{ link.url }}"
+                    {% if link.active %}
+                      aria-current="page"
+                    {% endif %}
+                  >
+                    {{- link.title | escape -}}
+                  </a>
+                </li>
+              {%- endfor -%}
+            </ul>
+          {%- endif -%}
+        </div>
+
+        <div class="em-header__nav-right">
+          {%- if section.settings.highlight_label != blank -%}
+            <a
+              class="em-header__highlight"
+              href="{{ section.settings.highlight_link | default: routes.all_products_collection_url }}"
+            >
+              <span class="em-header__highlight-icon" aria-hidden="true">
+                {%- render 'em-icon', icon: 'bolt', tone: 'mono' -%}
+              </span>
+              <span>{{ section.settings.highlight_label | default: 'Flash deals' | escape }}</span>
+            </a>
+          {%- endif -%}
+        </div>
       </div>
     </nav>
   {%- endif -%}
@@ -214,24 +250,24 @@
   >
     <div class="em-drawer__head">
       <a class="em-logo" href="{{ routes.root_url }}">
-        {%- render 'em-logo-mark', size: 30 -%}
+        {%- render 'em-logo-mark', size: 28 -%}
         <span class="em-logo__word">{{ shop.name | escape }}</span>
       </a>
       <button
         type="button"
-        class="em-icon-btn"
+        class="em-drawer__close"
         popovertarget="EmDrawer-{{ section.id }}"
         popovertargetaction="hide"
         aria-label="{{ 'emasole.header.close_menu' | t }}"
       >
-        {%- render 'em-icon', icon: 'close' -%}
+        {%- render 'em-icon', icon: 'close', tone: 'mono' -%}
       </button>
     </div>
 
     <div class="em-drawer__body">
       {%- if shop.customer_accounts_enabled -%}
         <a class="em-drawer__account" href="{{ routes.account_url }}">
-          {%- render 'em-icon', icon: 'user' -%}
+          {%- render 'em-icon', icon: 'user', tone: 'mono' -%}
           <span>
             {%- if customer -%}
               {%- assign customer_name = customer.first_name | default: customer.name -%}
@@ -240,7 +276,7 @@
               {{ 'emasole.header.sign_in' | t }}
             {%- endif -%}
           </span>
-          {%- render 'em-icon', icon: 'chevron-right' -%}
+          {%- render 'em-icon', icon: 'chevron-right', tone: 'mono' -%}
         </a>
       {%- endif -%}
 
@@ -253,14 +289,16 @@
                 <details class="em-drawer__group">
                   <summary>
                     <span>{{ link.title | escape }}</span>
-                    {%- render 'em-icon', icon: 'chevron-down' -%}
+                    {%- render 'em-icon', icon: 'chevron-down', tone: 'mono' -%}
                   </summary>
                   <ul role="list">
                     <li>
                       <a href="{{ link.url }}">{{ 'emasole.header.shop_all' | t: title: link.title | escape }}</a>
                     </li>
                     {%- for child in link.links -%}
-                      <li><a href="{{ child.url }}">{{ child.title | escape }}</a></li>
+                      <li>
+                        <a href="{{ child.url }}">{{ child.title | escape }}</a>
+                      </li>
                     {%- endfor -%}
                   </ul>
                 </details>
@@ -276,7 +314,9 @@
         <p class="em-drawer__label">{{ 'emasole.header.explore' | t }}</p>
         <ul class="em-drawer__menu" role="list">
           {%- for link in nav_menu.links -%}
-            <li><a class="em-drawer__link" href="{{ link.url }}">{{ link.title | escape }}</a></li>
+            <li>
+              <a class="em-drawer__link" href="{{ link.url }}">{{ link.title | escape }}</a>
+            </li>
           {%- endfor -%}
         </ul>
       {%- endif -%}
@@ -284,7 +324,9 @@
       {%- if utility_menu.links.size > 0 -%}
         <ul class="em-drawer__utility" role="list">
           {%- for link in utility_menu.links -%}
-            <li><a href="{{ link.url }}">{{ link.title | escape }}</a></li>
+            <li>
+              <a href="{{ link.url }}">{{ link.title | escape }}</a>
+            </li>
           {%- endfor -%}
         </ul>
       {%- endif -%}
@@ -315,28 +357,32 @@
 
   .em-header {
     display: block;
-    background: var(--em-card);
-    color: var(--em-color-text);
-    font-family: var(--em-font-body);
+    background: #ffffff;
+    color: #18181b;
+    font-family: var(--em-font-body, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+    -webkit-font-smoothing: antialiased;
   }
 
   .em-header[data-scrolled] .em-header__bar {
-    box-shadow: var(--em-shadow-2);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
   }
 
-  /* Top promo strip */
+  /* 1. TOP PROMO STRIP (Minimalist, borderless, neutral dark) */
   .em-header__topbar {
     height: 34px;
-    background: var(--em-ink-900);
+    background: #18181b;
     color: #ffffff;
-    font-size: var(--em-text-xs);
+    font-size: 11.5px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    border: none;
   }
 
   .em-header__topbar-inner {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: var(--em-space-5);
+    gap: 20px;
     height: 100%;
   }
 
@@ -349,16 +395,18 @@
   .em-header__promo {
     display: flex;
     align-items: center;
-    gap: var(--em-space-2);
+    gap: 8px;
     margin: 0;
     overflow: hidden;
-    font-weight: 600;
     white-space: nowrap;
     text-overflow: ellipsis;
   }
 
   .em-header__promo .em-icon {
-    color: var(--em-sun-400);
+    width: 14px;
+    height: 14px;
+    color: #a1a1aa;
+    flex-shrink: 0;
   }
 
   .em-header__promo a {
@@ -372,7 +420,7 @@
 
   .em-header__utility {
     display: none;
-    gap: var(--em-space-5);
+    gap: 18px;
     margin: 0;
     padding: 0;
     list-style: none;
@@ -387,7 +435,8 @@
   .em-header__utility a {
     color: #ffffff;
     text-decoration: none;
-    opacity: 0.85;
+    opacity: 0.8;
+    transition: opacity 120ms ease;
   }
 
   .em-header__utility a:hover {
@@ -395,12 +444,13 @@
     text-decoration: underline;
   }
 
-  /* Main bar */
+  /* 2. MAIN HEADER BAR (Rounded, Borderless, True Symmetrical Centered Search) */
   .em-header__bar {
     position: relative;
     z-index: 3;
-    background: var(--em-card);
-    transition: box-shadow var(--em-duration) var(--em-ease);
+    background: #ffffff;
+    border: none;
+    transition: box-shadow 160ms ease;
   }
 
   .em-header__main {
@@ -410,37 +460,52 @@
       'burger logo actions'
       'search search search';
     align-items: center;
-    column-gap: var(--em-space-2);
-    row-gap: var(--em-space-2);
-    padding-block: var(--em-space-2) var(--em-space-3);
+    column-gap: 12px;
+    row-gap: 10px;
+    padding-block: 10px 12px;
   }
 
   @media screen and (min-width: 990px) {
     .em-header__main {
-      grid-template-columns: auto minmax(0, 1fr) auto;
+      grid-template-columns: 220px 1fr 220px;
       grid-template-areas: 'logo search actions';
-      column-gap: var(--em-space-6);
-      padding-block: var(--em-space-4);
+      column-gap: 24px;
+      height: 68px;
+      padding-block: 0;
     }
+  }
+
+  .em-header__col-left {
+    grid-area: logo;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    justify-self: start;
   }
 
   .em-header__burger {
     grid-area: burger;
     display: inline-grid;
     place-items: center;
-    width: 40px;
-    height: 40px;
-    margin-inline-start: -8px;
+    width: 38px;
+    height: 38px;
+    margin-inline-start: -6px;
     padding: 0;
     border: 0;
-    background: none;
-    color: inherit;
+    border-radius: 9999px;
+    background: #f4f4f6;
+    color: #18181b;
     cursor: pointer;
+    transition: background 120ms ease;
+  }
+
+  .em-header__burger:hover {
+    background: #e4e4e7;
   }
 
   .em-header__burger .em-icon {
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
   }
 
   @media screen and (min-width: 990px) {
@@ -450,27 +515,26 @@
   }
 
   .em-logo {
-    grid-area: logo;
     display: inline-flex;
     align-items: center;
-    gap: var(--em-space-2);
-    color: var(--em-ink-900);
+    gap: 8px;
+    color: #18181b;
     text-decoration: none;
   }
 
   .em-logo__image {
     display: block;
     width: auto;
-    max-height: 44px;
+    max-height: 38px;
   }
 
   .em-logo__word {
-    font-family: var(--em-font-display);
-    font-size: 1.5rem;
-    font-weight: 800;
-    letter-spacing: -0.03em;
+    font-family: var(--em-font-display, var(--em-font-body));
+    font-size: 1.35rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
     line-height: 1;
-    text-transform: lowercase;
+    color: #18181b;
   }
 
   .em-logo-mark {
@@ -478,49 +542,75 @@
     display: block;
   }
 
-  /* Search */
-  .em-search {
+  /* 3. CENTERED SEARCH BAR (Rounded Pill, Soft Neutral Fill, No Border) */
+  .em-header__col-center {
     grid-area: search;
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    justify-self: center;
+  }
+
+  .em-search {
     position: relative;
-    display: block;
+    width: 100%;
+    max-width: 580px;
+    margin-inline: auto;
   }
 
   .em-search__form {
     display: flex;
     align-items: center;
-    height: 44px;
+    height: 42px;
     margin: 0;
-    padding: 3px;
-    border: 2px solid var(--em-ink-900);
-    border-radius: var(--em-radius-pill);
-    background: var(--em-card);
+    padding: 3px 4px 3px 16px;
+    border: 0;
+    border-radius: 9999px;
+    background: #f4f4f6;
+    transition: background 140ms ease, box-shadow 140ms ease;
   }
 
-  @media screen and (min-width: 990px) {
-    .em-search__form {
-      height: 48px;
-    }
+  .em-search__form:hover {
+    background: #ededf0;
   }
 
   .em-search__form:focus-within {
-    border-color: var(--em-ember-600);
+    background: #ffffff;
+    box-shadow: 0 0 0 2px #18181b, 0 4px 16px rgba(0, 0, 0, 0.06);
+  }
+
+  .em-search__icon {
+    display: inline-grid;
+    place-items: center;
+    width: 16px;
+    height: 16px;
+    margin-inline-end: 10px;
+    color: #71717a;
+    flex-shrink: 0;
+  }
+
+  .em-search__icon .em-icon {
+    width: 16px;
+    height: 16px;
   }
 
   .em-search__input {
     flex: 1;
     min-width: 0;
     height: 100%;
-    padding: 0 var(--em-space-4);
+    padding: 0;
     border: 0;
     background: transparent;
-    color: var(--em-color-text);
+    color: #18181b;
     font: inherit;
-    font-size: var(--em-text-md);
+    font-size: 13.5px;
+    font-weight: 400;
     outline: none;
   }
 
   .em-search__input::placeholder {
-    color: var(--em-color-text-muted);
+    color: #8e8e93;
+    font-weight: 400;
   }
 
   .em-search__input::-webkit-search-cancel-button {
@@ -531,46 +621,47 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: var(--em-space-2);
-    height: 100%;
-    min-width: 44px;
-    padding: 0 var(--em-space-3);
+    gap: 6px;
+    height: 34px;
+    padding: 0 16px;
     border: 0;
-    border-radius: var(--em-radius-pill);
-    background: var(--em-ink-900);
+    border-radius: 9999px;
+    background: #18181b;
     color: #ffffff;
     font: inherit;
-    font-weight: 700;
+    font-size: 12.5px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
     cursor: pointer;
+    flex-shrink: 0;
+    transition: background 140ms ease, transform 140ms ease;
   }
 
   .em-search__submit:hover {
-    background: var(--em-ember-600);
+    background: #27272a;
+  }
+
+  .em-search__submit .em-icon {
+    width: 13px;
+    height: 13px;
   }
 
   .em-search__submit-text {
-    display: none;
+    display: inline;
   }
 
-  @media screen and (min-width: 990px) {
-    .em-search__submit {
-      padding: 0 var(--em-space-5);
-    }
-
-    .em-search__submit-text {
-      display: inline;
-    }
-  }
-
+  /* Search Panel (Rounded Floating Card, No Border) */
   .em-search__panel {
     position: absolute;
-    inset: calc(100% + 6px) 0 auto;
-    z-index: 5;
+    inset-inline: 0;
+    inset-block-start: calc(100% + 8px);
+    z-index: 25;
     display: none;
-    padding: var(--em-space-4);
-    border-radius: var(--em-radius-lg);
-    background: var(--em-card);
-    box-shadow: var(--em-shadow-3);
+    padding: 18px 20px;
+    border-radius: 20px;
+    background: #ffffff;
+    border: 0;
+    box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.03);
   }
 
   .em-search:focus-within .em-search__panel {
@@ -578,79 +669,80 @@
   }
 
   .em-search__panel-title {
-    display: flex;
-    align-items: center;
-    gap: var(--em-space-2);
-    margin: 0 0 var(--em-space-3);
-    font-size: var(--em-text-sm);
-    font-weight: 700;
-  }
-
-  .em-search__panel-title .em-icon {
-    color: var(--em-ember-600);
+    margin: 0 0 10px;
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #71717a;
   }
 
   .em-search__chips {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--em-space-2);
+    gap: 8px;
     margin: 0;
     padding: 0;
     list-style: none;
   }
 
-  /* Actions */
-  .em-header__actions {
+  .em-chip {
+    display: inline-block;
+    padding: 6px 14px;
+    border-radius: 9999px;
+    background: #f4f4f6;
+    color: #27272a;
+    font-size: 12px;
+    font-weight: 500;
+    text-decoration: none;
+    border: 0;
+    transition: all 120ms ease;
+  }
+
+  .em-chip:hover {
+    background: #18181b;
+    color: #ffffff;
+  }
+
+  /* 4. ACTIONS (Rounded buttons, no borders) */
+  .em-header__col-right {
     grid-area: actions;
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: var(--em-space-2);
+    justify-self: end;
   }
 
-  .em-header__actions header-actions {
+  .em-header__actions {
+    display: flex;
     align-items: center;
-    gap: var(--em-space-1);
-  }
-
-  .em-header__actions .header-actions__action {
-    display: inline-grid;
-    place-items: center;
-    min-width: 44px;
-    height: 44px;
-    padding: 0;
-    border-radius: var(--em-radius-pill);
-    color: var(--em-ink-900);
-  }
-
-  .em-header__actions .header-actions__action:hover {
-    background: var(--em-ink-100);
-  }
-
-  .em-header__actions .svg-wrapper svg {
-    width: 24px;
-    height: 24px;
-  }
-
-  .em-header {
-    --color-account-icon: var(--em-ink-900);
-    --header-content-transition-timing: var(--em-duration);
+    gap: 6px;
   }
 
   .em-header__help {
     display: none;
     align-items: center;
-    gap: var(--em-space-2);
-    padding: var(--em-space-2) var(--em-space-3);
-    border-radius: var(--em-radius-pill);
-    color: var(--em-ink-900);
-    font-size: var(--em-text-sm);
-    font-weight: 600;
+    gap: 6px;
+    height: 36px;
+    padding: 0 14px;
+    border-radius: 9999px;
+    background: transparent;
+    color: #18181b;
+    font-size: 12.5px;
+    font-weight: 500;
     text-decoration: none;
+    border: 0;
+    transition: background 140ms ease;
   }
 
   .em-header__help:hover {
-    background: var(--em-ink-100);
+    background: #f4f4f6;
+  }
+
+  .em-header__help .em-icon {
+    width: 15px;
+    height: 15px;
+    color: #71717a;
   }
 
   @media screen and (min-width: 990px) {
@@ -659,13 +751,51 @@
     }
   }
 
-  /* Category navigation row */
+  .em-header__actions header-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .em-header__actions .header-actions__action {
+    display: inline-grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    border-radius: 9999px;
+    background: transparent;
+    color: #18181b;
+    border: 0;
+    transition: background 140ms ease;
+  }
+
+  .em-header__actions .header-actions__action:hover {
+    background: #f4f4f6;
+  }
+
+  .em-header__actions .svg-wrapper svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .em-header__actions .cart-bubble {
+    background: #18181b !important;
+    color: #ffffff !important;
+    font-weight: 600;
+    font-size: 10px;
+    border-radius: 9999px;
+    min-width: 17px;
+    height: 17px;
+  }
+
+  /* 5. SECOND HEADER / NAV ROW (Compact 42px, Rounded elements, No Border) */
   .em-header__nav {
     display: none;
     position: relative;
     z-index: 2;
-    border-block-start: 1px solid var(--em-color-border);
-    background: var(--em-card);
+    background: #ffffff;
+    border: 0;
   }
 
   @media screen and (min-width: 990px) {
@@ -677,57 +807,27 @@
   .em-header__nav-inner {
     display: flex;
     align-items: center;
-    gap: var(--em-space-5);
-    height: 46px;
+    justify-content: space-between;
+    gap: 20px;
+    height: 44px;
   }
 
-  .em-header__links {
+  .em-header__nav-left {
     display: flex;
-    flex: 1;
-    gap: var(--em-space-5);
-    min-width: 0;
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    list-style: none;
-  }
-
-  .em-header__links a {
-    display: block;
-    padding-block: var(--em-space-3);
-    color: var(--em-ink-900);
-    font-size: var(--em-text-sm);
-    font-weight: 600;
-    text-decoration: none;
-    white-space: nowrap;
-  }
-
-  .em-header__links a:hover,
-  .em-header__links a[aria-current='page'] {
-    color: var(--em-ember-600);
-  }
-
-  .em-header__highlight {
-    display: inline-flex;
     align-items: center;
-    gap: var(--em-space-1);
-    margin-inline-start: auto;
-    padding: 6px var(--em-space-3);
-    border-radius: var(--em-radius-pill);
-    background: var(--em-sun-400);
-    color: var(--em-ink-900);
-    font-size: var(--em-text-sm);
-    font-weight: 700;
-    text-decoration: none;
-    white-space: nowrap;
+    gap: 16px;
+    min-width: 0;
+    flex: 1;
+    height: 100%;
   }
 
-  .em-header__highlight:hover {
-    background: var(--em-ink-900);
-    color: var(--em-sun-400);
+  .em-header__nav-right {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
   }
 
-  /* Mega menu */
+  /* All Categories Pill Button */
   .em-mega {
     position: static;
   }
@@ -735,170 +835,279 @@
   .em-mega__toggle {
     display: inline-flex;
     align-items: center;
-    gap: var(--em-space-2);
+    gap: 8px;
     height: 34px;
-    padding: 0 var(--em-space-4);
-    border-radius: var(--em-radius-pill);
-    background: var(--em-ember-600);
-    color: #ffffff;
-    font-size: var(--em-text-sm);
-    font-weight: 700;
+    padding: 0 16px;
+    border-radius: 9999px;
+    border: 0;
+    background: #f4f4f6;
+    color: #18181b;
+    font-size: 13px;
+    font-weight: 600;
     list-style: none;
     cursor: pointer;
     white-space: nowrap;
+    transition: background 140ms ease, color 140ms ease;
   }
 
   .em-mega__toggle::-webkit-details-marker {
     display: none;
   }
 
-  .em-mega__toggle:hover,
+  .em-mega__toggle:hover {
+    background: #e4e4e7;
+  }
+
   .em-mega[open] .em-mega__toggle {
-    background: var(--em-ember-700);
+    background: #18181b;
+    color: #ffffff;
+  }
+
+  .em-mega__toggle .em-icon {
+    width: 14px;
+    height: 14px;
   }
 
   .em-mega__caret {
-    width: 16px;
-    height: 16px;
-    transition: rotate var(--em-duration) var(--em-ease);
+    width: 10px;
+    height: 10px;
+    opacity: 0.7;
+    transition: transform 140ms ease;
   }
 
   .em-mega[open] .em-mega__caret {
-    rotate: 180deg;
+    transform: rotate(180deg);
   }
 
-  .em-mega__panel {
-    position: absolute;
-    inset-inline: var(--em-gutter);
-    inset-block-start: 100%;
-    max-width: var(--em-container);
-    margin-inline: auto;
-    padding: var(--em-space-3);
-    border-radius: 0 0 var(--em-radius-lg) var(--em-radius-lg);
-    background: var(--em-card);
-    box-shadow: var(--em-shadow-3);
-  }
-
-  .em-mega__list {
-    position: relative;
-    width: 260px;
-    min-height: 380px;
+  /* Nav Links (Pills on hover, zero border) */
+  .em-header__links {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
     margin: 0;
     padding: 0;
     list-style: none;
+    height: 100%;
   }
 
-  .em-mega__link {
+  .em-header__nav-link {
+    display: inline-flex;
+    align-items: center;
+    height: 32px;
+    padding: 0 12px;
+    border-radius: 9999px;
+    color: #52525b;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: all 120ms ease;
+  }
+
+  .em-header__nav-link:hover,
+  .em-header__nav-link[aria-current='page'] {
+    background: #f4f4f6;
+    color: #18181b;
+    font-weight: 600;
+  }
+
+  /* FLASH DEALS (Luxury Rounded Pill, Borderless, Standout UI) */
+  .em-header__highlight {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 14px;
+    border-radius: 9999px;
+    border: 0;
+    background: #18181b;
+    color: #ffffff;
+    font-size: 12.5px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    text-decoration: none;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(24, 24, 27, 0.12);
+    transition: all 160ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .em-header__highlight:hover {
+    background: #27272a;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(24, 24, 27, 0.22);
+  }
+
+  .em-header__highlight-icon {
+    display: inline-grid;
+    place-items: center;
+    width: 14px;
+    height: 14px;
+    color: #ffffff;
+  }
+
+  .em-header__highlight-icon .em-icon {
+    width: 13px;
+    height: 13px;
+  }
+
+  /* 6. MEGA MENU (Rounded Floating Card, No Border, Clean Multi-Column) */
+  .em-mega__panel {
+    position: absolute;
+    inset-inline: var(--em-gutter);
+    inset-block-start: calc(100% + 4px);
+    max-width: var(--em-container);
+    margin-inline: auto;
+    padding: 10px;
+    border-radius: 20px;
+    background: #ffffff;
+    border: 0;
+    box-shadow: 0 20px 48px -12px rgba(0, 0, 0, 0.12), 0 4px 16px rgba(0, 0, 0, 0.04);
+  }
+
+  .em-mega__shell {
+    position: relative;
+    min-height: 340px;
+  }
+
+  .em-mega__rail {
+    width: 230px;
+    background: #f8f8fa;
+    border-radius: 14px;
+    padding: 6px;
+  }
+
+  .em-mega__rail-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .em-mega__rail-item {
+    position: static;
+  }
+
+  .em-mega__rail-link {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: var(--em-space-2);
-    padding: 10px var(--em-space-3);
-    border-radius: var(--em-radius-sm);
-    color: var(--em-ink-900);
-    font-size: var(--em-text-sm);
-    font-weight: 600;
+    padding: 9px 12px;
+    border-radius: 10px;
+    color: #3f3f46;
+    font-size: 13px;
+    font-weight: 500;
     text-decoration: none;
+    transition: all 120ms ease;
   }
 
-  .em-mega__link .em-icon {
-    width: 16px;
-    height: 16px;
-    color: var(--em-color-text-muted);
+  .em-mega__rail-link .em-icon {
+    width: 12px;
+    height: 12px;
+    color: #a1a1aa;
   }
 
-  .em-mega__children {
+  .em-mega__rail-item:hover > .em-mega__rail-link,
+  .em-mega__rail-item:focus-within > .em-mega__rail-link {
+    background: #ffffff;
+    color: #18181b;
+    font-weight: 600;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+  }
+
+  .em-mega__stage {
     position: absolute;
     inset-block: 0;
-    inset-inline-start: calc(100% + var(--em-space-3));
-    width: calc(min(var(--em-container), 100vw - var(--em-gutter) * 2) - 260px - var(--em-space-3) * 3);
+    inset-inline-start: calc(230px + 12px);
+    inset-inline-end: 0;
     display: none;
-    padding: var(--em-space-3) var(--em-space-5);
-    border-inline-start: 1px solid var(--em-color-border);
+    padding: 14px 20px;
     overflow-y: auto;
   }
 
-  .em-mega__item:hover > .em-mega__link,
-  .em-mega__item:focus-within > .em-mega__link {
-    background: var(--em-ember-50);
-    color: var(--em-ember-700);
-  }
-
-  .em-mega__item:hover > .em-mega__children,
-  .em-mega__item:focus-within > .em-mega__children,
-  .em-mega__list:not(:hover, :focus-within) > .em-mega__item:first-child > .em-mega__children {
+  .em-mega__rail-item:hover > .em-mega__stage,
+  .em-mega__rail-item:focus-within > .em-mega__stage,
+  .em-mega__rail-list:not(:hover, :focus-within) > .em-mega__rail-item:first-child > .em-mega__stage {
     display: block;
   }
 
-  .em-mega__children-title {
-    margin: 0 0 var(--em-space-4);
-    font-family: var(--em-font-display);
-    font-size: var(--em-text-lg);
-    font-weight: 700;
+  .em-mega__stage-title {
+    margin: 0 0 16px;
+    font-size: 14px;
+    font-weight: 600;
   }
 
-  .em-mega__children-title a {
-    color: var(--em-ink-900);
+  .em-mega__stage-title a {
+    color: #18181b;
     text-decoration: none;
   }
 
-  .em-mega__children-title a:hover {
-    color: var(--em-ember-600);
+  .em-mega__stage-title a:hover {
+    text-decoration: underline;
   }
 
   .em-mega__groups {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
-    gap: var(--em-space-5);
-    margin: 0;
-    padding: 0;
-    list-style: none;
+    gap: 20px 24px;
   }
 
-  .em-mega__child {
+  .em-mega__group-title {
     display: block;
-    margin-block-end: var(--em-space-2);
-    color: var(--em-ink-900);
-    font-size: var(--em-text-sm);
-    font-weight: 700;
+    margin-bottom: 8px;
+    color: #18181b;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
     text-decoration: none;
   }
 
-  .em-mega__grandchildren {
+  .em-mega__group-title:hover {
+    color: #000000;
+    text-decoration: underline;
+  }
+
+  .em-mega__sublist {
+    margin: 0;
+    padding: 0;
+    list-style: none;
     display: grid;
     gap: 6px;
-    margin: 0;
-    padding: 0;
-    list-style: none;
   }
 
-  .em-mega__grandchildren a {
-    color: var(--em-color-text-muted);
-    font-size: var(--em-text-sm);
+  .em-mega__sublist a {
+    color: #52525b;
+    font-size: 13px;
+    font-weight: 400;
     text-decoration: none;
+    transition: color 120ms ease;
   }
 
-  .em-mega__child:hover,
-  .em-mega__grandchildren a:hover {
-    color: var(--em-ember-600);
+  .em-mega__sublist a:hover {
+    color: #000000;
   }
 
-  /* Mobile drawer */
+  /* 7. MOBILE DRAWER (Rounded corners, no borders) */
   .em-drawer {
     position: fixed;
     inset: 0 auto 0 0;
-    width: min(360px, 88vw);
+    width: min(340px, 86vw);
     height: 100dvh;
     max-height: none;
     margin: 0;
     padding: 0;
     border: 0;
-    background: var(--em-card);
-    color: var(--em-color-text);
-    font-family: var(--em-font-body);
+    border-radius: 0 20px 20px 0;
+    background: #ffffff;
+    color: #18181b;
+    font-family: var(--em-font-body, system-ui, sans-serif);
     overflow-y: auto;
-    box-shadow: var(--em-shadow-3);
-    transition: translate 240ms var(--em-ease), display 240ms allow-discrete, overlay 240ms allow-discrete;
+    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.15);
+    transition: translate 220ms ease, display 220ms allow-discrete, overlay 220ms allow-discrete;
     translate: -100% 0;
   }
 
@@ -913,7 +1122,7 @@
   }
 
   .em-drawer::backdrop {
-    background: rgb(23 23 28 / 0.5);
+    background: rgba(0, 0, 0, 0.4);
   }
 
   .em-drawer__head {
@@ -923,41 +1132,64 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: var(--em-space-3) var(--em-space-4);
-    border-block-end: 1px solid var(--em-color-border);
-    background: var(--em-card);
+    padding: 14px 18px;
+    background: #ffffff;
   }
 
   .em-drawer__head .em-logo__word {
     font-size: 1.25rem;
   }
 
+  .em-drawer__close {
+    display: inline-grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border: 0;
+    border-radius: 9999px;
+    background: #f4f4f6;
+    color: #18181b;
+    cursor: pointer;
+  }
+
+  .em-drawer__close .em-icon {
+    width: 14px;
+    height: 14px;
+  }
+
   .em-drawer__body {
-    padding: var(--em-space-4);
+    padding: 10px 18px 24px;
   }
 
   .em-drawer__account {
     display: flex;
     align-items: center;
-    gap: var(--em-space-3);
-    padding: var(--em-space-3) var(--em-space-4);
-    border-radius: var(--em-radius-md);
-    background: var(--em-ember-50);
-    color: var(--em-ember-700);
-    font-weight: 700;
+    gap: 10px;
+    padding: 12px 16px;
+    border-radius: 14px;
+    background: #f4f4f6;
+    color: #18181b;
+    font-weight: 600;
+    font-size: 13px;
     text-decoration: none;
+    margin-bottom: 16px;
   }
 
   .em-drawer__account span {
     flex: 1;
   }
 
+  .em-drawer__account .em-icon {
+    width: 16px;
+    height: 16px;
+  }
+
   .em-drawer__label {
-    margin: var(--em-space-5) 0 var(--em-space-2);
-    color: var(--em-color-text-muted);
-    font-size: var(--em-text-xs);
-    font-weight: 700;
-    letter-spacing: 0.06em;
+    margin: 16px 0 8px;
+    color: #71717a;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
   }
 
@@ -967,6 +1199,9 @@
     margin: 0;
     padding: 0;
     list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
   }
 
   .em-drawer__link,
@@ -974,43 +1209,71 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    min-height: 48px;
-    border-block-end: 1px solid var(--em-ink-100);
-    color: var(--em-ink-900);
-    font-weight: 600;
+    min-height: 42px;
+    padding: 0 10px;
+    border-radius: 10px;
+    color: #18181b;
+    font-weight: 500;
+    font-size: 13.5px;
     text-decoration: none;
     list-style: none;
     cursor: pointer;
+    border: 0;
+    transition: background 120ms ease;
+  }
+
+  .em-drawer__link:hover,
+  .em-drawer__group summary:hover {
+    background: #f4f4f6;
   }
 
   .em-drawer__group summary::-webkit-details-marker {
     display: none;
   }
 
+  .em-drawer__group summary .em-icon {
+    width: 12px;
+    height: 12px;
+    color: #71717a;
+    transition: transform 140ms ease;
+  }
+
   .em-drawer__group[open] summary .em-icon {
-    rotate: 180deg;
+    transform: rotate(180deg);
   }
 
   .em-drawer__group ul {
-    padding: var(--em-space-2) 0 var(--em-space-3) var(--em-space-4);
+    padding: 4px 0 8px 14px;
   }
 
   .em-drawer__group ul a {
     display: block;
-    padding: var(--em-space-2) 0;
-    color: var(--em-color-text-muted);
+    padding: 6px 10px;
+    border-radius: 8px;
+    color: #52525b;
+    font-size: 13px;
     text-decoration: none;
   }
 
+  .em-drawer__group ul a:hover {
+    background: #f4f4f6;
+    color: #000000;
+  }
+
   .em-drawer__utility {
-    display: grid;
-    gap: var(--em-space-3);
-    margin-block-start: var(--em-space-5);
-    font-size: var(--em-text-sm);
+    margin-top: 18px;
+    gap: 8px;
+    font-size: 13px;
   }
 
   .em-drawer__utility a {
-    color: var(--em-color-text-muted);
+    color: #71717a;
+    text-decoration: none;
+    padding: 4px 10px;
+  }
+
+  .em-drawer__utility a:hover {
+    color: #18181b;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -1049,7 +1312,6 @@
         window.clearInterval(this.placeholderTimer);
       }
 
-      /** Publishes header heights for theme components that offset against the header. */
       measure = () => {
         const topbar = this.querySelector('.em-header__topbar');
         const total = this.offsetHeight;
@@ -1059,7 +1321,7 @@
       };
 
       onScroll = () => {
-        this.toggleAttribute('data-scrolled', window.scrollY > 40);
+        this.toggleAttribute('data-scrolled', window.scrollY > 30);
       };
 
       onDocumentClick = (event) => {

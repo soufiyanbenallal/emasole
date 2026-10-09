@@ -64,15 +64,30 @@
     display: grid;
     place-items: center;
     flex: none;
-    width: 40px;
-    height: 40px;
+    width: 42px;
+    height: 42px;
     border-radius: var(--em-radius-pill);
-    background: var(--em-mint-50);
-    color: var(--em-mint-700);
+    background: var(--em-surface);
+    color: var(--em-ink-900);
+    box-shadow: 0 1px 2px rgb(23 23 28 / 0.04);
+    transition: transform var(--em-duration) var(--em-ease), background-color var(--em-duration) var(--em-ease), box-shadow var(--em-duration) var(--em-ease);
+  }
+
+  .em-benefit__icon .em-icon {
+    width: 22px;
+    height: 22px;
+  }
+
+  a.em-benefit__inner:hover .em-benefit__icon,
+  .em-benefit:hover .em-benefit__icon {
+    transform: translateY(-2px) scale(1.05);
+    background: var(--em-card);
+    box-shadow: var(--em-shadow-1);
   }
 
   .em-benefits__list--mint .em-benefit__icon {
     background: var(--em-card);
+    box-shadow: 0 1px 2px rgb(23 23 28 / 0.06);
   }
 
   .em-benefit__copy {
